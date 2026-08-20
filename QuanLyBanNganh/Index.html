@@ -52,14 +52,14 @@
   <div class="ambient-glow w-[450px] h-[450px] bg-sky-500/15 bottom-[50px] right-[-120px]" style="animation-delay: -8s;"></div>
 
   <!-- TopAppBar -->
-  <header id="app-top-header" class="bg-surface-container-low/90 backdrop-blur-2xl fixed top-0 left-0 right-0 w-full h-16 z-50 border-b border-white/10 shadow-lg flex justify-between items-center px-4 sm:px-6">
+  <header id="app-top-header" class="no-print bg-surface-container-low/90 backdrop-blur-2xl fixed top-0 left-0 right-0 w-full h-16 z-50 border-b border-white/10 shadow-lg flex justify-between items-center px-4 sm:px-6">
     <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('dashboard')">
       <div class="w-10 h-10 rounded-2xl glass-card flex items-center justify-center border border-emerald-500/40 text-emerald-400">
         <span class="material-symbols-outlined text-[24px]">diversity_3</span>
       </div>
       <div>
-        <h1 class="text-base font-bold text-white tracking-tight leading-tight">Quản Lý Ban Ngành</h1>
-        <p class="text-[10px] text-text-secondary">Sinh Hoạt &bull; Điểm Danh &bull; Tài Chính</p>
+        <h1 id="brand-title" class="text-base font-bold text-white tracking-tight leading-tight">Quản Lý Ban Ngành</h1>
+        <p id="brand-subtitle" class="text-[10px] text-text-secondary">Sinh Hoạt &bull; Điểm Danh &bull; Tài Chính &bull; Chăm Sóc</p>
       </div>
     </div>
 
@@ -92,8 +92,11 @@
     </div>
 
     <!-- Right Controls -->
-    <div class="flex items-center gap-2">
-      <button onclick="navigateTo('settings')" class="p-2.5 text-text-secondary hover:text-emerald-400 transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Cài Đặt Kết Nối Sheet">
+    <div class="flex items-center gap-1.5">
+      <button onclick="refreshData(true)" class="p-2 text-text-secondary hover:text-emerald-400 transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Đồng bộ lại dữ liệu">
+        <span id="btn-refresh-icon" class="material-symbols-outlined text-[20px]">sync</span>
+      </button>
+      <button onclick="navigateTo('settings')" class="p-2 text-text-secondary hover:text-emerald-400 transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Cài Đặt Kết Nối Sheet">
         <span class="material-symbols-outlined text-[20px]">settings</span>
       </button>
     </div>
@@ -104,6 +107,7 @@
     
     <!-- VIEW 1: DASHBOARD -->
     <section id="view-dashboard" class="app-view space-y-6">
+      <!-- Theme Banner -->
       <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-emerald-500/25 bg-gradient-to-r from-surface-elevated/90 via-surface-container/70 to-surface-elevated/90">
         <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div class="space-y-2">
@@ -177,6 +181,48 @@
         </div>
       </div>
 
+      <!-- WIDGET 1: SINH NHẬT THÁNG NÀY (BIRTHDAY CAROUSEL/LIST) -->
+      <div class="glass-card rounded-3xl p-5 sm:p-6 border border-pink-500/25 bg-gradient-to-r from-pink-950/20 via-surface-elevated/80 to-surface-elevated/80 space-y-4 shadow-xl">
+        <div class="flex justify-between items-center border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-9 h-9 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-xl">cake</span>
+            </span>
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <span>Sinh Nhật Tháng Này</span>
+                <span id="dash-birthday-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">0 người</span>
+              </h3>
+              <p class="text-[11px] text-text-secondary">Danh sách đoàn viên có sinh nhật trong tháng để chúc mừng &amp; tặng quà.</p>
+            </div>
+          </div>
+        </div>
+        <div id="dash-birthday-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="col-span-3 text-center py-4 text-xs text-text-secondary">Đang kiểm tra sinh nhật...</div>
+        </div>
+      </div>
+
+      <!-- WIDGET 2: CẢNH BÁO VẮNG NHÓM & CẦN THĂM VIẾNG (ABSENCE ALERT) -->
+      <div class="glass-card rounded-3xl p-5 sm:p-6 border border-amber-500/25 bg-gradient-to-r from-amber-950/20 via-surface-elevated/80 to-surface-elevated/80 space-y-4 shadow-xl">
+        <div class="flex justify-between items-center border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-9 h-9 rounded-xl bg-amber-500/20 text-warning-amber flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-xl">warning</span>
+            </span>
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <span>Cảnh Báo Vắng Nhóm &amp; Cần Thăm Viếng</span>
+                <span id="dash-absence-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-warning-amber border border-amber-500/30">0 người</span>
+              </h3>
+              <p class="text-[11px] text-text-secondary">Đoàn viên vắng từ 2 buổi nhóm trở lên cần Ban Chăm Sóc khích lệ.</p>
+            </div>
+          </div>
+        </div>
+        <div id="dash-absence-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="col-span-3 text-center py-4 text-xs text-text-secondary">Đang kiểm tra lịch sử vắng...</div>
+        </div>
+      </div>
+
       <!-- Sheet Status Bar -->
       <div class="glass-card rounded-2xl p-4 border border-white/10 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3 min-w-0">
@@ -229,7 +275,7 @@
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 class="text-2xl font-bold text-white tracking-tight">Danh Sách Đoàn Viên</h2>
-          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý danh sách thành viên, chức vụ, tổ nhóm và thông tin liên lạc.</p>
+          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý danh sách thành viên, chức vụ, tổ nhóm, ngày sinh và phím tắt Zalo.</p>
         </div>
         <button onclick="openAddMemberModal()" class="py-2.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
           <span class="material-symbols-outlined text-[18px]">person_add</span>
@@ -280,27 +326,86 @@
       </div>
     </section>
 
-    <!-- VIEW 4: ATTENDANCE -->
-    <section id="view-attendance" class="app-view hidden space-y-6 max-w-3xl mx-auto">
+    <!-- VIEW 4: ATTENDANCE (SMART ATTENDANCE) -->
+    <section id="view-attendance" class="app-view hidden space-y-6 max-w-4xl mx-auto">
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 class="text-2xl font-bold text-white tracking-tight">Điểm Danh Sinh Hoạt</h2>
-          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Điểm danh có mặt và thuộc câu gốc cho buổi nhóm định kỳ.</p>
+          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Điểm danh có mặt và thuộc câu gốc siêu tốc cho buổi nhóm định kỳ.</p>
         </div>
-        <button onclick="handleSaveAttendance()" class="py-2.5 px-5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
-          <span class="material-symbols-outlined text-[18px]">save</span>
-          <span>Lưu Điểm Danh</span>
-        </button>
-      </div>
-
-      <div class="glass-card rounded-2xl p-4 border border-white/10 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-semibold text-text-secondary">Ngày điểm danh:</span>
-          <input id="attendance-date" type="date" class="glass-input rounded-xl px-3 py-1.5 text-xs font-semibold text-white" />
+        <div class="flex items-center gap-2">
+          <button onclick="handleSaveAttendance()" class="py-2.5 px-5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[18px]">save</span>
+            <span>Lưu Điểm Danh</span>
+          </button>
         </div>
       </div>
 
-      <div id="attendance-members-list" class="space-y-2">
+      <!-- Control Toolbar & Batch Actions -->
+      <div class="glass-card rounded-2xl p-4 border border-white/10 space-y-4">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-text-secondary">Ngày nhóm:</span>
+              <input id="attendance-date" type="date" class="glass-input rounded-xl px-3 py-1.5 text-xs font-semibold text-white" />
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-text-secondary">Lọc tổ:</span>
+              <select id="attendance-filter-group" onchange="renderAttendanceList()" class="glass-input rounded-xl px-3 py-1.5 text-xs font-semibold text-white">
+                <option value="all">Tất cả tổ nhóm</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
+            <button onclick="setAllAttendance(true, null)" class="px-3 py-1.5 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95">
+              <span class="material-symbols-outlined text-[16px]">done_all</span>
+              <span>Tất Cả Có Mặt</span>
+            </button>
+            <button onclick="setAllAttendance(false, null)" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95">
+              <span class="material-symbols-outlined text-[16px]">close</span>
+              <span>Bỏ Chọn Tất Cả</span>
+            </button>
+            <button onclick="setAllAttendance(null, true)" class="px-3 py-1.5 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 border border-sky-500/30 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95">
+              <span class="material-symbols-outlined text-[16px]">menu_book</span>
+              <span>Tất Cả Thuộc Câu Gốc</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Stats & Progress Bars -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-white/10">
+          <div class="p-3 bg-surface-elevated/70 rounded-xl border border-white/5 space-y-1.5">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-text-secondary flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>Có Mặt:</span>
+              </span>
+              <span id="att-live-present" class="font-bold text-emerald-400">0 / 0 (0%)</span>
+            </div>
+            <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+              <div id="att-bar-present" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <div class="p-3 bg-surface-elevated/70 rounded-xl border border-white/5 space-y-1.5">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-text-secondary flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                <span>Thuộc Câu Gốc:</span>
+              </span>
+              <span id="att-live-verse" class="font-bold text-sky-400">0 / 0 (0%)</span>
+            </div>
+            <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+              <div id="att-bar-verse" class="h-full bg-sky-500 transition-all duration-300" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="attendance-members-list" class="space-y-2.5">
         <div class="text-center py-12 text-xs text-text-secondary">Đang tải danh sách...</div>
       </div>
     </section>
@@ -344,23 +449,31 @@
       </div>
     </section>
 
-    <!-- VIEW 6: SCHEDULE -->
+    <!-- VIEW 6: SCHEDULE (PRINT A4/A5 READY) -->
     <section id="view-schedule" class="app-view hidden space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div class="no-print flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 class="text-2xl font-bold text-white tracking-tight">Lịch Phụng Vụ &amp; In A5</h2>
+          <h2 class="text-2xl font-bold text-white tracking-tight">Lịch Phụng Vụ &amp; In A4/A5</h2>
           <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Lập lịch phụng vụ hàng tuần, phân công nhân sự và in tờ chương trình.</p>
         </div>
         <div class="flex items-center gap-2">
-          <button onclick="window.print()" class="py-2.5 px-4 rounded-full glass-card hover:bg-white/10 text-white text-xs font-bold flex items-center gap-1 transition-all">
+          <button onclick="triggerPrintSchedule()" class="py-2.5 px-4 rounded-full glass-card hover:bg-white/10 text-white text-xs font-bold flex items-center gap-1 transition-all active:scale-95 shadow-md">
             <span class="material-symbols-outlined text-[18px]">print</span>
-            <span>In Tờ A5</span>
+            <span>In Bản A4 / A5</span>
           </button>
           <button onclick="openAddScheduleModal()" class="py-2.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-md active:scale-95 transition-all">
             <span class="material-symbols-outlined text-[18px]">add</span>
             <span>Thêm Lịch Mới</span>
           </button>
         </div>
+      </div>
+
+      <!-- Print Title Header (Only appears when printing) -->
+      <div class="print-only hidden text-center mb-6">
+        <h1 class="text-xl font-bold uppercase">HỘI THÁNH TIN LÀNH VIỆT NAM</h1>
+        <h2 id="print-ban-title" class="text-lg font-bold uppercase mt-1">LỊCH PHỤNG VỤ &amp; SINH HOẠT</h2>
+        <p class="text-xs text-gray-600 italic mt-0.5">Thời gian sinh hoạt chiều Chúa Nhật</p>
+        <hr class="my-3 border-gray-400" />
       </div>
 
       <div id="schedule-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -390,7 +503,7 @@
     <section id="view-settings" class="app-view hidden space-y-6 max-w-2xl mx-auto">
       <div>
         <h2 class="text-2xl font-bold text-white tracking-tight">Cài Đặt Ban Ngành</h2>
-        <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Kết nối Google Sheet cơ sở dữ liệu của Ban Ngành.</p>
+        <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Kết nối Google Sheet cơ sở dữ liệu và quản lý bộ nhớ đệm.</p>
       </div>
 
       <div class="glass-card rounded-3xl p-6 shadow-xl border border-emerald-500/30 bg-emerald-950/10 space-y-4">
@@ -425,13 +538,20 @@
               Mở Google Sheet <span class="material-symbols-outlined text-sm">open_in_new</span>
             </a>
           </div>
+
+          <div class="pt-2 border-t border-white/10 flex justify-between items-center">
+            <span class="text-xs text-text-secondary">Bộ nhớ đệm tải nhanh:</span>
+            <button onclick="clearLocalCache()" class="px-3 py-1.5 rounded-xl border border-white/10 hover:bg-white/5 text-xs text-text-secondary hover:text-white transition-colors">
+              Xóa Cache Cục Bộ
+            </button>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
   <!-- Bottom Navigation Bar (Mobile) -->
-  <nav id="app-bottom-nav" class="glass-card backdrop-blur-3xl fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-md h-16 rounded-full border border-white/10 shadow-[0_8px_28px_rgba(0,0,0,0.5)] flex justify-around items-center px-3 z-40 lg:hidden">
+  <nav id="app-bottom-nav" class="no-print glass-card backdrop-blur-3xl fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-md h-16 rounded-full border border-white/10 shadow-[0_8px_28px_rgba(0,0,0,0.5)] flex justify-around items-center px-3 z-40 lg:hidden">
     <button data-page="dashboard" onclick="navigateTo('dashboard')" class="bottom-nav-btn flex flex-col items-center justify-center text-emerald-400 active:scale-90 transition-transform">
       <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">dashboard</span>
       <span class="nav-label text-[10px] mt-0.5 font-bold">Tổng quan</span>
@@ -466,7 +586,7 @@
   </div>
 
   <!-- Global Toast Notifications Container -->
-  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
+  <div id="toast-container" class="no-print fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
 
   <!-- MODAL: THÊM / SỬA ĐOÀN VIÊN -->
   <div id="modal-member" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
@@ -500,7 +620,7 @@
 
           <div>
             <label class="block text-xs font-semibold text-text-secondary mb-1">Ngày Sinh</label>
-            <input id="member-ngaysinh" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="DD/MM/YYYY" />
+            <input id="member-ngaysinh" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="DD/MM/YYYY (VD: 15/08/1995)" />
           </div>
 
           <div>

@@ -1,13 +1,13 @@
 <script>
   // =========================================================================
-  // GLOBAL STATE & RUNNER
+  // GLOBAL STATE & INSTANT LOCAL CACHE ENGINE
   // =========================================================================
   var state = {
     activeSheetId: '',
     banNganhTitle: '',
     banNganhId: '',
     kpis: { total_members: 0, active_members: 0, group_count: 0, total_balance: 0, total_attendance_records: 0, total_visits: 0 },
-    theme: { chuDe: '', cauGoc: '', noiDungCauGoc: '' },
+    theme: { chuDe: 'KỶ LUẬT THUỘC LINH', cauGoc: 'I Ti-mô-thê 4:7-8', noiDungCauGoc: 'Hãy tập tành sự tin kính...' },
     members: [],
     groups: [],
     funds: [],
@@ -17,13 +17,19 @@
     schedules: [],
     themes: [],
     templates: [],
-    spreadsheet: { id: '', name: 'Google Sheet', url: '' },
+    spreadsheet: { id: '', name: 'Google Sheet Ban Ngành', url: '' },
     currentView: 'dashboard',
     searchMember: '',
     filterMemberGroup: 'all',
     searchFinance: '',
-    activeModal: null
+    activeModal: null,
+
+    // Smart Attendance state
+    liveAttendance: {},
+    attendanceFilterGroup: 'all'
   };
+
+  const CACHE_PREFIX = 'qlnb_cache_';
 
   // Safe Accessor Helpers
   function getMemberName(m) {
@@ -33,7 +39,14 @@
 
   function getMemberPhone(m) {
     if (!m) return '';
-    return m.sdt || m.SDT || m.dienthoai || m.phone || m.phoneNumber || m['Số điện thoại'] || m['SĐT'] || '';
+    return String(m.sdt || m.SDT || m.dienthoai || m.phone || m.phoneNumber || m['Số điện thoại'] || m['SĐT'] || '').trim();
+  }
+
+  function cleanPhoneNumber(p) {
+    if (!p) return '';
+    let num = p.replace(/[^0-9]/g, '');
+    if (num.startsWith('84')) num = '0' + num.substring(2);
+    return num;
   }
 
   function getMemberCode(m) {
@@ -56,6 +69,9 @@
     return g.tenTo || g.TenTo || g.tento || g.name || g['Tên tổ'] || g['Tổ'] || 'Tổ nhóm';
   }
 
+  // =========================================================================
+  // GAS RUNNER WITH FALLBACK
+  // =========================================================================
   function runGAS(functionName) {
     var args = Array.prototype.slice.call(arguments, 1);
     return new Promise(function(resolve) {
@@ -67,7 +83,6 @@
 
       var runner = google.script.run
         .withSuccessHandler(function(res) {
-          console.log('GAS Success [' + functionName + ']:', res);
           resolve(res);
         })
         .withFailureHandler(function(err) {
@@ -81,11 +96,10 @@
   }
 
   // =========================================================================
-  // INITIALIZATION & NAVIGATION
+  // INITIALIZATION & STALE-WHILE-REVALIDATE CACHE
   // =========================================================================
 
   async function initApp() {
-    // Đọc tham số URL
     try {
       const urlParams = new URLSearchParams(window.location.search);
       state.activeSheetId = urlParams.get('sheetId') || '';
@@ -94,37 +108,103 @@
 
       if (state.banNganhTitle) {
         document.title = 'Quản Lý ' + state.banNganhTitle;
-        const brandHeader = document.querySelector('header h1');
-        if (brandHeader) brandHeader.textContent = state.banNganhTitle;
+        const brandH1 = document.getElementById('brand-title');
+        const printTitle = document.getElementById('print-ban-title');
+        if (brandH1) brandH1.textContent = 'Quản Lý ' + state.banNganhTitle;
+        if (printTitle) printTitle.textContent = 'LỊCH PHỤNG VỤ - ' + state.banNganhTitle.toUpperCase();
+      }
+
+      // Default attendance date: current Sunday
+      const attDateInput = document.getElementById('attendance-date');
+      if (attDateInput && !attDateInput.value) {
+        attDateInput.value = new Date().toISOString().split('T')[0];
       }
     } catch (e) {}
 
-    showLoading(true);
+    // 1. TẢI NGAY TỪ LOCAL CACHE ĐỂ GIAO DIỆN HIỂN THỊ TRONG 0.1S
+    loadFromLocalCache();
+
+    // 2. TẢI NGẦM DỮ LIỆU MỚI NHẤT TỪ GOOGLE SHEET
+    await refreshData(false);
+  }
+
+  function getCacheKey() {
+    return CACHE_PREFIX + (state.activeSheetId || 'default');
+  }
+
+  function loadFromLocalCache() {
+    try {
+      const key = getCacheKey();
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const cached = JSON.parse(raw);
+        if (cached && cached.data) {
+          applyData(cached.data);
+          renderAll();
+        }
+      }
+    } catch (e) {
+      console.warn('Cache load error:', e);
+    }
+  }
+
+  function saveToLocalCache(data) {
+    try {
+      const key = getCacheKey();
+      localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), data: data }));
+    } catch (e) {}
+  }
+
+  function clearLocalCache() {
+    try {
+      const key = getCacheKey();
+      localStorage.removeItem(key);
+      showToast('Đã xóa bộ nhớ đệm cache!', 'success');
+      refreshData(true);
+    } catch (e) {}
+  }
+
+  function applyData(data) {
+    state.kpis = data.kpis || state.kpis;
+    state.theme = data.theme || state.theme;
+    state.members = data.members || [];
+    state.groups = data.groups || [];
+    state.funds = data.funds || [];
+    state.transactions = data.transactions || [];
+    state.attendances = data.attendances || [];
+    state.visits = data.visits || [];
+    state.schedules = data.schedules || [];
+    state.themes = data.themes || [];
+    state.templates = data.templates || [];
+    state.spreadsheet = data.spreadsheet || state.spreadsheet;
+
+    // Reset Live Attendance State
+    initLiveAttendanceState();
+  }
+
+  async function refreshData(showLoader) {
+    const refreshIcon = document.getElementById('btn-refresh-icon');
+    if (refreshIcon) refreshIcon.classList.add('animate-spin');
+    if (showLoader) showLoading(true);
+
     try {
       const res = await runGAS('apiGetInitialData', state.activeSheetId);
       if (res && res.success && res.data) {
-        state.kpis = res.data.kpis || state.kpis;
-        state.theme = res.data.theme || state.theme;
-        state.members = res.data.members || [];
-        state.groups = res.data.groups || [];
-        state.funds = res.data.funds || [];
-        state.transactions = res.data.transactions || [];
-        state.attendances = res.data.attendances || [];
-        state.visits = res.data.visits || [];
-        state.schedules = res.data.schedules || [];
-        state.themes = res.data.themes || [];
-        state.templates = res.data.templates || [];
-        state.spreadsheet = res.data.spreadsheet || state.spreadsheet;
-
+        applyData(res.data);
+        saveToLocalCache(res.data);
         renderAll();
+        if (showLoader) showToast('Đồng bộ dữ liệu thành công!', 'success');
       } else {
-        showToast('Chưa kết nối dữ liệu: ' + (res.message || 'Vui lòng kiểm tra cài đặt Sheet'), 'warning');
+        if (!state.members.length) {
+          showToast('Chưa kết nối dữ liệu: ' + (res.message || 'Vui lòng kiểm tra cài đặt Sheet'), 'warning');
+        }
       }
     } catch (e) {
-      console.error('initApp Error:', e);
-      showToast('Lỗi nạp dữ liệu: ' + e.message, 'error');
+      console.error('refreshData Error:', e);
+      if (showLoader) showToast('Lỗi nạp dữ liệu: ' + e.message, 'error');
     } finally {
-      showLoading(false);
+      if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+      if (showLoader) showLoading(false);
     }
   }
 
@@ -158,6 +238,8 @@
 
   function renderAll() {
     renderDashboard();
+    renderBirthdays();
+    renderAbsenceWarnings();
     renderMembers();
     renderGroups();
     renderAttendance();
@@ -168,7 +250,7 @@
   }
 
   // =========================================================================
-  // 1. DASHBOARD
+  // 1. DASHBOARD & SMART WIDGETS
   // =========================================================================
 
   function renderDashboard() {
@@ -245,8 +327,174 @@
     }
   }
 
+  // WIDGET: SINH NHẬT THÁNG NÀY
+  function renderBirthdays() {
+    const container = document.getElementById('dash-birthday-container');
+    const badge = document.getElementById('dash-birthday-badge');
+    if (!container) return;
+
+    const currentMonth = new Date().getMonth() + 1;
+    const birthdayList = [];
+
+    (state.members || []).forEach(m => {
+      const dobStr = m.ngaySinh || m.NgaySinh || '';
+      if (!dobStr) return;
+
+      let bMonth = null;
+      let bDay = null;
+
+      // Check DD/MM/YYYY or DD/MM or YYYY-MM-DD
+      if (dobStr.includes('/')) {
+        const parts = dobStr.split('/');
+        bDay = parseInt(parts[0], 10);
+        bMonth = parseInt(parts[1], 10);
+      } else if (dobStr.includes('-')) {
+        const parts = dobStr.split('-');
+        bMonth = parseInt(parts[1], 10);
+        bDay = parseInt(parts[2], 10);
+      }
+
+      if (bMonth === currentMonth) {
+        birthdayList.push({ member: m, day: bDay, raw: dobStr });
+      }
+    });
+
+    birthdayList.sort((a, b) => (a.day || 0) - (b.day || 0));
+
+    if (badge) badge.textContent = `${birthdayList.length} người trong tháng ${currentMonth}`;
+
+    if (birthdayList.length === 0) {
+      container.innerHTML = `
+        <div class="col-span-3 text-center py-6 text-xs text-text-secondary">
+          <span class="material-symbols-outlined text-2xl text-pink-400/50 block mb-1">cake</span>
+          Không có đoàn viên nào sinh nhật trong tháng ${currentMonth}.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = birthdayList.map(item => {
+      const m = item.member;
+      const name = getMemberName(m);
+      const phone = getMemberPhone(m);
+      const cleanPhone = cleanPhoneNumber(phone);
+      const role = getMemberRole(m);
+
+      return `
+        <div class="p-3 rounded-2xl bg-surface-elevated/80 border border-pink-500/20 flex items-center justify-between gap-2 shadow-sm">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-300 font-bold flex flex-col items-center justify-center shrink-0 border border-pink-500/30">
+              <span class="text-[9px] uppercase font-semibold leading-none">Ngày</span>
+              <span class="text-sm font-extrabold leading-none mt-0.5">${item.day || '--'}</span>
+            </div>
+            <div class="min-w-0">
+              <h4 class="text-xs font-bold text-white truncate">${name}</h4>
+              <p class="text-[10px] text-text-secondary truncate">${role} &bull; ${item.raw}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            ${cleanPhone ? `
+              <a href="https://zalo.me/${cleanPhone}" target="_blank" class="px-2.5 py-1.5 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 text-[11px] font-bold flex items-center gap-1 transition-all" title="Gửi lời chúc mừng qua Zalo">
+                <span class="material-symbols-outlined text-sm">cake</span>
+                <span>Chúc Zalo</span>
+              </a>
+            ` : `
+              <span class="text-[10px] text-text-secondary italic">Chưa có SĐT</span>
+            `}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // WIDGET: CẢNH BÁO VẮNG NHÓM & CẦN THĂM VIẾNG
+  function renderAbsenceWarnings() {
+    const container = document.getElementById('dash-absence-container');
+    const badge = document.getElementById('dash-absence-badge');
+    if (!container) return;
+
+    // Get distinct attendance dates sorted descending
+    const allAtt = state.attendances || [];
+    const dateMap = {};
+    allAtt.forEach(a => {
+      if (a.ngayDiemDanh) dateMap[a.ngayDiemDanh] = true;
+    });
+    const sortedDates = Object.keys(dateMap).sort().reverse();
+    const recentDates = sortedDates.slice(0, 3); // Check last 3 Sundays
+
+    const absenceList = [];
+
+    if (recentDates.length >= 2) {
+      (state.members || []).forEach(m => {
+        if ((m.trangThai || 'active') !== 'active') return;
+        let consecutiveAbsences = 0;
+
+        for (let d of recentDates) {
+          const rec = allAtt.find(a => a.ngayDiemDanh === d && String(a.thanhVienId) === String(m.id));
+          if (!rec || rec.coMat === 'VANG' || rec.coMat === false || rec.coMat === 'false') {
+            consecutiveAbsences++;
+          } else {
+            break;
+          }
+        }
+
+        if (consecutiveAbsences >= 2) {
+          absenceList.push({ member: m, absences: consecutiveAbsences });
+        }
+      });
+    }
+
+    if (badge) badge.textContent = `${absenceList.length} người cần chăm sóc`;
+
+    if (absenceList.length === 0) {
+      container.innerHTML = `
+        <div class="col-span-3 text-center py-6 text-xs text-text-secondary">
+          <span class="material-symbols-outlined text-2xl text-emerald-400/50 block mb-1">verified</span>
+          Tất cả đoàn viên đều duy trì sinh hoạt đều đặn!
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = absenceList.map(item => {
+      const m = item.member;
+      const name = getMemberName(m);
+      const phone = getMemberPhone(m);
+      const cleanPhone = cleanPhoneNumber(phone);
+
+      return `
+        <div class="p-3 rounded-2xl bg-surface-elevated/80 border border-amber-500/25 flex items-center justify-between gap-2 shadow-sm">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-warning-amber font-bold flex flex-col items-center justify-center shrink-0 border border-amber-500/30">
+              <span class="material-symbols-outlined text-base">person_alert</span>
+              <span class="text-[9px] font-bold leading-none mt-0.5">Vắng ${item.absences}T</span>
+            </div>
+            <div class="min-w-0">
+              <h4 class="text-xs font-bold text-white truncate">${name}</h4>
+              <p class="text-[10px] text-warning-amber font-semibold">Vắng ${item.absences} tuần liên tiếp</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${cleanPhone ? `
+              <a href="tel:${cleanPhone}" class="p-1.5 rounded-lg bg-white/5 hover:bg-emerald-500/20 text-emerald-400 transition-colors" title="Gọi điện">
+                <span class="material-symbols-outlined text-base">call</span>
+              </a>
+              <a href="https://zalo.me/${cleanPhone}" target="_blank" class="p-1.5 rounded-lg bg-white/5 hover:bg-sky-500/20 text-sky-400 transition-colors" title="Zalo">
+                <span class="material-symbols-outlined text-base">chat</span>
+              </a>
+            ` : ''}
+            <button onclick="openQuickVisitModal('${m.id}', ${item.absences})" class="px-2.5 py-1.5 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 text-[11px] font-bold flex items-center gap-1 transition-all" title="Lập phiếu thăm viếng">
+              <span class="material-symbols-outlined text-sm">volunteer_activism</span>
+              <span>Thăm</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   // =========================================================================
-  // 2. MEMBERS VIEW
+  // 2. MEMBERS VIEW & QUICK ACTIONS
   // =========================================================================
 
   function renderMembers() {
@@ -269,9 +517,13 @@
 
     const fGroup = document.getElementById('member-filter-group');
     const mGroup = document.getElementById('member-modal-group');
+    const attFGroup = document.getElementById('attendance-filter-group');
     const groupOpts = (state.groups || []).map(g => `<option value="${g.id}">${getGroupName(g)}</option>`).join('');
+
     if (fGroup) fGroup.innerHTML = `<option value="all">Tất cả Tổ Nhóm</option>` + groupOpts;
     if (mGroup) mGroup.innerHTML = `<option value="">-- Không thuộc tổ --</option>` + groupOpts;
+    if (attFGroup) attFGroup.innerHTML = `<option value="all">Tất cả tổ nhóm</option>` + groupOpts;
+
     if (fGroup && state.filterMemberGroup) fGroup.value = state.filterMemberGroup;
 
     const container = document.getElementById('members-grid-container');
@@ -294,43 +546,75 @@
     container.innerHTML = list.map(m => {
       const name = getMemberName(m);
       const phone = getMemberPhone(m);
+      const cleanPhone = cleanPhoneNumber(phone);
       const role = getMemberRole(m);
       const code = getMemberCode(m);
       const address = getMemberAddress(m);
       const dob = m.ngaySinh || m.NgaySinh || '';
+      const toName = groupMap[m.toId] || 'Chưa phân tổ';
+      const isFemale = (m.gioiTinh === 'Nữ' || m.gioiTinh === 'Nu');
 
       return `
-        <div class="glass-card rounded-3xl p-5 border border-white/10 hover:border-emerald-400/40 flex flex-col justify-between shadow-lg transition-all duration-200 group">
+        <div class="glass-card rounded-3xl p-5 border border-white/10 hover:border-emerald-500/40 flex flex-col justify-between shadow-lg transition-all duration-200 group">
           <div>
             <div class="flex justify-between items-start gap-2 mb-3">
-              <div class="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold shrink-0">
-                <span class="material-symbols-outlined text-2xl">person</span>
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl ${isFemale ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'} border flex items-center justify-center font-bold text-sm shrink-0">
+                  <span class="material-symbols-outlined">${isFemale ? 'face_3' : 'person'}</span>
+                </div>
+                <div class="min-w-0">
+                  <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-white/5 text-emerald-400 border border-white/10 inline-block">${code}</span>
+                  <h3 class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors truncate">${name}</h3>
+                </div>
               </div>
-              <div class="flex items-center gap-1">
-                <button onclick="openEditMemberModal('${m.id}')" class="p-2 text-text-secondary hover:text-white rounded-full hover:bg-white/5 transition-colors" title="Sửa"><span class="material-symbols-outlined text-[18px]">edit</span></button>
-                <button onclick="deleteMember('${m.id}')" class="p-2 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5 transition-colors" title="Xóa"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <button onclick="openEditMemberModal('${m.id}')" class="p-1.5 text-text-secondary hover:text-white rounded-full hover:bg-white/5 transition-colors" title="Sửa"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                <button onclick="deleteMember('${m.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5 transition-colors" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
               </div>
             </div>
 
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/5 text-emerald-400 border border-white/10 inline-block mb-1">${code}</span>
-            <h3 class="text-base font-bold text-white leading-snug group-hover:text-emerald-400 transition-colors">${name}</h3>
-            <p class="text-xs text-text-secondary mt-1 flex items-center gap-1">
-              <span class="material-symbols-outlined text-[14px]">badge</span>
-              <span>${role} &bull; ${groupMap[m.toId] || 'Chưa vào tổ'}</span>
-            </p>
-
-            <div class="mt-4 pt-3 border-t border-white/5 space-y-1.5 text-[11px] text-text-secondary">
-              ${phone ? `<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">call</span><span>${phone}</span></div>` : ''}
-              ${address ? `<div class="flex items-center gap-1.5 truncate"><span class="material-symbols-outlined text-[14px]">location_on</span><span>${address}</span></div>` : ''}
-              ${dob ? `<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">cake</span><span>${dob}</span></div>` : ''}
+            <div class="space-y-1.5 text-[11px] text-text-secondary pt-1">
+              <div class="flex items-center justify-between">
+                <span class="text-text-secondary/70">Chức vụ:</span>
+                <span class="text-white font-semibold">${role}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-text-secondary/70">Tổ nhóm:</span>
+                <span class="text-emerald-400 font-medium">${toName}</span>
+              </div>
+              ${dob ? `
+                <div class="flex items-center justify-between">
+                  <span class="text-text-secondary/70">Ngày sinh:</span>
+                  <span class="text-white font-mono">${dob}</span>
+                </div>
+              ` : ''}
+              ${address ? `
+                <div class="truncate">
+                  <span class="text-text-secondary/70">Địa chỉ:</span>
+                  <span class="text-white">${address}</span>
+                </div>
+              ` : ''}
             </div>
           </div>
 
-          <div class="mt-5 pt-3 border-t border-white/5 flex justify-between items-center text-[10px] text-text-secondary">
-            <span>Trạng thái: <strong class="text-emerald-400 font-semibold">${(m.trangThai || 'active') === 'active' ? 'Đang sinh hoạt' : 'Tạm ngưng'}</strong></span>
-            <button onclick="openVisitationForMember('${m.id}')" class="text-emerald-400 hover:underline flex items-center gap-1 font-semibold">
-              <span>Thăm viếng</span>
-              <span class="material-symbols-outlined text-xs">arrow_forward</span>
+          <!-- Quick Action Buttons Toolbar -->
+          <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-1.5">
+            ${cleanPhone ? `
+              <a href="tel:${cleanPhone}" class="flex-1 py-1.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Gọi điện">
+                <span class="material-symbols-outlined text-sm">call</span>
+                <span>Gọi</span>
+              </a>
+              <a href="https://zalo.me/${cleanPhone}" target="_blank" class="flex-1 py-1.5 rounded-xl bg-sky-600/20 hover:bg-sky-600/40 text-sky-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Mở Zalo">
+                <span class="material-symbols-outlined text-sm">chat</span>
+                <span>Zalo</span>
+              </a>
+            ` : `
+              <span class="text-[10px] text-text-secondary italic">Chưa có số điện thoại</span>
+            `}
+            <button onclick="openQuickVisitModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-pink-500/20 text-pink-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Tạo phiếu thăm viếng">
+              <span class="material-symbols-outlined text-sm">volunteer_activism</span>
+              <span>Thăm</span>
             </button>
           </div>
         </div>
@@ -354,12 +638,12 @@
     document.getElementById('member-matv').value = getMemberCode(m);
     document.getElementById('member-sdt').value = getMemberPhone(m);
     document.getElementById('member-ngaysinh').value = m.ngaySinh || m.NgaySinh || '';
-    document.getElementById('member-gioitinh').value = m.gioiTinh || m.GioiTinh || 'Nam';
+    document.getElementById('member-gioitinh').value = m.gioiTinh || 'Nam';
     document.getElementById('member-modal-group').value = m.toId || '';
     document.getElementById('member-chucvu').value = getMemberRole(m);
     document.getElementById('member-diachi').value = getMemberAddress(m);
     document.getElementById('member-trangthai').value = m.trangThai || 'active';
-    document.getElementById('member-ghichu').value = m.ghiChu || m.GhiChu || '';
+    document.getElementById('member-ghichu').value = m.ghiChu || '';
 
     document.getElementById('modal-member-title').innerHTML = `<span class="material-symbols-outlined text-emerald-400">edit</span> Cập Nhật Đoàn Viên`;
     openModal('modal-member');
@@ -387,9 +671,9 @@
       if (res && res.success) {
         showToast(res.message || 'Lưu đoàn viên thành công!', 'success');
         closeModal('modal-member');
-        await initApp();
+        await refreshData(false);
       } else {
-        showToast(res.message || 'Lỗi lưu đoàn viên', 'error');
+        showToast(res.message || 'Lỗi khi lưu đoàn viên', 'error');
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -399,13 +683,13 @@
   }
 
   async function deleteMember(id) {
-    if (!confirm('Bạn có chắc muốn xóa đoàn viên này?')) return;
+    if (!confirm('Bạn có chắc muốn xóa đoàn viên này khỏi danh sách?')) return;
     showLoading(true);
     try {
       const res = await runGAS('apiDeleteMember', id, state.activeSheetId);
       if (res && res.success) {
         showToast('Đã xóa đoàn viên!', 'info');
-        await initApp();
+        await refreshData(false);
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -417,63 +701,251 @@
   }
 
   // =========================================================================
-  // 3. GROUPS VIEW
+  // 3. SMART ATTENDANCE ENGINE (ĐIỂM DANH SIÊU TỐC)
+  // =========================================================================
+
+  function initLiveAttendanceState() {
+    state.liveAttendance = {};
+    (state.members || []).forEach(m => {
+      state.liveAttendance[m.id] = {
+        coMat: true, // Mặc định có mặt để điểm danh nhanh
+        thuocCauGoc: false,
+        ghiChu: ''
+      };
+    });
+  }
+
+  function setAllAttendance(coMatVal, thuocCauGocVal) {
+    let list = getFilteredAttendanceMembers();
+    list.forEach(m => {
+      if (!state.liveAttendance[m.id]) {
+        state.liveAttendance[m.id] = { coMat: false, thuocCauGoc: false, ghiChu: '' };
+      }
+      if (coMatVal !== null && coMatVal !== undefined) {
+        state.liveAttendance[m.id].coMat = coMatVal;
+      }
+      if (thuocCauGocVal !== null && thuocCauGocVal !== undefined) {
+        state.liveAttendance[m.id].thuocCauGoc = thuocCauGocVal;
+      }
+    });
+
+    renderAttendanceList();
+  }
+
+  function getFilteredAttendanceMembers() {
+    let list = (state.members || []).filter(m => (m.trangThai || 'active') === 'active');
+    const fGroup = document.getElementById('attendance-filter-group');
+    const groupVal = fGroup ? fGroup.value : 'all';
+    if (groupVal !== 'all') {
+      list = list.filter(m => String(m.toId) === String(groupVal));
+    }
+    return list;
+  }
+
+  function renderAttendance() {
+    renderAttendanceList();
+  }
+
+  function renderAttendanceList() {
+    const container = document.getElementById('attendance-members-list');
+    if (!container) return;
+
+    const list = getFilteredAttendanceMembers();
+    const groupMap = {};
+    state.groups.forEach(g => { groupMap[g.id] = getGroupName(g); });
+
+    if (list.length === 0) {
+      container.innerHTML = `<div class="text-center py-12 text-xs text-text-secondary">Chưa có đoàn viên nào để điểm danh.</div>`;
+      updateAttendanceStats(0, 0, 0);
+      return;
+    }
+
+    let presentCount = 0;
+    let verseCount = 0;
+
+    container.innerHTML = list.map((m, idx) => {
+      const att = state.liveAttendance[m.id] || { coMat: false, thuocCauGoc: false, ghiChu: '' };
+      if (att.coMat) presentCount++;
+      if (att.thuocCauGoc) verseCount++;
+
+      const name = getMemberName(m);
+      const role = getMemberRole(m);
+      const toName = groupMap[m.toId] || 'Chưa phân tổ';
+
+      return `
+        <div class="glass-card rounded-2xl p-3.5 sm:p-4 border ${att.coMat ? 'border-emerald-500/40 bg-emerald-950/15' : 'border-white/5 bg-surface-elevated/40'} flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="w-7 h-7 rounded-xl bg-white/5 text-text-secondary flex items-center justify-center text-xs font-mono font-bold shrink-0">${idx + 1}</span>
+            <div class="min-w-0">
+              <h4 class="text-sm font-bold text-white truncate">${name}</h4>
+              <p class="text-[11px] text-text-secondary">${role} &bull; <span class="text-emerald-400 font-medium">${toName}</span></p>
+            </div>
+          </div>
+
+          <!-- Dual Switch Toggles & Note -->
+          <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
+            <!-- Có Mặt Toggle -->
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <span class="text-xs font-semibold ${att.coMat ? 'text-emerald-400 font-bold' : 'text-text-secondary'}">Có mặt</span>
+              <div class="switch-toggle">
+                <input type="checkbox" ${att.coMat ? 'checked' : ''} onchange="handleToggleLiveAttendance('${m.id}', 'coMat', this.checked)" />
+                <span class="switch-slider switch-slider-green"></span>
+              </div>
+            </label>
+
+            <!-- Thuộc Câu Gốc Toggle -->
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <span class="text-xs font-semibold ${att.thuocCauGoc ? 'text-sky-400 font-bold' : 'text-text-secondary'}">Thuộc câu gốc</span>
+              <div class="switch-toggle">
+                <input type="checkbox" ${att.thuocCauGoc ? 'checked' : ''} onchange="handleToggleLiveAttendance('${m.id}', 'thuocCauGoc', this.checked)" />
+                <span class="switch-slider switch-slider-blue"></span>
+              </div>
+            </label>
+
+            <!-- Note Input -->
+            <input
+              type="text"
+              placeholder="Ghi chú..."
+              value="${att.ghiChu || ''}"
+              onchange="handleLiveAttendanceNote('${m.id}', this.value)"
+              class="glass-input rounded-xl px-2.5 py-1 text-xs w-full sm:w-28 text-text-secondary"
+            />
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    updateAttendanceStats(presentCount, verseCount, list.length);
+  }
+
+  function handleToggleLiveAttendance(memberId, field, val) {
+    if (!state.liveAttendance[memberId]) {
+      state.liveAttendance[memberId] = { coMat: false, thuocCauGoc: false, ghiChu: '' };
+    }
+    state.liveAttendance[memberId][field] = val;
+    renderAttendanceList();
+  }
+
+  function handleLiveAttendanceNote(memberId, val) {
+    if (!state.liveAttendance[memberId]) {
+      state.liveAttendance[memberId] = { coMat: false, thuocCauGoc: false, ghiChu: '' };
+    }
+    state.liveAttendance[memberId].ghiChu = val;
+  }
+
+  function updateAttendanceStats(present, verse, total) {
+    const pPct = total > 0 ? Math.round((present / total) * 100) : 0;
+    const vPct = total > 0 ? Math.round((verse / total) * 100) : 0;
+
+    const elPText = document.getElementById('att-live-present');
+    const elPBar = document.getElementById('att-bar-present');
+    const elVText = document.getElementById('att-live-verse');
+    const elVBar = document.getElementById('att-bar-verse');
+
+    if (elPText) elPText.textContent = `${present} / ${total} (${pPct}%)`;
+    if (elPBar) elPBar.style.width = `${pPct}%`;
+    if (elVText) elVText.textContent = `${verse} / ${total} (${vPct}%)`;
+    if (elVBar) elVBar.style.width = `${vPct}%`;
+  }
+
+  async function handleSaveAttendance() {
+    const rawDate = document.getElementById('attendance-date').value;
+    if (!rawDate) {
+      showToast('Vui lòng chọn ngày điểm danh!', 'warning');
+      return;
+    }
+
+    const dParts = rawDate.split('-');
+    const formattedDate = `${dParts[2]}/${dParts[1]}/${dParts[0]}`;
+
+    const list = getFilteredAttendanceMembers();
+    const records = list.map(m => {
+      const att = state.liveAttendance[m.id] || { coMat: false, thuocCauGoc: false, ghiChu: '' };
+      return {
+        thanhVienId: m.id,
+        coMat: att.coMat,
+        thuocCauGoc: att.thuocCauGoc,
+        ghiChu: att.ghiChu || ''
+      };
+    });
+
+    if (records.length === 0) {
+      showToast('Không có đoàn viên nào để lưu điểm danh', 'warning');
+      return;
+    }
+
+    showLoading(true);
+    try {
+      const payload = {
+        ngayDiemDanh: formattedDate,
+        records: records,
+        nguoiDiemDanh: 'Thư Ký'
+      };
+
+      const res = await runGAS('apiSaveAttendance', payload, state.activeSheetId);
+      if (res && res.success) {
+        showToast(res.message || 'Đã lưu điểm danh thành công!', 'success');
+        await refreshData(false);
+      } else {
+        showToast(res.message || 'Lỗi lưu điểm danh', 'error');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  // =========================================================================
+  // 4. GROUPS, FINANCE, SCHEDULE, VISITATIONS
   // =========================================================================
 
   function renderGroups() {
     const container = document.getElementById('groups-grid-container');
     if (!container) return;
 
-    if (state.groups.length === 0) {
+    const list = state.groups || [];
+    if (list.length === 0) {
       container.innerHTML = `
         <div class="col-span-3 glass-card rounded-3xl p-12 text-center text-xs text-text-secondary space-y-3">
-          <span class="material-symbols-outlined text-4xl text-emerald-400/60">groups</span>
+          <span class="material-symbols-outlined text-4xl text-blue-400/60">account_tree</span>
           <p class="font-medium text-sm text-white">Chưa có tổ nhóm nào</p>
-          <p>Bấm nút <strong>"+ Thêm Tổ Mới"</strong> để phân tổ sinh hoạt.</p>
+          <p>Bấm nút <strong>"+ Thêm Tổ Mới"</strong> để phân chia tổ.</p>
         </div>
       `;
       return;
     }
 
-    container.innerHTML = state.groups.map(g => {
-      const count = state.members.filter(m => String(m.toId) === String(g.id)).length;
-      const gName = getGroupName(g);
-      const gCode = g.maTo || g.MaTo || 'TO';
-      const toTruong = g.toTruong || g.ToTruong || 'Chưa gán';
-      const toPho = g.toPho || g.ToPho || 'Chưa gán';
-      const lich = g.lichSinhHoat || g.LichSinhHoat || 'Chưa cập nhật';
+    container.innerHTML = list.map(g => {
+      const membersInGroup = (state.members || []).filter(m => String(m.toId) === String(g.id)).length;
 
       return `
-        <div class="glass-card rounded-3xl p-5 border border-white/10 hover:border-emerald-400/40 flex flex-col justify-between shadow-lg transition-all duration-200">
+        <div class="glass-card rounded-3xl p-5 border border-white/10 hover:border-blue-500/40 flex flex-col justify-between shadow-lg transition-all duration-200 group">
           <div>
             <div class="flex justify-between items-start gap-2 mb-3">
-              <div class="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold shrink-0">
-                <span class="material-symbols-outlined text-xl">groups</span>
+              <div class="w-11 h-11 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center font-bold shrink-0">
+                <span class="material-symbols-outlined">diversity_2</span>
               </div>
               <div class="flex items-center gap-1">
-                <button onclick="openEditGroupModal('${g.id}')" class="p-1.5 text-text-secondary hover:text-white rounded-full hover:bg-white/5"><span class="material-symbols-outlined text-[16px]">edit</span></button>
-                <button onclick="deleteGroup('${g.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+                <button onclick="openEditGroupModal('${g.id}')" class="p-1.5 text-text-secondary hover:text-white rounded-full hover:bg-white/5 transition-colors" title="Sửa"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                <button onclick="deleteGroup('${g.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5 transition-colors" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
               </div>
             </div>
 
-            <span class="text-[10px] font-mono font-bold text-emerald-400 block">${gCode}</span>
-            <h3 class="text-base font-bold text-white">${gName}</h3>
-            
-            <div class="mt-3 space-y-1 text-[11px] text-text-secondary pt-2 border-t border-white/5">
-              <div><span class="text-text-secondary/70">Tổ trưởng:</span> <strong class="text-white">${toTruong}</strong></div>
-              <div><span class="text-text-secondary/70">Tổ phó:</span> <strong class="text-white">${toPho}</strong></div>
-              <div><span class="text-text-secondary/70">Lịch nhóm:</span> <span>${lich}</span></div>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/5 text-blue-400 border border-white/10 inline-block mb-1">${g.maTo || 'TO'}</span>
+            <h3 class="text-base font-bold text-white group-hover:text-blue-400 transition-colors">${getGroupName(g)}</h3>
+
+            <div class="space-y-1.5 text-xs text-text-secondary mt-3">
+              <div><span class="text-text-secondary/70">Tổ trưởng:</span> <span class="text-white font-medium">${g.toTruong || 'Chưa gán'}</span></div>
+              ${g.toPho ? `<div><span class="text-text-secondary/70">Tổ phó:</span> <span class="text-white">${g.toPho}</span></div>` : ''}
+              ${g.lichSinhHoat ? `<div><span class="text-text-secondary/70">Lịch nhóm:</span> <span class="text-emerald-400 font-medium">${g.lichSinhHoat}</span></div>` : ''}
+              ${g.diaDiem ? `<div><span class="text-text-secondary/70">Địa điểm:</span> <span class="text-white">${g.diaDiem}</span></div>` : ''}
             </div>
           </div>
 
-          <div class="mt-4 pt-3 border-t border-white/5 flex justify-between items-center">
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-400">
-              ${count} đoàn viên
-            </span>
-            <button onclick="state.filterMemberGroup = '${g.id}'; navigateTo('members');" class="text-xs text-emerald-400 hover:underline flex items-center gap-1 font-semibold">
-              <span>Xem đoàn viên</span>
-              <span class="material-symbols-outlined text-xs">arrow_forward</span>
-            </button>
+          <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+            <span class="text-text-secondary">Sĩ số thành viên:</span>
+            <span class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30">${membersInGroup} đoàn viên</span>
           </div>
         </div>
       `;
@@ -489,15 +961,13 @@
   function openEditGroupModal(id) {
     const g = state.groups.find(item => String(item.id) === String(id));
     if (!g) return;
-
     document.getElementById('group-id').value = g.id;
     document.getElementById('group-tento').value = getGroupName(g);
-    document.getElementById('group-mato').value = g.maTo || g.MaTo || '';
-    document.getElementById('group-totruong').value = g.toTruong || g.ToTruong || '';
-    document.getElementById('group-topho').value = g.toPho || g.ToPho || '';
-    document.getElementById('group-lichnhom').value = g.lichSinhHoat || g.LichSinhHoat || '';
-    document.getElementById('group-diadiem').value = g.diaDiem || g.DiaDiem || '';
-    document.getElementById('group-ghichu').value = g.ghiChu || g.GhiChu || '';
+    document.getElementById('group-mato').value = g.maTo || '';
+    document.getElementById('group-totruong').value = g.toTruong || '';
+    document.getElementById('group-topho').value = g.toPho || '';
+    document.getElementById('group-lichnhom').value = g.lichSinhHoat || '';
+    document.getElementById('group-diadiem').value = g.diaDiem || '';
     openModal('modal-group');
   }
 
@@ -510,8 +980,7 @@
       toTruong: document.getElementById('group-totruong').value.trim(),
       toPho: document.getElementById('group-topho').value.trim(),
       lichSinhHoat: document.getElementById('group-lichnhom').value.trim(),
-      diaDiem: document.getElementById('group-diadiem').value.trim(),
-      ghiChu: document.getElementById('group-ghichu').value.trim()
+      diaDiem: document.getElementById('group-diadiem').value.trim()
     };
 
     showLoading(true);
@@ -520,9 +989,9 @@
       if (res && res.success) {
         showToast('Lưu tổ nhóm thành công!', 'success');
         closeModal('modal-group');
-        await initApp();
+        await refreshData(false);
       } else {
-        showToast(res.message || 'Lỗi lưu tổ nhóm', 'error');
+        showToast(res.message || 'Lỗi lưu tổ', 'error');
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -532,13 +1001,13 @@
   }
 
   async function deleteGroup(id) {
-    if (!confirm('Bạn có chắc muốn xóa tổ này?')) return;
+    if (!confirm('Bạn có chắc muốn xóa tổ nhóm này?')) return;
     showLoading(true);
     try {
       const res = await runGAS('apiDeleteGroup', id, state.activeSheetId);
       if (res && res.success) {
         showToast('Đã xóa tổ nhóm!', 'info');
-        await initApp();
+        await refreshData(false);
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -549,134 +1018,42 @@
     }
   }
 
-  // =========================================================================
-  // 4. ATTENDANCE
-  // =========================================================================
-
-  function renderAttendance() {
-    const listEl = document.getElementById('attendance-members-list');
-    if (!listEl) return;
-
-    const dateInput = document.getElementById('attendance-date');
-    if (dateInput && !dateInput.value) {
-      dateInput.value = new Date().toISOString().split('T')[0];
-    }
-
-    if (state.members.length === 0) {
-      listEl.innerHTML = `<div class="text-center py-8 text-xs text-text-secondary">Chưa có danh sách đoàn viên để điểm danh</div>`;
-      return;
-    }
-
-    listEl.innerHTML = state.members.map((m, idx) => {
-      const name = getMemberName(m);
-      const role = getMemberRole(m);
-
-      return `
-        <div class="p-3 rounded-2xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <span class="w-6 text-xs text-text-secondary font-mono">${idx + 1}</span>
-            <div>
-              <h4 class="text-xs font-bold text-white">${name}</h4>
-              <p class="text-[10px] text-text-secondary">${role}</p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-4">
-            <label class="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-emerald-400">
-              <input type="checkbox" data-mid="${m.id}" class="att-comat rounded border-white/20 text-emerald-500 focus:ring-emerald-400 bg-surface-container" checked />
-              <span>Có mặt</span>
-            </label>
-
-            <label class="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-blue-400">
-              <input type="checkbox" data-mid="${m.id}" class="att-caugoc rounded border-white/20 text-blue-500 focus:ring-blue-400 bg-surface-container" checked />
-              <span>Thuộc câu gốc</span>
-            </label>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  async function handleSaveAttendance() {
-    const dateVal = document.getElementById('attendance-date').value;
-    if (!dateVal) {
-      showToast('Vui lòng chọn ngày điểm danh', 'warning');
-      return;
-    }
-
-    const records = [];
-    document.querySelectorAll('.att-comat').forEach(cb => {
-      const mid = cb.getAttribute('data-mid');
-      const cgCb = document.querySelector(`.att-caugoc[data-mid="${mid}"]`);
-      records.push({
-        thanhVienId: mid,
-        coMat: cb.checked,
-        thuocCauGoc: cgCb ? cgCb.checked : false
-      });
-    });
-
-    showLoading(true);
-    try {
-      const res = await runGAS('apiSaveAttendance', {
-        ngayDiemDanh: dateVal,
-        records: records,
-        nguoiDiemDanh: 'Thư Ký'
-      }, state.activeSheetId);
-      if (res && res.success) {
-        showToast(res.message || 'Lưu điểm danh thành công!', 'success');
-        await initApp();
-      } else {
-        showToast(res.message || 'Lỗi lưu điểm danh', 'error');
-      }
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      showLoading(false);
-    }
-  }
-
-  // =========================================================================
-  // 5. FINANCE
-  // =========================================================================
-
   function renderFinance() {
-    const totalBalanceEl = document.getElementById('finance-total-balance');
-    if (totalBalanceEl) {
-      totalBalanceEl.textContent = Number(state.kpis.total_balance || 0).toLocaleString('vi-VN') + ' đ';
-    }
+    const balEl = document.getElementById('finance-total-balance');
+    if (balEl) balEl.textContent = Number(state.kpis.total_balance || 0).toLocaleString('vi-VN') + ' đ';
 
-    const txContainer = document.getElementById('finance-transactions-container');
-    if (!txContainer) return;
+    const container = document.getElementById('finance-transactions-container');
+    if (!container) return;
 
-    if (state.transactions.length === 0) {
-      txContainer.innerHTML = `<div class="text-center py-8 text-xs text-text-secondary">Chưa có phiếu thu / chi nào</div>`;
+    const list = state.transactions || [];
+    if (list.length === 0) {
+      container.innerHTML = `<div class="text-center py-8 text-xs text-text-secondary">Chưa có giao dịch sổ quỹ nào.</div>`;
       return;
     }
 
-    txContainer.innerHTML = state.transactions.map(t => {
+    container.innerHTML = list.map(t => {
       const hm = t.hangMuc || t.HangMuc || t.noidung || 'Giao dịch';
       const st = Number(t.soTien || t.SoTien || 0);
       const loai = t.loaiGD || t.LoaiGD || 'THU';
       const ngay = t.ngayGD || t.NgayGD || '';
-      const nguoi = t.nguoiNopNhan || t.NguoiNopNhan || 'Người nộp/nhận';
+      const nguoi = t.nguoiNopNhan || t.NguoiNopNhan || '';
 
       return `
-        <div class="p-4 rounded-2xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-3">
+        <div class="p-3.5 rounded-2xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl ${loai === 'THU' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'} flex items-center justify-center font-bold text-lg shrink-0">
-              <span class="material-symbols-outlined">${loai === 'THU' ? 'arrow_downward' : 'arrow_upward'}</span>
+            <div class="w-10 h-10 rounded-xl ${loai === 'THU' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'} flex items-center justify-center font-bold shrink-0">
+              <span class="material-symbols-outlined text-lg">${loai === 'THU' ? 'arrow_downward' : 'arrow_upward'}</span>
             </div>
             <div>
-              <h4 class="text-xs font-bold text-white">${hm}</h4>
+              <h4 class="text-xs sm:text-sm font-bold text-white">${hm}</h4>
               <p class="text-[11px] text-text-secondary">${ngay} &bull; ${nguoi}</p>
             </div>
           </div>
-
-          <div class="flex items-center gap-3">
-            <span class="text-sm font-extrabold ${loai === 'THU' ? 'text-emerald-400' : 'text-rose-400'}">
+          <div class="flex items-center gap-2">
+            <span class="text-xs sm:text-sm font-bold font-mono ${loai === 'THU' ? 'text-emerald-400' : 'text-rose-400'}">
               ${loai === 'THU' ? '+' : '-'}${st.toLocaleString('vi-VN')} đ
             </span>
-            <button onclick="deleteTransaction('${t.id}')" class="p-1 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5" title="Xóa"><span class="material-symbols-outlined text-sm">delete</span></button>
+            <button onclick="deleteTransaction('${t.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
           </div>
         </div>
       `;
@@ -685,10 +1062,10 @@
 
   function openAddTransactionModal(loai) {
     document.getElementById('form-tx').reset();
-    document.getElementById('tx-loai').value = loai || 'THU';
+    document.getElementById('tx-loai').value = loai;
     document.getElementById('modal-tx-title').innerHTML = loai === 'THU' 
-      ? `<span class="material-symbols-outlined text-emerald-400">arrow_downward</span> Lập Phiếu Thu Mới`
-      : `<span class="material-symbols-outlined text-rose-400">arrow_upward</span> Lập Phiếu Chi Mới`;
+      ? `<span class="material-symbols-outlined text-emerald-400">arrow_downward</span> Lập Phiếu Thu Quỹ`
+      : `<span class="material-symbols-outlined text-rose-400">arrow_upward</span> Lập Phiếu Chi Quỹ`;
     openModal('modal-transaction');
   }
 
@@ -697,7 +1074,7 @@
     const payload = {
       loaiGD: document.getElementById('tx-loai').value,
       hangMuc: document.getElementById('tx-hangmuc').value.trim(),
-      soTien: document.getElementById('tx-sotien').value.trim(),
+      soTien: document.getElementById('tx-sotien').value,
       nguoiNopNhan: document.getElementById('tx-nguoinopnhan').value.trim(),
       ghiChu: document.getElementById('tx-ghichu').value.trim()
     };
@@ -706,11 +1083,11 @@
     try {
       const res = await runGAS('apiAddTransaction', payload, state.activeSheetId);
       if (res && res.success) {
-        showToast('Lưu phiếu sổ quỹ thành công!', 'success');
+        showToast('Lưu phiếu thành công!', 'success');
         closeModal('modal-transaction');
-        await initApp();
+        await refreshData(false);
       } else {
-        showToast(res.message || 'Lỗi lưu sổ quỹ', 'error');
+        showToast(res.message || 'Lỗi lưu giao dịch', 'error');
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -720,13 +1097,13 @@
   }
 
   async function deleteTransaction(id) {
-    if (!confirm('Bạn có chắc muốn xóa phiếu thu/chi này?')) return;
+    if (!confirm('Bạn có chắc muốn xóa giao dịch này?')) return;
     showLoading(true);
     try {
       const res = await runGAS('apiDeleteTransaction', id, state.activeSheetId);
       if (res && res.success) {
         showToast('Đã xóa giao dịch!', 'info');
-        await initApp();
+        await refreshData(false);
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -737,37 +1114,41 @@
     }
   }
 
-  // =========================================================================
-  // 6. SCHEDULE
-  // =========================================================================
-
   function renderSchedule() {
     const container = document.getElementById('schedule-list-container');
     if (!container) return;
 
-    if (state.schedules.length === 0) {
-      container.innerHTML = `<div class="col-span-3 text-center py-8 text-xs text-text-secondary">Chưa có lịch phụng vụ nào</div>`;
+    const list = state.schedules || [];
+    if (list.length === 0) {
+      container.innerHTML = `<div class="col-span-3 text-center py-12 text-xs text-text-secondary">Chưa có lịch phụng vụ nào được lập.</div>`;
       return;
     }
 
-    container.innerHTML = state.schedules.map(s => `
-      <div class="glass-card rounded-3xl p-5 border border-white/10 flex flex-col justify-between shadow-lg">
-        <div>
-          <div class="flex justify-between items-start gap-2 mb-2">
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400">${s.ngayNhom}</span>
-            <button onclick="deleteSchedule('${s.id}')" class="p-1 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5"><span class="material-symbols-outlined text-sm">delete</span></button>
+    container.innerHTML = list.map(s => {
+      return `
+        <div class="glass-card rounded-3xl p-5 border border-white/10 flex flex-col justify-between shadow-lg space-y-3">
+          <div>
+            <div class="flex justify-between items-start gap-2 mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">${s.ngayNhom || 'Chúa Nhật'}</span>
+              <button onclick="deleteSchedule('${s.id}')" class="no-print p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+            </div>
+            <h3 class="text-sm sm:text-base font-bold text-white leading-snug">${s.deTai || 'Thờ Phượng'}</h3>
+            ${s.cauGoc ? `<p class="text-xs text-emerald-400 font-semibold mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-sm">menu_book</span> ${s.cauGoc}</p>` : ''}
           </div>
 
-          <h3 class="text-sm font-bold text-white">${s.deTai}</h3>
-          <p class="text-xs text-emerald-400 mt-1 font-serif italic">${s.cauGoc || ''}</p>
-
-          <div class="mt-3 pt-2 border-t border-white/5 space-y-1 text-[11px] text-text-secondary">
-            <div>Phụ trách: <strong class="text-white">${s.phuTrach || s.toPhuTrach || 'Chưa gán'}</strong></div>
-            <div>Hướng dẫn: <strong class="text-white">${s.huongDan || ''}</strong> &bull; Cầu nguyện: <strong class="text-white">${s.cauNguyen || ''}</strong></div>
+          <div class="space-y-1 text-xs text-text-secondary pt-2 border-t border-white/10">
+            ${s.toPhuTrach ? `<div><span class="text-text-secondary/70">Tổ phụ trách:</span> <span class="text-white font-medium">${s.toPhuTrach}</span></div>` : ''}
+            ${s.phuTrach ? `<div><span class="text-text-secondary/70">Diễn giả:</span> <span class="text-white font-medium">${s.phuTrach}</span></div>` : ''}
+            ${s.huongDan ? `<div><span class="text-text-secondary/70">Hướng dẫn:</span> <span class="text-white">${s.huongDan}</span></div>` : ''}
+            ${s.cauNguyen ? `<div><span class="text-text-secondary/70">Cầu nguyện:</span> <span class="text-white">${s.cauNguyen}</span></div>` : ''}
           </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+  }
+
+  function triggerPrintSchedule() {
+    window.print();
   }
 
   function openAddScheduleModal() {
@@ -786,8 +1167,7 @@
       toPhuTrach: document.getElementById('sch-tophutrach').value.trim(),
       phuTrach: document.getElementById('sch-phutrach').value.trim(),
       huongDan: document.getElementById('sch-huongdan').value.trim(),
-      cauNguyen: document.getElementById('sch-caunguyen').value.trim(),
-      ghiChu: document.getElementById('sch-ghichu').value.trim()
+      cauNguyen: document.getElementById('sch-caunguyen').value.trim()
     };
 
     showLoading(true);
@@ -796,7 +1176,7 @@
       if (res && res.success) {
         showToast('Lưu lịch phụng vụ thành công!', 'success');
         closeModal('modal-schedule');
-        await initApp();
+        await refreshData(false);
       } else {
         showToast(res.message || 'Lỗi lưu lịch', 'error');
       }
@@ -814,7 +1194,7 @@
       const res = await runGAS('apiDeleteSchedule', id, state.activeSheetId);
       if (res && res.success) {
         showToast('Đã xóa lịch phụng vụ!', 'info');
-        await initApp();
+        await refreshData(false);
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -825,44 +1205,43 @@
     }
   }
 
-  // =========================================================================
-  // 7. VISITATIONS
-  // =========================================================================
-
   function renderVisitations() {
     const container = document.getElementById('visitations-list-container');
-    if (!container) return;
-
-    const mSelect = document.getElementById('vis-thanhvien-id');
-    if (mSelect) {
-      mSelect.innerHTML = state.members.map(m => `<option value="${m.id}">${getMemberName(m)} (${getMemberCode(m)})</option>`).join('');
+    const memberSelect = document.getElementById('vis-thanhvien-id');
+    if (memberSelect) {
+      memberSelect.innerHTML = `<option value="">-- Chọn đoàn viên --</option>` + 
+        (state.members || []).map(m => `<option value="${m.id}">${getMemberName(m)} (${getMemberRole(m)})</option>`).join('');
     }
 
-    if (state.visits.length === 0) {
-      container.innerHTML = `<div class="col-span-3 text-center py-8 text-xs text-text-secondary">Chưa có phiếu thăm viếng nào</div>`;
+    if (!container) return;
+
+    const list = state.visits || [];
+    if (list.length === 0) {
+      container.innerHTML = `<div class="col-span-3 text-center py-12 text-xs text-text-secondary">Chưa có phiếu thăm viếng nào.</div>`;
       return;
     }
 
     const memberMap = {};
     state.members.forEach(m => { memberMap[m.id] = getMemberName(m); });
 
-    container.innerHTML = state.visits.map(v => `
-      <div class="glass-card rounded-3xl p-5 border border-white/10 flex flex-col justify-between shadow-lg">
-        <div>
-          <div class="flex justify-between items-start gap-2 mb-2">
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400">${v.ngayTham}</span>
-            <button onclick="deleteVisitation('${v.id}')" class="p-1 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5"><span class="material-symbols-outlined text-sm">delete</span></button>
+    container.innerHTML = list.map(v => {
+      const mName = memberMap[v.thanhVienId] || 'Đoàn viên';
+      return `
+        <div class="glass-card rounded-3xl p-5 border border-white/10 space-y-3 shadow-lg">
+          <div class="flex justify-between items-start gap-2">
+            <div>
+              <span class="text-[10px] font-bold text-pink-400 block">${v.ngayTham || ''}</span>
+              <h3 class="text-sm font-bold text-white">${mName}</h3>
+            </div>
+            <button onclick="deleteVisitation('${v.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5"><span class="material-symbols-outlined text-[16px]">delete</span></button>
           </div>
-
-          <h3 class="text-sm font-bold text-white">${memberMap[v.thanhVienId] || 'Đoàn viên'}</h3>
-          <p class="text-xs text-text-secondary mt-1">Người thăm: <strong class="text-white">${v.nguoiTham || 'Ban Chăm Sóc'}</strong></p>
-
-          <div class="mt-3 pt-2 border-t border-white/5 text-[11px] text-text-secondary">
-            <p><strong>Nội dung:</strong> ${v.noiDungCauNguyen || 'Thăm viếng khích lệ'}</p>
+          <div class="p-3 bg-surface-elevated/70 rounded-2xl border border-white/5 text-xs text-text-secondary">
+            <p class="text-white">${v.noiDungCauNguyen || 'Thăm hỏi, động viên và cầu nguyện.'}</p>
+            ${v.nguoiTham ? `<p class="mt-2 text-[10px] text-text-secondary/70">Người đi thăm: <span class="text-emerald-400 font-medium">${v.nguoiTham}</span></p>` : ''}
           </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   function openAddVisitationModal() {
@@ -871,10 +1250,16 @@
     openModal('modal-visitation');
   }
 
-  function openVisitationForMember(mid) {
+  function openQuickVisitModal(memberId, absences) {
     openAddVisitationModal();
-    const mSelect = document.getElementById('vis-thanhvien-id');
-    if (mSelect) mSelect.value = mid;
+    if (memberId) {
+      const sel = document.getElementById('vis-thanhvien-id');
+      if (sel) sel.value = memberId;
+    }
+    const noteArea = document.getElementById('vis-noidung');
+    if (noteArea && absences) {
+      noteArea.value = `Đoàn viên vắng sinh hoạt ${absences} tuần liên tiếp, cần thăm viếng khích lệ và cầu nguyện.`;
+    }
   }
 
   async function handleSaveVisitation(e) {
@@ -890,11 +1275,11 @@
     try {
       const res = await runGAS('apiSaveVisitation', payload, state.activeSheetId);
       if (res && res.success) {
-        showToast('Lưu phiếu thăm viếng thành công!', 'success');
+        showToast('Đã lưu phiếu thăm viếng!', 'success');
         closeModal('modal-visitation');
-        await initApp();
+        await refreshData(false);
       } else {
-        showToast(res.message || 'Lỗi lưu thăm viếng', 'error');
+        showToast(res.message || 'Lỗi lưu phiếu thăm', 'error');
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -904,13 +1289,13 @@
   }
 
   async function deleteVisitation(id) {
-    if (!confirm('Bạn có chắc muốn xóa phiếu này?')) return;
+    if (!confirm('Bạn có chắc muốn xóa phiếu thăm viếng này?')) return;
     showLoading(true);
     try {
       const res = await runGAS('apiDeleteVisitation', id, state.activeSheetId);
       if (res && res.success) {
         showToast('Đã xóa phiếu thăm viếng!', 'info');
-        await initApp();
+        await refreshData(false);
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -921,44 +1306,28 @@
     }
   }
 
-  // =========================================================================
-  // 8. SETTINGS
-  // =========================================================================
-
   function renderSettings() {
-    const sheetInput = document.getElementById('cfg-bannganh-sheet-id');
-    const sheetStatus = document.getElementById('cfg-bannganh-sheet-status');
-    const sheetLink = document.getElementById('cfg-bannganh-sheet-link');
+    const input = document.getElementById('cfg-bannganh-sheet-id');
+    const status = document.getElementById('cfg-bannganh-sheet-status');
+    const link = document.getElementById('cfg-bannganh-sheet-link');
 
-    if (state.spreadsheet.id && sheetInput) sheetInput.value = state.spreadsheet.id;
-    if (sheetStatus) sheetStatus.textContent = 'Đã kết nối: ' + (state.spreadsheet.name || 'Google Sheet');
-    if (sheetLink && (state.spreadsheet.url || state.activeSheetId)) {
-      sheetLink.href = state.spreadsheet.url || ('https://docs.google.com/spreadsheets/d/' + state.activeSheetId + '/edit');
-    }
+    if (input && state.activeSheetId) input.value = state.activeSheetId;
+    if (status) status.textContent = state.spreadsheet.name ? `Đã kết nối: ${state.spreadsheet.name}` : (state.activeSheetId ? 'Đã gán ID' : 'Chưa kết nối');
+    if (link && state.spreadsheet.url) link.href = state.spreadsheet.url;
   }
 
   async function handleSaveSheetConnection() {
-    const rawInput = document.getElementById('cfg-bannganh-sheet-id').value.trim();
-    if (!rawInput) return;
+    const raw = document.getElementById('cfg-bannganh-sheet-id').value.trim();
+    if (!raw) return;
 
+    state.activeSheetId = raw;
     showLoading(true);
-    try {
-      const res = await runGAS('apiSaveSpreadsheetId', rawInput);
-      if (res && res.success) {
-        showToast(res.message || 'Kết nối Sheet thành công!', 'success');
-        await initApp();
-      } else {
-        showToast(res.message || 'Lỗi kết nối Sheet', 'error');
-      }
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      showLoading(false);
-    }
+    await refreshData(true);
+    showLoading(false);
   }
 
   // =========================================================================
-  // MODALS & TOAST
+  // MODALS & TOASTS
   // =========================================================================
 
   function openModal(modalId) {
@@ -1006,7 +1375,7 @@
     const bgColors = {
       success: 'bg-emerald-600/90 border-emerald-400/50 text-white',
       error: 'bg-rose-600/90 border-rose-400/50 text-white',
-      info: 'bg-surface-elevated/90 border-emerald-400/40 text-on-surface',
+      info: 'bg-surface-elevated/90 border-emerald-500/40 text-on-surface',
       warning: 'bg-amber-600/90 border-amber-400/50 text-white'
     };
     const icons = {
@@ -1030,10 +1399,6 @@
       setTimeout(() => toast.remove(), 300);
     }, 3500);
   }
-
-  // =========================================================================
-  // BOOTSTRAP RUNNER
-  // =========================================================================
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllModals();

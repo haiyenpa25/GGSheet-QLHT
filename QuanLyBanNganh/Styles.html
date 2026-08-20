@@ -48,17 +48,80 @@
   .animate-fade-in {
     animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+  
+  /* Custom Switch Toggle */
+  .switch-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+  }
+  .switch-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: .3s;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  .switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+  }
+  input:checked + .switch-slider-green {
+    background-color: #10b981;
+    border-color: #059669;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  }
+  input:checked + .switch-slider-blue {
+    background-color: #0284c7;
+    border-color: #0369a1;
+    box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
+  }
+  input:checked + .switch-slider:before {
+    transform: translateX(20px);
+  }
 
+  /* Print Stylesheet for A4/A5 */
   @media print {
     body {
-      background: white !important;
-      color: black !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+      font-size: 12pt;
     }
-    .no-print, header, nav, #toast-container {
+    .no-print, header, nav, #toast-container, .bottom-nav-btn, button, .ambient-glow {
       display: none !important;
     }
     .print-only {
       display: block !important;
+    }
+    main {
+      padding: 0 !important;
+      max-width: 100% !important;
+    }
+    .glass-card, .glass-card-solid {
+      background: #ffffff !important;
+      border: 1px solid #cccccc !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      color: #000000 !important;
+      page-break-inside: avoid;
+    }
+    .text-white, .text-on-surface, .text-text-secondary {
+      color: #000000 !important;
     }
   }
 </style>

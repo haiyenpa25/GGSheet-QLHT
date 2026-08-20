@@ -1,6 +1,6 @@
 /**
- * HỆ THỐNG QUẢN LÝ BAN NGÀNH (REST API & WEB APP)
- * Google Apps Script Backend
+ * HỆ THỐNG QUẢN LÝ BAN NGÀNH (REST API & WEB APP ENGINE)
+ * Google Apps Script Backend (Batch-Optimized & Multi-tenant Ready)
  */
 
 const DEFAULT_SPREADSHEET_ID = '';
@@ -32,6 +32,10 @@ const SCHEMAS = {
   [SHEET_NAMES.SO_QUY]: ['id', 'ngayGD', 'maQuy', 'loaiGD', 'hangMuc', 'soTien', 'nguoiNopNhan', 'nguoiThucHien', 'chungTu', 'ghiChu', 'ngayTao'],
   [SHEET_NAMES.MAU_TIN_NHAN]: ['id', 'maMau', 'tieuDe', 'loai', 'noiDung', 'moTa', 'trangThai']
 };
+
+// =========================================================================
+// ENTRY POINTS: doGet & doPost
+// =========================================================================
 
 function doGet(e) {
   if (e && e.parameter && e.parameter.action) {
@@ -278,16 +282,8 @@ function normalizeHeaderKey(header) {
   return map[raw] || header;
 }
 
-function sheetFindAll(sheetName, customSheetId) {
-  const ss = getSpreadsheet(customSheetId);
-  let sheet = ss.getSheetByName(sheetName);
-  if (!sheet) {
-    setupDatabase(customSheetId);
-    sheet = ss.getSheetByName(sheetName);
-  }
-  const data = sheet.getDataRange().getValues();
-  if (data.length <= 1) return [];
-
+function parseRowsFromValues(data) {
+  if (!data || data.length <= 1) return [];
   const headers = data[0].map(h => String(h).trim());
   const results = [];
 
@@ -318,6 +314,17 @@ function sheetFindAll(sheetName, customSheetId) {
     results.push(item);
   }
   return results;
+}
+
+function sheetFindAll(sheetName, customSheetId) {
+  const ss = getSpreadsheet(customSheetId);
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    setupDatabase(customSheetId);
+    sheet = ss.getSheetByName(sheetName);
+  }
+  const data = sheet.getDataRange().getValues();
+  return parseRowsFromValues(data);
 }
 
 function sheetInsert(sheetName, record, customSheetId) {
@@ -408,19 +415,37 @@ function sheetDelete(sheetName, id, customSheetId) {
   }
 }
 
+/**
+ * Batch-Optimized apiGetInitialData (Reads entire spreadsheet in 1 single API call)
+ */
 function apiGetInitialData(customSheetId) {
   try {
     const ss = getSpreadsheet(customSheetId);
+    const sheets = ss.getSheets();
+    const sheetMap = {};
 
-    const members = sheetFindAll(SHEET_NAMES.THANH_VIEN, customSheetId);
-    const groups = sheetFindAll(SHEET_NAMES.TO_NHOM, customSheetId);
-    const funds = sheetFindAll(SHEET_NAMES.DANH_MUC_QUY, customSheetId);
-    const transactions = sheetFindAll(SHEET_NAMES.SO_QUY, customSheetId);
-    const attendances = sheetFindAll(SHEET_NAMES.DIEM_DANH, customSheetId);
-    const visits = sheetFindAll(SHEET_NAMES.THAM_VIENG, customSheetId);
-    const schedules = sheetFindAll(SHEET_NAMES.LICH_QUY, customSheetId);
-    const themes = sheetFindAll(SHEET_NAMES.CHU_DE, customSheetId);
-    const templates = sheetFindAll(SHEET_NAMES.MAU_TIN_NHAN, customSheetId);
+    sheets.forEach(s => {
+      sheetMap[s.getName()] = s.getDataRange().getValues();
+    });
+
+    // Check if sheets exist; if not, initialize database
+    if (!sheetMap[SHEET_NAMES.THANH_VIEN]) {
+      setupDatabase(customSheetId);
+      const newSheets = ss.getSheets();
+      newSheets.forEach(s => {
+        sheetMap[s.getName()] = s.getDataRange().getValues();
+      });
+    }
+
+    const members = parseRowsFromValues(sheetMap[SHEET_NAMES.THANH_VIEN] || []);
+    const groups = parseRowsFromValues(sheetMap[SHEET_NAMES.TO_NHOM] || []);
+    const funds = parseRowsFromValues(sheetMap[SHEET_NAMES.DANH_MUC_QUY] || []);
+    const transactions = parseRowsFromValues(sheetMap[SHEET_NAMES.SO_QUY] || []);
+    const attendances = parseRowsFromValues(sheetMap[SHEET_NAMES.DIEM_DANH] || []);
+    const visits = parseRowsFromValues(sheetMap[SHEET_NAMES.THAM_VIENG] || []);
+    const schedules = parseRowsFromValues(sheetMap[SHEET_NAMES.LICH_QUY] || []);
+    const themes = parseRowsFromValues(sheetMap[SHEET_NAMES.CHU_DE] || []);
+    const templates = parseRowsFromValues(sheetMap[SHEET_NAMES.MAU_TIN_NHAN] || []);
 
     let totalBalance = 0;
     funds.forEach(f => {
@@ -435,7 +460,7 @@ function apiGetInitialData(customSheetId) {
     const yearTheme = themes.find(t => String(t.nam) === '2026') || themes[0] || {
       chuDe: 'KỶ LUẬT THUỘC LINH',
       cauGoc: 'I Ti-mô-thê 4:7-8',
-      noiDungCauGoc: 'Hãy tập tành sự tin kính...'
+      noiDungCauGoc: 'Hãy tập tành sự tin kính; vì sự tập tành thân thể ích lợi ít bề, còn sự tin kính ích cho mọi sự, có lời hứa về đời này và đời sau nữa.'
     };
 
     return {
@@ -524,20 +549,47 @@ function apiSaveAttendance(payload, customSheetId) {
     if (!payload.ngayDiemDanh) throw new Error('Vui lòng chọn ngày điểm danh');
     if (!payload.records || !Array.isArray(payload.records)) throw new Error('Dữ liệu điểm danh không hợp lệ');
 
-    const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss');
-    payload.records.forEach(rec => {
-      sheetInsert(SHEET_NAMES.DIEM_DANH, {
-        ngayDiemDanh: payload.ngayDiemDanh,
-        thanhVienId: rec.thanhVienId,
-        coMat: rec.coMat ? 'CO_MAT' : 'VANG',
-        thuocCauGoc: rec.thuocCauGoc ? 'THUOC' : 'CHUA_THUOC',
-        ghiChu: rec.ghiChu || '',
-        nguoiDiemDanh: payload.nguoiDiemDanh || 'Thư Ký',
-        createdAt: nowStr
-      }, customSheetId);
-    });
+    const lock = LockService.getScriptLock();
+    try { lock.waitLock(8000); } catch(e) {}
+    try {
+      const ss = getSpreadsheet(customSheetId);
+      let sheet = ss.getSheetByName(SHEET_NAMES.DIEM_DANH);
+      if (!sheet) {
+        setupDatabase(customSheetId);
+        sheet = ss.getSheetByName(SHEET_NAMES.DIEM_DANH);
+      }
 
-    return { success: true, message: `Đã lưu điểm danh cho ${payload.records.length} đoàn viên!` };
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+      const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss');
+      
+      const newRows = payload.records.map(rec => {
+        const record = {
+          id: 'id_' + Utilities.getUuid().substring(0, 8),
+          ngayDiemDanh: payload.ngayDiemDanh,
+          thanhVienId: rec.thanhVienId,
+          coMat: rec.coMat ? 'CO_MAT' : 'VANG',
+          thuocCauGoc: rec.thuocCauGoc ? 'THUOC' : 'CHUA_THUOC',
+          ghiChu: rec.ghiChu || '',
+          nguoiDiemDanh: payload.nguoiDiemDanh || 'Thư Ký',
+          createdAt: nowStr
+        };
+        return headers.map(h => {
+          const norm = normalizeHeaderKey(h);
+          if (record[h] !== undefined) return record[h];
+          if (record[norm] !== undefined) return record[norm];
+          return '';
+        });
+      });
+
+      if (newRows.length > 0) {
+        const lastRow = sheet.getLastRow();
+        sheet.getRange(lastRow + 1, 1, newRows.length, headers.length).setValues(newRows);
+      }
+
+      return { success: true, message: `Đã lưu điểm danh cho ${payload.records.length} đoàn viên thành công!` };
+    } finally {
+      try { lock.releaseLock(); } catch(e) {}
+    }
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
