@@ -31,9 +31,9 @@
 
   const CACHE_PREFIX = 'qlnb_cache_';
 
-  // Safe Accessor Helpers
+  // Safe Accessor Helpers (Chuẩn hóa thuật ngữ Tin Lành)
   function getMemberName(m) {
-    if (!m) return 'Đoàn viên';
+    if (!m) return 'Ban viên';
     return m.hoTen || m.HoTen || m.hoten || m.fullName || m.fullname || m.name || m['Họ và tên'] || m['Họ Tên'] || m['Họ và Tên'] || m['Họ tên'] || 'Chưa đặt tên';
   }
 
@@ -50,13 +50,13 @@
   }
 
   function getMemberCode(m) {
-    if (!m) return 'TV';
-    return m.maTV || m.MaTV || m.matv || m.code || m['Mã TV'] || 'TV';
+    if (!m) return 'BV';
+    return m.maTV || m.MaTV || m.matv || m.code || m['Mã TV'] || m['Mã BV'] || 'BV';
   }
 
   function getMemberRole(m) {
-    if (!m) return 'Đoàn viên';
-    return m.chucVu || m.ChucVu || m.role || m['Chức vụ'] || 'Đoàn viên';
+    if (!m) return 'Ban viên';
+    return m.chucVu || m.ChucVu || m.role || m['Chức vụ'] || 'Ban viên';
   }
 
   function getMemberAddress(m) {
@@ -111,7 +111,7 @@
         const brandH1 = document.getElementById('brand-title');
         const printTitle = document.getElementById('print-ban-title');
         if (brandH1) brandH1.textContent = 'Quản Lý ' + state.banNganhTitle;
-        if (printTitle) printTitle.textContent = 'LỊCH PHỤNG VỤ - ' + state.banNganhTitle.toUpperCase();
+        if (printTitle) printTitle.textContent = 'CHƯƠNG TRÌNH SINH HOẠT - ' + state.banNganhTitle.toUpperCase();
       }
 
       // Default attendance date: current Sunday
@@ -270,7 +270,7 @@
       document.getElementById('dash-sheet-link').href = state.spreadsheet.url || ('https://docs.google.com/spreadsheets/d/' + state.activeSheetId + '/edit');
     }
 
-    // Recent Members
+    // Recent Members (Ban viên gần đây)
     const rMembersEl = document.getElementById('dash-recent-members');
     if (state.members.length > 0) {
       rMembersEl.innerHTML = state.members.slice(0, 5).map(m => {
@@ -297,7 +297,7 @@
         `;
       }).join('');
     } else {
-      rMembersEl.innerHTML = `<div class="text-center py-6 text-xs text-text-secondary">Chưa có đoàn viên nào</div>`;
+      rMembersEl.innerHTML = `<div class="text-center py-6 text-xs text-text-secondary">Chưa có ban viên nào</div>`;
     }
 
     // Recent Transactions
@@ -343,7 +343,6 @@
       let bMonth = null;
       let bDay = null;
 
-      // Check DD/MM/YYYY or DD/MM or YYYY-MM-DD
       if (dobStr.includes('/')) {
         const parts = dobStr.split('/');
         bDay = parseInt(parts[0], 10);
@@ -367,7 +366,7 @@
       container.innerHTML = `
         <div class="col-span-3 text-center py-6 text-xs text-text-secondary">
           <span class="material-symbols-outlined text-2xl text-pink-400/50 block mb-1">cake</span>
-          Không có đoàn viên nào sinh nhật trong tháng ${currentMonth}.
+          Không có ban viên nào sinh nhật trong tháng ${currentMonth}.
         </div>
       `;
       return;
@@ -413,14 +412,13 @@
     const badge = document.getElementById('dash-absence-badge');
     if (!container) return;
 
-    // Get distinct attendance dates sorted descending
     const allAtt = state.attendances || [];
     const dateMap = {};
     allAtt.forEach(a => {
       if (a.ngayDiemDanh) dateMap[a.ngayDiemDanh] = true;
     });
     const sortedDates = Object.keys(dateMap).sort().reverse();
-    const recentDates = sortedDates.slice(0, 3); // Check last 3 Sundays
+    const recentDates = sortedDates.slice(0, 3);
 
     const absenceList = [];
 
@@ -450,7 +448,7 @@
       container.innerHTML = `
         <div class="col-span-3 text-center py-6 text-xs text-text-secondary">
           <span class="material-symbols-outlined text-2xl text-emerald-400/50 block mb-1">verified</span>
-          Tất cả đoàn viên đều duy trì sinh hoạt đều đặn!
+          Tất cả ban viên đều duy trì sinh hoạt đều đặn!
         </div>
       `;
       return;
@@ -494,7 +492,7 @@
   }
 
   // =========================================================================
-  // 2. MEMBERS VIEW & QUICK ACTIONS
+  // 2. MEMBERS VIEW (BAN VIÊN) & QUICK ACTIONS
   // =========================================================================
 
   function renderMembers() {
@@ -513,7 +511,7 @@
     }
 
     const countBadge = document.getElementById('members-count-badge');
-    if (countBadge) countBadge.textContent = `Tổng cộng: ${list.length} Đoàn Viên`;
+    if (countBadge) countBadge.textContent = `Tổng cộng: ${list.length} Ban Viên`;
 
     const fGroup = document.getElementById('member-filter-group');
     const mGroup = document.getElementById('member-modal-group');
@@ -533,8 +531,8 @@
       container.innerHTML = `
         <div class="col-span-3 glass-card rounded-3xl p-12 text-center text-xs text-text-secondary space-y-3">
           <span class="material-symbols-outlined text-4xl text-emerald-400/60">person</span>
-          <p class="font-medium text-sm text-white">Chưa có đoàn viên nào</p>
-          <p>Bấm nút <strong>"+ Thêm Đoàn Viên Mới"</strong> để tạo hồ sơ.</p>
+          <p class="font-medium text-sm text-white">Chưa có ban viên nào</p>
+          <p>Bấm nút <strong>"+ Thêm Ban Viên Mới"</strong> để tạo hồ sơ.</p>
         </div>
       `;
       return;
@@ -625,7 +623,8 @@
   function openAddMemberModal() {
     document.getElementById('form-member').reset();
     document.getElementById('member-id').value = '';
-    document.getElementById('modal-member-title').innerHTML = `<span class="material-symbols-outlined text-emerald-400">person_add</span> Thêm Đoàn Viên Mới`;
+    document.getElementById('member-chucvu').value = 'Ban viên';
+    document.getElementById('modal-member-title').innerHTML = `<span class="material-symbols-outlined text-emerald-400">person_add</span> Thêm Ban Viên Mới`;
     openModal('modal-member');
   }
 
@@ -645,7 +644,7 @@
     document.getElementById('member-trangthai').value = m.trangThai || 'active';
     document.getElementById('member-ghichu').value = m.ghiChu || '';
 
-    document.getElementById('modal-member-title').innerHTML = `<span class="material-symbols-outlined text-emerald-400">edit</span> Cập Nhật Đoàn Viên`;
+    document.getElementById('modal-member-title').innerHTML = `<span class="material-symbols-outlined text-emerald-400">edit</span> Cập Nhật Ban Viên`;
     openModal('modal-member');
   }
 
@@ -659,7 +658,7 @@
       ngaySinh: document.getElementById('member-ngaysinh').value.trim(),
       gioiTinh: document.getElementById('member-gioitinh').value,
       toId: document.getElementById('member-modal-group').value,
-      chucVu: document.getElementById('member-chucvu').value.trim(),
+      chucVu: document.getElementById('member-chucvu').value,
       diaChi: document.getElementById('member-diachi').value.trim(),
       trangThai: document.getElementById('member-trangthai').value,
       ghiChu: document.getElementById('member-ghichu').value.trim()
@@ -669,11 +668,11 @@
     try {
       const res = await runGAS('apiSaveMember', payload, state.activeSheetId);
       if (res && res.success) {
-        showToast(res.message || 'Lưu đoàn viên thành công!', 'success');
+        showToast(res.message || 'Lưu ban viên thành công!', 'success');
         closeModal('modal-member');
         await refreshData(false);
       } else {
-        showToast(res.message || 'Lỗi khi lưu đoàn viên', 'error');
+        showToast(res.message || 'Lỗi khi lưu ban viên', 'error');
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -683,12 +682,12 @@
   }
 
   async function deleteMember(id) {
-    if (!confirm('Bạn có chắc muốn xóa đoàn viên này khỏi danh sách?')) return;
+    if (!confirm('Bạn có chắc muốn xóa ban viên này khỏi danh sách?')) return;
     showLoading(true);
     try {
       const res = await runGAS('apiDeleteMember', id, state.activeSheetId);
       if (res && res.success) {
-        showToast('Đã xóa đoàn viên!', 'info');
+        showToast('Đã xóa ban viên!', 'info');
         await refreshData(false);
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
@@ -708,7 +707,7 @@
     state.liveAttendance = {};
     (state.members || []).forEach(m => {
       state.liveAttendance[m.id] = {
-        coMat: true, // Mặc định có mặt để điểm danh nhanh
+        coMat: true,
         thuocCauGoc: false,
         ghiChu: ''
       };
@@ -755,7 +754,7 @@
     state.groups.forEach(g => { groupMap[g.id] = getGroupName(g); });
 
     if (list.length === 0) {
-      container.innerHTML = `<div class="text-center py-12 text-xs text-text-secondary">Chưa có đoàn viên nào để điểm danh.</div>`;
+      container.innerHTML = `<div class="text-center py-12 text-xs text-text-secondary">Chưa có ban viên nào để điểm danh.</div>`;
       updateAttendanceStats(0, 0, 0);
       return;
     }
@@ -870,7 +869,7 @@
     });
 
     if (records.length === 0) {
-      showToast('Không có đoàn viên nào để lưu điểm danh', 'warning');
+      showToast('Không có ban viên nào để lưu điểm danh', 'warning');
       return;
     }
 
@@ -944,8 +943,8 @@
           </div>
 
           <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-            <span class="text-text-secondary">Sĩ số thành viên:</span>
-            <span class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30">${membersInGroup} đoàn viên</span>
+            <span class="text-text-secondary">Sĩ số ban viên:</span>
+            <span class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30">${membersInGroup} ban viên</span>
           </div>
         </div>
       `;
@@ -1064,7 +1063,7 @@
     document.getElementById('form-tx').reset();
     document.getElementById('tx-loai').value = loai;
     document.getElementById('modal-tx-title').innerHTML = loai === 'THU' 
-      ? `<span class="material-symbols-outlined text-emerald-400">arrow_downward</span> Lập Phiếu Thu Quỹ`
+      ? `<span class="material-symbols-outlined text-emerald-400">arrow_downward</span> Lập Phiếu Thu Quỹ / Dâng Hiến`
       : `<span class="material-symbols-outlined text-rose-400">arrow_upward</span> Lập Phiếu Chi Quỹ`;
     openModal('modal-transaction');
   }
@@ -1120,7 +1119,7 @@
 
     const list = state.schedules || [];
     if (list.length === 0) {
-      container.innerHTML = `<div class="col-span-3 text-center py-12 text-xs text-text-secondary">Chưa có lịch phụng vụ nào được lập.</div>`;
+      container.innerHTML = `<div class="col-span-3 text-center py-12 text-xs text-text-secondary">Chưa có lịch sinh hoạt nào được lập.</div>`;
       return;
     }
 
@@ -1132,15 +1131,15 @@
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">${s.ngayNhom || 'Chúa Nhật'}</span>
               <button onclick="deleteSchedule('${s.id}')" class="no-print p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5"><span class="material-symbols-outlined text-[16px]">delete</span></button>
             </div>
-            <h3 class="text-sm sm:text-base font-bold text-white leading-snug">${s.deTai || 'Thờ Phượng'}</h3>
+            <h3 class="text-sm sm:text-base font-bold text-white leading-snug">${s.deTai || 'Chương Trình Thờ Phượng'}</h3>
             ${s.cauGoc ? `<p class="text-xs text-emerald-400 font-semibold mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-sm">menu_book</span> ${s.cauGoc}</p>` : ''}
           </div>
 
           <div class="space-y-1 text-xs text-text-secondary pt-2 border-t border-white/10">
             ${s.toPhuTrach ? `<div><span class="text-text-secondary/70">Tổ phụ trách:</span> <span class="text-white font-medium">${s.toPhuTrach}</span></div>` : ''}
-            ${s.phuTrach ? `<div><span class="text-text-secondary/70">Diễn giả:</span> <span class="text-white font-medium">${s.phuTrach}</span></div>` : ''}
-            ${s.huongDan ? `<div><span class="text-text-secondary/70">Hướng dẫn:</span> <span class="text-white">${s.huongDan}</span></div>` : ''}
-            ${s.cauNguyen ? `<div><span class="text-text-secondary/70">Cầu nguyện:</span> <span class="text-white">${s.cauNguyen}</span></div>` : ''}
+            ${s.phuTrach ? `<div><span class="text-text-secondary/70">Giảng luận / Diễn giả:</span> <span class="text-white font-medium">${s.phuTrach}</span></div>` : ''}
+            ${s.huongDan ? `<div><span class="text-text-secondary/70">Hướng dẫn chương trình:</span> <span class="text-white">${s.huongDan}</span></div>` : ''}
+            ${s.cauNguyen ? `<div><span class="text-text-secondary/70">Cầu nguyện khai lễ:</span> <span class="text-white">${s.cauNguyen}</span></div>` : ''}
           </div>
         </div>
       `;
@@ -1174,11 +1173,11 @@
     try {
       const res = await runGAS('apiSaveSchedule', payload, state.activeSheetId);
       if (res && res.success) {
-        showToast('Lưu lịch phụng vụ thành công!', 'success');
+        showToast('Lưu lịch sinh hoạt thành công!', 'success');
         closeModal('modal-schedule');
         await refreshData(false);
       } else {
-        showToast(res.message || 'Lỗi lưu lịch', 'error');
+        showToast(res.message || 'Lỗi lưu lịch sinh hoạt', 'error');
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -1188,12 +1187,12 @@
   }
 
   async function deleteSchedule(id) {
-    if (!confirm('Bạn có chắc muốn xóa lịch này?')) return;
+    if (!confirm('Bạn có chắc muốn xóa lịch sinh hoạt này?')) return;
     showLoading(true);
     try {
       const res = await runGAS('apiDeleteSchedule', id, state.activeSheetId);
       if (res && res.success) {
-        showToast('Đã xóa lịch phụng vụ!', 'info');
+        showToast('Đã xóa lịch sinh hoạt!', 'info');
         await refreshData(false);
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
@@ -1209,7 +1208,7 @@
     const container = document.getElementById('visitations-list-container');
     const memberSelect = document.getElementById('vis-thanhvien-id');
     if (memberSelect) {
-      memberSelect.innerHTML = `<option value="">-- Chọn đoàn viên --</option>` + 
+      memberSelect.innerHTML = `<option value="">-- Chọn ban viên --</option>` + 
         (state.members || []).map(m => `<option value="${m.id}">${getMemberName(m)} (${getMemberRole(m)})</option>`).join('');
     }
 
@@ -1225,7 +1224,7 @@
     state.members.forEach(m => { memberMap[m.id] = getMemberName(m); });
 
     container.innerHTML = list.map(v => {
-      const mName = memberMap[v.thanhVienId] || 'Đoàn viên';
+      const mName = memberMap[v.thanhVienId] || 'Ban viên';
       return `
         <div class="glass-card rounded-3xl p-5 border border-white/10 space-y-3 shadow-lg">
           <div class="flex justify-between items-start gap-2">
@@ -1236,7 +1235,7 @@
             <button onclick="deleteVisitation('${v.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5"><span class="material-symbols-outlined text-[16px]">delete</span></button>
           </div>
           <div class="p-3 bg-surface-elevated/70 rounded-2xl border border-white/5 text-xs text-text-secondary">
-            <p class="text-white">${v.noiDungCauNguyen || 'Thăm hỏi, động viên và cầu nguyện.'}</p>
+            <p class="text-white">${v.noiDungCauNguyen || 'Thăm hỏi, khích lệ và cầu nguyện.'}</p>
             ${v.nguoiTham ? `<p class="mt-2 text-[10px] text-text-secondary/70">Người đi thăm: <span class="text-emerald-400 font-medium">${v.nguoiTham}</span></p>` : ''}
           </div>
         </div>
@@ -1258,7 +1257,7 @@
     }
     const noteArea = document.getElementById('vis-noidung');
     if (noteArea && absences) {
-      noteArea.value = `Đoàn viên vắng sinh hoạt ${absences} tuần liên tiếp, cần thăm viếng khích lệ và cầu nguyện.`;
+      noteArea.value = `Ban viên vắng sinh hoạt ${absences} tuần liên tiếp, cần thăm viếng khích lệ và cầu nguyện.`;
     }
   }
 

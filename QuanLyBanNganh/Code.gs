@@ -500,13 +500,13 @@ function apiGetInitialData(customSheetId) {
 function apiSaveMember(payload, customSheetId) {
   try {
     const hoTen = payload.hoTen || payload.HoTen || payload.fullName;
-    if (!hoTen) throw new Error('Họ tên đoàn viên không được để trống');
+    if (!hoTen) throw new Error('Họ tên ban viên không được để trống');
     payload.hoTen = hoTen;
     payload.trangThai = payload.trangThai || 'active';
-    payload.maTV = payload.maTV || ('TV' + Math.floor(100 + Math.random() * 900));
+    payload.maTV = payload.maTV || ('BV' + Math.floor(100 + Math.random() * 900));
 
     let res = payload.id ? sheetUpdate(SHEET_NAMES.THANH_VIEN, payload.id, payload, customSheetId) : sheetInsert(SHEET_NAMES.THANH_VIEN, payload, customSheetId);
-    return { success: true, data: res, message: 'Đã lưu đoàn viên thành công!' };
+    return { success: true, data: res, message: 'Đã lưu ban viên thành công!' };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
@@ -515,7 +515,7 @@ function apiSaveMember(payload, customSheetId) {
 function apiDeleteMember(id, customSheetId) {
   try {
     sheetDelete(SHEET_NAMES.THANH_VIEN, id, customSheetId);
-    return { success: true, message: 'Đã xóa đoàn viên thành công!' };
+    return { success: true, message: 'Đã xóa ban viên thành công!' };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
@@ -586,7 +586,7 @@ function apiSaveAttendance(payload, customSheetId) {
         sheet.getRange(lastRow + 1, 1, newRows.length, headers.length).setValues(newRows);
       }
 
-      return { success: true, message: `Đã lưu điểm danh cho ${payload.records.length} đoàn viên thành công!` };
+      return { success: true, message: `Đã lưu điểm danh cho ${payload.records.length} ban viên thành công!` };
     } finally {
       try { lock.releaseLock(); } catch(e) {}
     }
@@ -633,7 +633,7 @@ function apiSaveSchedule(payload, customSheetId) {
     if (!payload.deTai) throw new Error('Đề tài không được để trống');
 
     let res = payload.id ? sheetUpdate(SHEET_NAMES.LICH_QUY, payload.id, payload, customSheetId) : sheetInsert(SHEET_NAMES.LICH_QUY, payload, customSheetId);
-    return { success: true, data: res, message: 'Đã lưu lịch phụng vụ thành công!' };
+    return { success: true, data: res, message: 'Đã lưu lịch sinh hoạt thành công!' };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
@@ -642,7 +642,7 @@ function apiSaveSchedule(payload, customSheetId) {
 function apiDeleteSchedule(id, customSheetId) {
   try {
     sheetDelete(SHEET_NAMES.LICH_QUY, id, customSheetId);
-    return { success: true, message: 'Đã xóa lịch phụng vụ thành công!' };
+    return { success: true, message: 'Đã xóa lịch sinh hoạt thành công!' };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
@@ -650,7 +650,7 @@ function apiDeleteSchedule(id, customSheetId) {
 
 function apiSaveVisitation(payload, customSheetId) {
   try {
-    if (!payload.thanhVienId) throw new Error('Vui lòng chọn đoàn viên được thăm viếng');
+    if (!payload.thanhVienId) throw new Error('Vui lòng chọn ban viên được thăm viếng');
     if (!payload.ngayTham) throw new Error('Vui lòng chọn ngày thăm');
 
     let res = payload.id ? sheetUpdate(SHEET_NAMES.THAM_VIENG, payload.id, payload, customSheetId) : sheetInsert(SHEET_NAMES.THAM_VIENG, payload, customSheetId);
