@@ -791,12 +791,28 @@
         const code = getMemberCode(m);
         const address = getMemberAddress(m);
         const dob = m.ngaySinh || m.NgaySinh || '';
-        const toName = groupMap[m.toId] || null;
+        const toName = groupMap[m.toId] || '';
         const isFemale = (m.gioiTinh === 'Nữ' || m.gioiTinh === 'Nu');
         const isSelected = state.selectedMemberIds && state.selectedMemberIds.has(String(m.id));
 
+        const toBadgeHtml = toName
+          ? '<span class="text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">' + toName + '</span>'
+          : '<span class="text-amber-400 font-bold px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30">⚠️ Chưa có tổ</span>';
+
+        const dobHtml = dob
+          ? '<div class="flex items-center justify-between"><span class="text-text-secondary/70">Ngày sinh:</span><span class="text-white font-mono">' + dob + '</span></div>'
+          : '';
+
+        const addressHtml = address
+          ? '<div class="truncate"><span class="text-text-secondary/70">Địa chỉ:</span><span class="text-white">' + address + '</span></div>'
+          : '';
+
+        const phoneActionsHtml = cleanPhone
+          ? '<a href="tel:' + cleanPhone + '" class="flex-1 py-1.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Gọi điện"><span class="material-symbols-outlined text-sm">call</span><span>Gọi</span></a><a href="https://zalo.me/' + cleanPhone + '" target="_blank" class="flex-1 py-1.5 rounded-xl bg-sky-600/20 hover:bg-sky-600/40 text-sky-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Mở Zalo"><span class="material-symbols-outlined text-sm">chat</span><span>Zalo</span></a>'
+          : '<span class="text-[10px] text-text-secondary italic">Chưa có số điện thoại</span>';
+
         return `
-          <div class="glass-card rounded-3xl p-5 border ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-950/20' : 'border-white/10 hover:border-emerald-500/40'} flex flex-col justify-between shadow-lg transition-all duration-200 group">
+          <div class="glass-card rounded-3xl p-5 border ${isSelected ? 'border-emerald-500/50 bg-emerald-950/20' : 'border-white/10'} hover:border-emerald-500/30 transition-all flex flex-col justify-between group">
             <div>
               <div class="flex justify-between items-start gap-2 mb-3">
                 <div class="flex items-center gap-3 min-w-0">
@@ -830,37 +846,16 @@
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-text-secondary/70">Tổ nhóm:</span>
-                  ${toName ? `<span class="text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">${toName}</span>` : `<span class="text-amber-400 font-bold px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30">⚠️ Chưa có tổ</span>`}
+                  ${toBadgeHtml}
                 </div>
-                ${dob ? `
-                  <div class="flex items-center justify-between">
-                    <span class="text-text-secondary/70">Ngày sinh:</span>
-                    <span class="text-white font-mono">${dob}</span>
-                  </div>
-                ` : ''}
-                ${address ? `
-                  <div class="truncate">
-                    <span class="text-text-secondary/70">Địa chỉ:</span>
-                    <span class="text-white">${address}</span>
-                  </div>
-                ` : ''}
+                ${dobHtml}
+                ${addressHtml}
               </div>
             </div>
 
             <!-- Quick Action Buttons Toolbar -->
             <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-1.5">
-              ${cleanPhone ? `
-                <a href="tel:${cleanPhone}" class="flex-1 py-1.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Gọi điện">
-                  <span class="material-symbols-outlined text-sm">call</span>
-                  <span>Gọi</span>
-                </a>
-                <a href="https://zalo.me/${cleanPhone}" target="_blank" class="flex-1 py-1.5 rounded-xl bg-sky-600/20 hover:bg-sky-600/40 text-sky-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Mở Zalo">
-                  <span class="material-symbols-outlined text-sm">chat</span>
-                  <span>Zalo</span>
-                </a>
-              ` : `
-                <span class="text-[10px] text-text-secondary italic">Chưa có số điện thoại</span>
-              `}
+              ${phoneActionsHtml}
               <button onclick="openQuickVisitModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-pink-500/20 text-pink-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Tạo phiếu thăm viếng">
                 <span class="material-symbols-outlined text-sm">volunteer_activism</span>
                 <span>Thăm</span>
@@ -881,10 +876,22 @@
         const code = getMemberCode(m);
         const address = getMemberAddress(m);
         const dob = m.ngaySinh || m.NgaySinh || '--';
-        const toName = groupMap[m.toId] || null;
+        const toName = groupMap[m.toId] || '';
         const gender = m.gioiTinh || 'Nam';
         const isFemale = (gender === 'Nữ' || gender === 'Nu');
         const isSelected = state.selectedMemberIds && state.selectedMemberIds.has(String(m.id));
+
+        const toBadgeTable = toName
+          ? '<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">' + toName + '</span>'
+          : '<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">⚠️ Chưa có tổ</span>';
+
+        const phoneLinkTable = cleanPhone
+          ? '<a href="tel:' + cleanPhone + '" class="hover:underline flex items-center gap-1"><span class="material-symbols-outlined text-xs">call</span>' + phone + '</a>'
+          : '<span class="text-text-secondary/50 italic">--</span>';
+
+        const zaloBtnTable = cleanPhone
+          ? '<a href="https://zalo.me/' + cleanPhone + '" target="_blank" class="p-1 text-sky-400 hover:bg-white/10 rounded-lg" title="Nhắn Zalo"><span class="material-symbols-outlined text-[16px]">chat</span></a>'
+          : '';
 
         return `
           <tr class="hover:bg-white/5 transition-colors ${isSelected ? 'bg-emerald-950/30' : ''}">
@@ -908,18 +915,14 @@
             </td>
             <td class="p-3 whitespace-nowrap">${isFemale ? '👩 Nữ' : '👨 Nam'}</td>
             <td class="p-3 font-mono text-text-secondary whitespace-nowrap">${dob}</td>
-            <td class="p-3 whitespace-nowrap">
-              ${toName ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">${toName}</span>` : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">⚠️ Chưa có tổ</span>`}
-            </td>
+            <td class="p-3 whitespace-nowrap">${toBadgeTable}</td>
             <td class="p-3 text-text-secondary whitespace-nowrap">${role}</td>
-            <td class="p-3 font-mono text-emerald-400 whitespace-nowrap">
-              ${cleanPhone ? `<a href="tel:${cleanPhone}" class="hover:underline flex items-center gap-1"><span class="material-symbols-outlined text-xs">call</span>${phone}</a>` : '<span class="text-text-secondary/50 italic">--</span>'}
-            </td>
+            <td class="p-3 font-mono text-emerald-400 whitespace-nowrap">${phoneLinkTable}</td>
             <td class="p-3 text-text-secondary max-w-xs truncate" title="${address}">${address || '--'}</td>
             <td class="p-3 text-center whitespace-nowrap">
               <div class="flex items-center justify-center gap-1">
                 <button onclick="openMemberProfileModal('${m.id}')" class="p-1 text-emerald-400 hover:bg-white/10 rounded-lg" title="Xem hồ sơ chi tiết"><span class="material-symbols-outlined text-[16px]">visibility</span></button>
-                ${cleanPhone ? `<a href="https://zalo.me/${cleanPhone}" target="_blank" class="p-1 text-sky-400 hover:bg-white/10 rounded-lg" title="Nhắn Zalo"><span class="material-symbols-outlined text-[16px]">chat</span></a>` : ''}
+                ${zaloBtnTable}
                 <button onclick="openQuickVisitModal('${m.id}')" class="p-1 text-pink-400 hover:bg-white/10 rounded-lg" title="Lập phiếu thăm viếng"><span class="material-symbols-outlined text-[16px]">volunteer_activism</span></button>
                 <button onclick="openEditMemberModal('${m.id}')" class="p-1 text-text-secondary hover:text-white hover:bg-white/10 rounded-lg" title="Sửa"><span class="material-symbols-outlined text-[16px]">edit</span></button>
                 <button onclick="deleteMember('${m.id}')" class="p-1 text-text-secondary hover:text-rose-400 hover:bg-white/10 rounded-lg" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
@@ -2787,15 +2790,19 @@
       const doKtFormatted = [s.doKT, s.nguoiDoKT].filter(Boolean).join(' - ');
       const dienGiaFormatted = s.dienGia || s.phuTrach || '--';
 
+      const rolesHtml = [
+        s.amNhac ? '<span>🎹 ' + s.amNhac + '</span>' : '',
+        s.mayChieu ? '<span>🎛️ ' + s.mayChieu + '</span>' : '',
+        s.tiepTan ? '<span>🚪 ' + s.tiepTan + '</span>' : ''
+      ].filter(Boolean).join(' ');
+
       return `
         <tr class="hover:bg-white/5 transition-colors border-b border-white/5 group">
           <td class="py-3 px-3 font-mono text-center font-bold text-emerald-400 text-xs">${s.ngayNhom || '--'}</td>
           <td class="py-3 px-3 font-bold text-white">
             <div>${s.deTai || '--'}</div>
             <div class="text-[10px] text-text-secondary font-normal mt-0.5 space-x-2">
-              ${s.amNhac ? `<span>🎹 ${s.amNhac}</span>` : ''}
-              ${s.mayChieu ? `<span>🎛️ ${s.mayChieu}</span>` : ''}
-              ${s.tiepTan ? `<span>🚪 ${s.tiepTan}</span>` : ''}
+              ${rolesHtml}
             </div>
           </td>
           <td class="py-3 px-3 font-medium text-emerald-300 text-xs">${s.cauGoc || '--'}</td>
@@ -3220,6 +3227,12 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
         const doKtFormatted = [s.doKT, s.nguoiDoKT].filter(Boolean).join(' - ') || '--';
         const dienGiaFormatted = s.dienGia || s.phuTrach || '--';
 
+        const printRolesHtml = [
+          s.amNhac ? '🎹 ' + s.amNhac : '',
+          s.mayChieu ? '🎛️ ' + s.mayChieu : '',
+          s.tiepTan ? '🚪 ' + s.tiepTan : ''
+        ].filter(Boolean).join('<br/>');
+
         return `
           <tr style="border-bottom: 1px solid #cbd5e1;">
             <td style="text-align: center; font-weight: 600; border: 1px solid #475569; padding: 5px 3px;">${idx + 1}</td>
@@ -3231,9 +3244,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
             <td style="text-align: center; font-weight: 600; color: #059669; border: 1px solid #475569; padding: 5px 4px;">${s.toPhuTrach || '--'}</td>
             <td style="font-weight: bold; border: 1px solid #475569; padding: 5px 4px;">${dienGiaFormatted}</td>
             <td style="font-size: 8pt; border: 1px solid #475569; padding: 5px 3px; color: #334155;">
-              ${s.amNhac ? `🎹 ${s.amNhac}<br/>` : ''}
-              ${s.mayChieu ? `🎛️ ${s.mayChieu}<br/>` : ''}
-              ${s.tiepTan ? `🚪 ${s.tiepTan}` : ''}
+              ${printRolesHtml}
             </td>
           </tr>
         `;
