@@ -106,10 +106,15 @@
 
   async function initApp() {
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      state.activeSheetId = urlParams.get('sheetId') || '';
-      state.banNganhTitle = urlParams.get('title') || '';
-      state.banNganhId = urlParams.get('banNganhId') || '';
+      const serverCfg = window.SERVER_CONFIG || {};
+      let urlParams = null;
+      try {
+        urlParams = new URLSearchParams(window.location.search);
+      } catch (e) {}
+
+      state.activeSheetId = serverCfg.sheetId || (urlParams ? urlParams.get('sheetId') : '') || '';
+      state.banNganhTitle = serverCfg.banNganhTitle || (urlParams ? urlParams.get('title') : '') || '';
+      state.banNganhId = serverCfg.banNganhId || (urlParams ? urlParams.get('banNganhId') : '') || '';
 
       if (state.banNganhTitle) {
         document.title = 'Quản Lý ' + state.banNganhTitle;
@@ -126,7 +131,7 @@
       }
     } catch (e) {}
 
-    // 1. TẢI NGAY TỪ LOCAL CACHE ĐỂ GIAO DIỆN HIỂN THỊ TRONG 0.1S
+    // 1. TẢI TỪ LOCAL CACHE (NẾU CÓ DỮ LIỆU CỦA ĐÚNG SHEET ID NÀY)
     loadFromLocalCache();
 
     // 2. TẢI NGẦM DỮ LIỆU MỚI NHẤT TỪ GOOGLE SHEET
@@ -1723,6 +1728,23 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
     showLoading(true);
     await refreshData(true);
     showLoading(false);
+  }
+
+  async function handleSyncDatabaseSchema() {
+    showLoading(true);
+    try {
+      const res = await runGAS('apiSyncDatabaseSchema', state.activeSheetId);
+      if (res && res.success) {
+        showToast(res.message || 'Đã đồng bộ và chuẩn hóa cấu trúc Google Sheet thành công!', 'success');
+        await refreshData(true);
+      } else {
+        showToast(res.message || 'Lỗi chuẩn hóa Sheet', 'error');
+      }
+    } catch (e) {
+      showToast(e.message, 'error');
+    } finally {
+      showLoading(false);
+    }
   }
 
   // =========================================================================

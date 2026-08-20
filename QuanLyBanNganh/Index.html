@@ -43,6 +43,14 @@
   }
   </script>
 
+  <script>
+    window.SERVER_CONFIG = {
+      sheetId: '<?= sheetId ?>',
+      banNganhId: '<?= banNganhId ?>',
+      banNganhTitle: '<?= banNganhTitle ?>'
+    };
+  </script>
+
   <?!= include('Styles'); ?>
 </head>
 
@@ -616,6 +624,17 @@
             <a id="cfg-bannganh-sheet-link" href="#" target="_blank" class="text-emerald-400 hover:underline flex items-center gap-1 font-semibold">
               Mở Google Sheet <span class="material-symbols-outlined text-sm">open_in_new</span>
             </a>
+          </div>
+
+          <div class="pt-2 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div>
+              <span class="text-xs font-semibold text-white block">Cấu trúc bảng dữ liệu:</span>
+              <span class="text-[11px] text-text-secondary">Tự động kiểm tra và thêm các cột/tab còn thiếu vào Sheet</span>
+            </div>
+            <button onclick="handleSyncDatabaseSchema()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1.5 shrink-0">
+              <span class="material-symbols-outlined text-[16px]">sync_saved_locally</span>
+              <span>⚡ Chuẩn Hóa Cột Google Sheet</span>
+            </button>
           </div>
 
           <div class="pt-2 border-t border-white/10 flex justify-between items-center">

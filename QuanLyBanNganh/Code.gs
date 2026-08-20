@@ -119,6 +119,9 @@ function handleApiRequest(action, params) {
       case 'apiDeleteVisitation':
         result = apiDeleteVisitation(params.id, sheetId);
         break;
+      case 'apiSyncDatabaseSchema':
+        result = setupDatabase(sheetId);
+        break;
       default:
         result = { success: false, message: `Hành động "${action}" không tồn tại` };
     }
@@ -175,7 +178,6 @@ function setupDatabase(sheetIdOrUrl) {
   let customId = '';
   if (sheetIdOrUrl) {
     customId = cleanIdFromInput(sheetIdOrUrl);
-    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', customId);
   }
 
   const ss = getSpreadsheet(customId);
@@ -192,20 +194,44 @@ function setupDatabase(sheetIdOrUrl) {
       }
     }
 
-    if (sheet.getLastRow() === 0) {
-      const headers = SCHEMAS[sheetName];
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-      sheet.getRange(1, 1, 1, headers.length)
+    const expectedHeaders = SCHEMAS[sheetName];
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+
+    if (lastRow === 0 || lastCol === 0) {
+      sheet.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+      sheet.getRange(1, 1, 1, expectedHeaders.length)
         .setFontWeight('bold')
         .setBackground('#10b981')
         .setFontColor('#ffffff');
       sheet.setFrozenRows(1);
+    } else {
+      // Sheet already exists - check if any columns are missing and append them!
+      const currentHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+      const normalizedCurrent = currentHeaders.map(h => normalizeHeaderKey(h));
+      
+      const missingHeaders = [];
+      expectedHeaders.forEach(exp => {
+        const normExp = normalizeHeaderKey(exp);
+        if (!normalizedCurrent.includes(normExp) && !currentHeaders.includes(exp)) {
+          missingHeaders.push(exp);
+        }
+      });
+
+      if (missingHeaders.length > 0) {
+        const startCol = lastCol + 1;
+        sheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
+        sheet.getRange(1, startCol, 1, missingHeaders.length)
+          .setFontWeight('bold')
+          .setBackground('#10b981')
+          .setFontColor('#ffffff');
+      }
     }
   });
 
   return {
     success: true,
-    message: 'Khởi tạo cơ sở dữ liệu Ban Ngành thành công!',
+    message: 'Khởi tạo và đồng bộ chuẩn hóa cấu trúc Google Sheet thành công!',
     spreadsheetId: ss.getId(),
     spreadsheetUrl: ss.getUrl()
   };
@@ -461,6 +487,9 @@ function sheetDelete(sheetName, id, customSheetId) {
 
 function apiGetInitialData(customSheetId) {
   try {
+    // Tự động kiểm tra và chuẩn hóa cấu trúc các tab và cột cho file Sheet này
+    setupDatabase(customSheetId);
+
     const ss = getSpreadsheet(customSheetId);
     const allSheets = ss.getSheets();
     const sheetMap = {};
