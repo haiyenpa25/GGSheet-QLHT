@@ -1099,7 +1099,7 @@
     if (groupSelect) {
       let opts = '<option value="">Tự động nhận diện / Không chỉ định</option>';
       (state.groups || []).forEach(g => {
-        opts += `<option value="${g.id}">${g.tenTo || g.name}</option>';
+        opts += `<option value="${g.id}">${g.tenTo || g.name}</option>`;
       });
       groupSelect.innerHTML = opts;
     }
