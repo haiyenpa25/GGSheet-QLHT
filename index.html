@@ -145,6 +145,23 @@
     
     <!-- VIEW 1: DASHBOARD -->
     <section id="view-dashboard" class="app-view space-y-6">
+      <!-- Direct Web App Link Banner (If CORS/Permission is blocked on GitHub Pages) -->
+      <div id="cors-warning-banner" class="hidden p-4 rounded-3xl bg-amber-950/40 border border-warning-amber/40 backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-warning-amber flex items-center justify-center font-bold shrink-0">
+            <span class="material-symbols-outlined text-2xl">info</span>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-white">Mở Trực Tiếp Trên Google Apps Script (Khuyên Dùng)</h4>
+            <p class="text-xs text-text-secondary">Trình duyệt chặn kết nối từ GitHub Pages. Bấm nút bên cạnh để mở bản Web App chính thức 100% ổn định.</p>
+          </div>
+        </div>
+        <a href="https://script.google.com/macros/s/AKfycbz7e9ZVchhCfuTs10-ldapfDMl3ZzqlB2jQz7nCsyFpQXzHJk6c2AYvM_qOs9MODZZ8/exec" target="_blank" class="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-lg active:scale-95 transition-all">
+          <span>Mở Web App Google</span>
+          <span class="material-symbols-outlined text-sm">open_in_new</span>
+        </a>
+      </div>
+
       <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-primary/25 bg-gradient-to-r from-surface-elevated/90 via-surface-container/70 to-surface-elevated/90">
         <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div class="space-y-2">
@@ -739,8 +756,7 @@
         return json;
       } catch (err) {
         console.error('Fetch Error [' + action + ']:', err);
-        showToast('Lỗi kết nối máy chủ: ' + err.message, 'error');
-        return { success: false, message: err.message || String(err) };
+        return { success: false, message: 'Google Apps Script yêu cầu cấp quyền hoặc mở trực tiếp Web App: ' + err.message };
       }
     }
 
@@ -757,14 +773,20 @@
           state.banNganhWebAppUrl = res.data.banNganhWebAppUrl || state.banNganhWebAppUrl;
           renderAll();
         } else {
-          showToast('Không thể tải dữ liệu: ' + (res.message || 'Lỗi không xác định'), 'error');
+          showToast('Vui lòng mở trực tiếp Web App trên Google Apps Script để cấp quyền!', 'warning');
+          renderCorsFallback();
         }
       } catch (e) {
         console.error('initApp Error:', e);
-        showToast('Lỗi khởi động: ' + e.message, 'error');
+        renderCorsFallback();
       } finally {
         showLoading(false);
       }
+    }
+
+    function renderCorsFallback() {
+      const banner = document.getElementById('cors-warning-banner');
+      if (banner) banner.classList.remove('hidden');
     }
 
     function navigateTo(viewName, params = {}) {
