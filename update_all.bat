@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 set "ROOT_DIR=%~dp0"
 set "HOI_THANH_DEPLOY_ID=AKfycbz7e9ZVchhCfuTs10-ldapfDMl3ZzqlB2jQz7nCsyFpQXzHJk6c2AYvM_qOs9MODZZ8"
-set "BAN_NGANH_DEPLOY_ID=AKfycbx9jjjOgGQUh79YP514sDqJWgEc2Nc7GjmHvfq4lDF-C-DiaxdV64N966LLSX85AzMS"
+set "BAN_NGANH_DEPLOY_ID=AKfycbzA9hu94R8otpipHPtw_52Fimf22HIgxIH02YVdisQU6D3KgCVlltjW0QjuD0KGwdYL"
 
 echo ====================================================================
 echo   DONG BO VA AUTO-DEPLOY TOAN BO HE THONG (APPS SCRIPT + GITHUB)
