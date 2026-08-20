@@ -1,10 +1,16 @@
 @echo off
-chcp 65001 > nul
+setlocal
+set "ROOT_DIR=%~dp0"
+
 echo ======================================================
-echo 🚀 ĐANG ĐỒNG BỘ SOURCE CODE: BAN THANH TRÁNG (BAN NGÀNH)
+echo DONG BO SOURCE CODE: BAN THANH TRANG (BAN NGANH)
 echo ======================================================
-cd /d "%~dp0QuanLyBanNganh"
-call npx @google/clasp push -f
+cd /d "%ROOT_DIR%QuanLyBanNganh"
+call npx --yes @google/clasp push -f
+
+cd /d "%ROOT_DIR%"
 echo.
-echo ✅ ĐÃ CẬP NHẬT XONG DỰ ÁN BAN THANH TRÁNG!
+echo ======================================================
+echo [HOAN TAT] DA CAP NHAT XONG DU AN BAN THANH TRANG!
+echo ======================================================
 pause

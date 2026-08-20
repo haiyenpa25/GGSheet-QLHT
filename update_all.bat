@@ -1,20 +1,23 @@
 @echo off
-chcp 65001 > nul
+setlocal
+set "ROOT_DIR=%~dp0"
+
 echo ======================================================
-echo 🚀 1. ĐỒNG BỘ: QUẢN LÝ HỘI THÁNH
+echo [1/2] DONG BO SOURCE CODE: QUAN LY HOI THANH (MASTER)
 echo ======================================================
-cd /d "%~dp0QuanLyHoiThanh"
-call npx @google/clasp push -f
+cd /d "%ROOT_DIR%QuanLyHoiThanh"
+call npx --yes @google/clasp push -f
 
 echo.
 echo ======================================================
-echo 🚀 2. ĐỒNG BỘ: BAN THANH TRÁNG
+echo [2/2] DONG BO SOURCE CODE: BAN THANH TRANG (BAN NGANH)
 echo ======================================================
-cd /d "%~dp0QuanLyBanNganh"
-call npx @google/clasp push -f
+cd /d "%ROOT_DIR%QuanLyBanNganh"
+call npx --yes @google/clasp push -f
 
+cd /d "%ROOT_DIR%"
 echo.
 echo ======================================================
-echo ✅ ĐÃ CẬP NHẬT THÀNH CÔNG CẢ 2 DỰ ÁN LÊN GOOGLE!
+echo [HOAN TAT] DA CAP NHAT THANH CONG CA 2 DU AN LEN GOOGLE!
 echo ======================================================
 pause
