@@ -287,6 +287,10 @@
           <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý danh sách thành viên, phân chia tổ nhóm, sắp xếp ABC, lọc nâng cao và gán tổ hàng loạt.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="exportMembersToExcel()" class="py-2.5 px-4 rounded-full bg-surface-elevated hover:bg-white/10 text-sky-400 border border-sky-500/40 text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0" title="Xuất danh sách ban viên ra file Excel / CSV">
+            <span class="material-symbols-outlined text-[18px]">file_download</span>
+            <span>📤 Xuất Excel (.CSV)</span>
+          </button>
           <button onclick="openBulkImportModal()" class="py-2.5 px-4 rounded-full bg-surface-elevated hover:bg-white/10 text-emerald-400 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
             <span class="material-symbols-outlined text-[18px]">file_upload</span>
             <span>📥 Nhập Từ Excel / Bảng</span>
@@ -467,6 +471,10 @@
           <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Chọn Năm &rarr; Quý &rarr; Tháng &rarr; Buổi Nhóm để điểm danh trực tiếp và lưu vào Google Sheet.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="openAttendanceReportModal()" class="py-2.5 px-4 rounded-full glass-card hover:bg-white/10 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all" title="Xem bảng vàng thi đua chuyên cần & đố Kinh Thánh">
+            <span class="material-symbols-outlined text-[18px]">emoji_events</span>
+            <span>🏆 Thi Đua &amp; Báo Cáo Quý</span>
+          </button>
           <button onclick="selectNearestSession()" class="py-2.5 px-4 rounded-full glass-card hover:bg-white/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all">
             <span class="material-symbols-outlined text-[18px]">near_me</span>
             <span>⚡ Buổi Nhóm Gần Nhất</span>
@@ -694,9 +702,36 @@
         </div>
       </div>
 
+      <!-- Finance Filter & Search Bar -->
+      <div class="glass-card rounded-2xl p-3 border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0" id="finance-type-tabs">
+          <button data-type="all" onclick="filterFinanceByType('all')" class="fin-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 transition-all shrink-0">
+            Tất Cả Giao Dịch
+          </button>
+          <button data-type="THU" onclick="filterFinanceByType('THU')" class="fin-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 border border-transparent transition-all shrink-0">
+            🟢 Chỉ Phiếu Thu
+          </button>
+          <button data-type="CHI" onclick="filterFinanceByType('CHI')" class="fin-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 border border-transparent transition-all shrink-0">
+            🔴 Chỉ Phiếu Chi
+          </button>
+        </div>
+        <div class="relative w-full sm:w-64">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-sm">search</span>
+          <input
+            id="finance-search-input"
+            oninput="state.searchFinance = this.value; renderFinance();"
+            class="glass-input w-full rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-text-secondary/50"
+            placeholder="Tìm hạng mục, người nộp/nhận..."
+          />
+        </div>
+      </div>
+
       <!-- Transaction List -->
       <div class="glass-card rounded-3xl p-6 border border-white/10 space-y-4">
-        <h3 class="text-base font-bold text-white">Lịch Sử Giao Dịch Gần Đây</h3>
+        <div class="flex justify-between items-center">
+          <h3 class="text-base font-bold text-white">Lịch Sử Giao Dịch</h3>
+          <span id="finance-count-badge" class="text-xs font-bold text-emerald-400">0 giao dịch</span>
+        </div>
         <div id="finance-transactions-container" class="space-y-2.5">
           <div class="text-center py-8 text-xs text-text-secondary">Đang tải lịch sử giao dịch...</div>
         </div>
@@ -1536,6 +1571,79 @@
             <span>🖨️ In Lịch Ra Giấy / Lưu PDF</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: BẢNG VÀNG THI ĐUA & BÁO CÁO CHUYÊN CẦN QUÝ -->
+  <div id="modal-attendance-report" class="app-modal hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md items-center justify-center p-3 sm:p-5">
+    <div class="glass-card-solid rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl border border-white/20 animate-fade-in flex flex-col max-h-[94vh]">
+      <!-- Header -->
+      <div class="p-4 sm:p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/60">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-xl">emoji_events</span>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-white">Bảng Vàng Thi Đua &amp; Tổng Kết Quý</h3>
+            <p class="text-[11px] text-text-secondary">Xếp hạng chuyên cần, top đố Kinh Thánh và thi đua giữa các tổ nhóm.</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-attendance-report')" class="text-text-secondary hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Controls & Filter -->
+      <div class="p-4 sm:p-6 space-y-6 overflow-y-auto">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-elevated/70 p-4 rounded-2xl border border-white/5">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-text-secondary">Xem Theo Quý:</span>
+            <select id="report-att-quarter" onchange="renderAttendanceReport()" class="glass-input rounded-xl px-3 py-1.5 text-xs font-bold text-amber-300">
+              <option value="current">Quý Hiện Tại</option>
+              <option value="I">Quý I (Tháng 1 - Tháng 3)</option>
+              <option value="II">Quý II (Tháng 4 - Tháng 6)</option>
+              <option value="III">Quý III (Tháng 7 - Tháng 9)</option>
+              <option value="IV">Quý IV (Tháng 10 - Tháng 12)</option>
+              <option value="all">Toàn Bộ Cả Năm</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="copyAttendanceReportZalo()" class="py-2 px-3.5 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 border border-sky-500/30 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md">
+              <span class="material-symbols-outlined text-[16px]">content_copy</span>
+              <span>📋 Copy Bảng Zalo</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Bento Sections: Chuyên Cần, Đố KT, Tổ Nhóm -->
+        <div id="attendance-report-content" class="space-y-5">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <div class="p-4 sm:p-5 border-t border-white/10 flex justify-end gap-2 bg-surface-container-low/60">
+        <button type="button" onclick="closeModal('modal-attendance-report')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: THẺ HỒ SƠ BAN VIÊN CHI TIẾT -->
+  <div id="modal-member-profile" class="app-modal hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md items-center justify-center p-3 sm:p-5">
+    <div class="glass-card-solid rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-white/20 animate-fade-in flex flex-col max-h-[92vh]">
+      <div class="p-4 sm:p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/60">
+        <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-emerald-400">badge</span>
+          <span>Hồ Sơ Ban Viên</span>
+        </h3>
+        <button onclick="closeModal('modal-member-profile')" class="text-text-secondary hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div id="member-profile-content" class="p-5 sm:p-6 space-y-5 overflow-y-auto">
+        <!-- Rendered dynamically -->
       </div>
     </div>
   </div>

@@ -568,6 +568,22 @@
     }).join('');
   }
 
+  function openQuickVisitModal(memberId, absences) {
+    const sel = document.getElementById('vis-thanhvien-id');
+    if (sel) sel.value = memberId;
+
+    const dt = document.getElementById('vis-ngaytham');
+    if (dt) dt.value = new Date().toISOString().split('T')[0];
+
+    const ng = document.getElementById('vis-nguoitham');
+    if (ng) ng.value = 'Ban Chăm Sóc';
+
+    const nd = document.getElementById('vis-noidung');
+    if (nd) nd.value = `Thăm viếng và cầu thay khích lệ do vắng nhóm ${absences ? absences + ' tuần liên tiếp' : ''}.`;
+
+    openModal('modal-visitation');
+  }
+
   // =========================================================================
   // 2. MEMBERS VIEW (BAN VIÊN) & QUICK ACTIONS
   // =========================================================================
@@ -778,16 +794,17 @@
                     class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4 shrink-0 cursor-pointer"
                     title="Chọn để gán tổ"
                   />
-                  <div class="w-10 h-10 rounded-2xl ${isFemale ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'} border flex items-center justify-center font-bold text-sm shrink-0">
+                  <div onclick="openMemberProfileModal('${m.id}')" class="w-10 h-10 rounded-2xl ${isFemale ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'} border flex items-center justify-center font-bold text-sm shrink-0 cursor-pointer hover:scale-105 transition-transform" title="Xem hồ sơ">
                     <span class="material-symbols-outlined text-lg">${isFemale ? 'face_3' : 'person'}</span>
                   </div>
                   <div class="min-w-0">
                     <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-white/5 text-emerald-400 border border-white/10 inline-block">${code}</span>
-                    <h3 class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors truncate">${name}</h3>
+                    <h3 onclick="openMemberProfileModal('${m.id}')" class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors truncate cursor-pointer hover:underline" title="Xem hồ sơ chi tiết">${name}</h3>
                   </div>
                 </div>
 
                 <div class="flex items-center gap-1 shrink-0">
+                  <button onclick="openMemberProfileModal('${m.id}')" class="p-1.5 text-text-secondary hover:text-emerald-400 rounded-full hover:bg-white/5 transition-colors" title="Xem hồ sơ chi tiết"><span class="material-symbols-outlined text-[16px]">visibility</span></button>
                   <button onclick="openEditMemberModal('${m.id}')" class="p-1.5 text-text-secondary hover:text-white rounded-full hover:bg-white/5 transition-colors" title="Sửa"><span class="material-symbols-outlined text-[16px]">edit</span></button>
                   <button onclick="deleteMember('${m.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5 transition-colors" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
                 </div>
@@ -867,13 +884,13 @@
               />
             </td>
             <td class="p-3 text-center text-text-secondary font-mono">${idx + 1}</td>
-            <td class="p-3 font-mono font-bold text-emerald-400">${code}</td>
+            <td class="p-3 font-mono font-bold text-emerald-400 cursor-pointer hover:underline" onclick="openMemberProfileModal('${m.id}')">${code}</td>
             <td class="p-3 font-bold text-white whitespace-nowrap">
-              <div class="flex items-center gap-2">
+              <div onclick="openMemberProfileModal('${m.id}')" class="flex items-center gap-2 cursor-pointer group/name">
                 <span class="w-6 h-6 rounded-full ${isFemale ? 'bg-pink-500/20 text-pink-400' : 'bg-emerald-500/20 text-emerald-400'} flex items-center justify-center text-xs">
                   <span class="material-symbols-outlined text-[14px]">${isFemale ? 'face_3' : 'person'}</span>
                 </span>
-                <span>${name}</span>
+                <span class="group-hover/name:text-emerald-400 group-hover/name:underline">${name}</span>
               </div>
             </td>
             <td class="p-3 whitespace-nowrap">${isFemale ? '👩 Nữ' : '👨 Nam'}</td>
@@ -888,6 +905,7 @@
             <td class="p-3 text-text-secondary max-w-xs truncate" title="${address}">${address || '--'}</td>
             <td class="p-3 text-center whitespace-nowrap">
               <div class="flex items-center justify-center gap-1">
+                <button onclick="openMemberProfileModal('${m.id}')" class="p-1 text-emerald-400 hover:bg-white/10 rounded-lg" title="Xem hồ sơ chi tiết"><span class="material-symbols-outlined text-[16px]">visibility</span></button>
                 ${cleanPhone ? `<a href="https://zalo.me/${cleanPhone}" target="_blank" class="p-1 text-sky-400 hover:bg-white/10 rounded-lg" title="Nhắn Zalo"><span class="material-symbols-outlined text-[16px]">chat</span></a>` : ''}
                 <button onclick="openQuickVisitModal('${m.id}')" class="p-1 text-pink-400 hover:bg-white/10 rounded-lg" title="Lập phiếu thăm viếng"><span class="material-symbols-outlined text-[16px]">volunteer_activism</span></button>
                 <button onclick="openEditMemberModal('${m.id}')" class="p-1 text-text-secondary hover:text-white hover:bg-white/10 rounded-lg" title="Sửa"><span class="material-symbols-outlined text-[16px]">edit</span></button>
@@ -900,6 +918,178 @@
     }
 
     updateBatchActionBar();
+  }
+
+  function exportMembersToExcel() {
+    const list = getFilteredMembers();
+    if (list.length === 0) {
+      showToast('Không có ban viên nào để xuất file', 'warning');
+      return;
+    }
+
+    const groupMap = {};
+    state.groups.forEach(g => { groupMap[g.id] = getGroupName(g); });
+
+    const headers = ['STT', 'Mã Ban Viên', 'Họ và Tên', 'Số Điện Thoại', 'Ngày Sinh', 'Giới Tính', 'Tổ Nhóm', 'Chức Vụ', 'Địa Chỉ', 'Trạng Thái'];
+    const rows = list.map((m, idx) => [
+      idx + 1,
+      `"${getMemberCode(m)}"`,
+      `"${getMemberName(m)}"`,
+      `"${getMemberPhone(m)}"`,
+      `"${m.ngaySinh || m.NgaySinh || ''}"`,
+      `"${m.gioiTinh || 'Nam'}"`,
+      `"${groupMap[m.toId] || 'Chưa phân tổ'}"`,
+      `"${getMemberRole(m)}"`,
+      `"${(getMemberAddress(m) || '').replace(/"/g, '""')}"`,
+      `"${m.trangThai || 'active'}"`
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const safeTitle = (state.banNganhTitle || 'BanThanhTrang').replace(/\s+/g, '_');
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Danh_Sach_Ban_Vien_${safeTitle}_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(`Đã xuất danh sách ${list.length} ban viên thành công!`, 'success');
+  }
+
+  function openMemberProfileModal(memberId) {
+    const m = (state.members || []).find(item => String(item.id) === String(memberId));
+    if (!m) return;
+
+    const name = getMemberName(m);
+    const code = getMemberCode(m);
+    const phone = getMemberPhone(m);
+    const cleanPhone = cleanPhoneNumber(phone);
+    const role = getMemberRole(m);
+    const address = getMemberAddress(m);
+    const dob = m.ngaySinh || m.NgaySinh || '--';
+    const gender = m.gioiTinh || 'Nam';
+    const isFemale = (gender === 'Nữ' || gender === 'Nu');
+
+    const groupMap = {};
+    state.groups.forEach(g => { groupMap[g.id] = getGroupName(g); });
+    const toName = groupMap[m.toId] || 'Chưa phân tổ';
+
+    // Calculate Spiritual Stats
+    const memberAtts = (state.attendances || []).filter(a => String(a.thanhVienId) === String(m.id));
+    const totalRecordedSessions = memberAtts.length;
+    const presentCount = memberAtts.filter(a => (a.coMat === 'CO_MAT' || a.coMat === true || a.coMat === '1' || a.coMat === 'TRUE')).length;
+    const verseCount = memberAtts.filter(a => (a.thuocCauGoc === 'THUOC' || a.thuocCauGoc === true || a.thuocCauGoc === '1' || a.thuocCauGoc === 'TRUE')).length;
+    let quizTotalScore = 0;
+    memberAtts.forEach(a => { quizTotalScore += (parseInt(a.soCauKT, 10) || 0); });
+
+    const pPct = totalRecordedSessions > 0 ? Math.round((presentCount / totalRecordedSessions) * 100) : 0;
+    const vPct = totalRecordedSessions > 0 ? Math.round((verseCount / totalRecordedSessions) * 100) : 0;
+
+    // Visitations
+    const memberVisits = (state.visitations || []).filter(v => String(v.thanhVienId) === String(m.id));
+
+    const container = document.getElementById('member-profile-content');
+    if (!container) return;
+
+    container.innerHTML = `
+      <!-- Top Hero Card -->
+      <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-5 rounded-2xl bg-surface-elevated border border-white/10">
+        <div class="w-16 h-16 rounded-3xl ${isFemale ? 'bg-pink-500/20 text-pink-400 border-pink-500/40' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'} border-2 flex items-center justify-center font-bold text-2xl shrink-0 shadow-lg">
+          <span class="material-symbols-outlined text-3xl">${isFemale ? 'face_3' : 'person'}</span>
+        </div>
+
+        <div class="flex-1 text-center sm:text-left min-w-0 space-y-1">
+          <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+            <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-white/10 text-emerald-400 border border-white/15">${code}</span>
+            <h3 class="text-lg font-bold text-white">${name}</h3>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${isFemale ? 'bg-pink-500/20 text-pink-300' : 'bg-blue-500/20 text-blue-300'}">${gender}</span>
+          </div>
+          <p class="text-xs text-text-secondary">${role} &bull; <span class="text-emerald-400 font-bold">${toName}</span></p>
+          <p class="text-xs text-text-secondary flex items-center justify-center sm:justify-start gap-1">
+            <span class="material-symbols-outlined text-sm">cake</span>
+            <span>Ngày sinh: <strong class="text-white">${dob}</strong></span>
+          </p>
+          ${address ? `<p class="text-xs text-text-secondary truncate"><span class="material-symbols-outlined text-sm inline-block align-middle">location_on</span> ${address}</p>` : ''}
+        </div>
+
+        <!-- Quick Contact Buttons -->
+        <div class="flex sm:flex-col gap-2 shrink-0">
+          ${cleanPhone ? `
+            <a href="tel:${cleanPhone}" class="px-3.5 py-2 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-all">
+              <span class="material-symbols-outlined text-base">call</span>
+              <span>${phone}</span>
+            </a>
+            <a href="https://zalo.me/${cleanPhone}" target="_blank" class="px-3.5 py-2 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 border border-sky-500/30 text-xs font-bold flex items-center gap-1.5 transition-all">
+              <span class="material-symbols-outlined text-base">chat</span>
+              <span>Nhắn Zalo</span>
+            </a>
+          ` : '<span class="text-xs text-text-secondary italic">Chưa có SĐT</span>'}
+        </div>
+      </div>
+
+      <!-- Spiritual KPI Dashboard Strip -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 text-center space-y-1">
+          <span class="text-[11px] font-bold text-text-secondary uppercase">Đi Nhóm Chuyên Cần</span>
+          <div class="text-2xl font-extrabold text-emerald-400">${presentCount} / ${totalRecordedSessions}</div>
+          <div class="text-xs font-semibold text-emerald-300">Tỷ lệ: ${pPct}%</div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-sky-950/20 border border-sky-500/30 text-center space-y-1">
+          <span class="text-[11px] font-bold text-text-secondary uppercase">Thuộc Câu Gốc</span>
+          <div class="text-2xl font-extrabold text-sky-400">${verseCount} / ${totalRecordedSessions}</div>
+          <div class="text-xs font-semibold text-sky-300">Tỷ lệ: ${vPct}%</div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 text-center space-y-1">
+          <span class="text-[11px] font-bold text-text-secondary uppercase">Đáp Câu Kinh Thánh</span>
+          <div class="text-2xl font-extrabold text-amber-400">${quizTotalScore}</div>
+          <div class="text-xs font-semibold text-amber-300">Tổng câu trả lời đúng</div>
+        </div>
+      </div>
+
+      <!-- Visitation History -->
+      <div class="space-y-2">
+        <div class="flex justify-between items-center">
+          <h4 class="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-pink-400">volunteer_activism</span>
+            <span>Lịch Sử Thăm Viếng &amp; Chăm Sóc (${memberVisits.length})</span>
+          </h4>
+          <button onclick="closeModal('modal-member-profile'); openQuickVisitModal('${m.id}')" class="px-3 py-1 rounded-xl bg-pink-600/20 hover:bg-pink-600/40 text-pink-300 border border-pink-500/30 text-xs font-bold flex items-center gap-1 transition-all">
+            <span class="material-symbols-outlined text-sm">add</span>
+            <span>+ Lập Phiếu Thăm</span>
+          </button>
+        </div>
+
+        <div class="space-y-2 max-h-40 overflow-y-auto">
+          ${memberVisits.length === 0 ? `
+            <div class="text-center py-4 text-xs text-text-secondary italic">Chưa có lịch sử thăm viếng nào.</div>
+          ` : memberVisits.map(v => `
+            <div class="p-3 rounded-xl bg-surface-elevated/70 border border-white/5 space-y-1 text-xs">
+              <div class="flex justify-between items-center text-text-secondary font-mono text-[11px]">
+                <span class="text-white font-bold">${v.ngayTham || '--'}</span>
+                <span>Người thăm: <strong class="text-emerald-400">${v.nguoiTham || 'Ban Chăm Sóc'}</strong></span>
+              </div>
+              <p class="text-white line-clamp-2">${v.noiDungCauNguyen || v.noiDung || 'Không có ghi chú'}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Bottom Actions -->
+      <div class="pt-3 border-t border-white/10 flex justify-end gap-2">
+        <button onclick="closeModal('modal-member-profile'); openEditMemberModal('${m.id}')" class="px-4 py-2 rounded-xl glass-card hover:bg-white/10 text-emerald-400 text-xs font-bold flex items-center gap-1">
+          <span class="material-symbols-outlined text-sm">edit</span>
+          <span>Chỉnh Sửa Thông Tin</span>
+        </button>
+        <button onclick="closeModal('modal-member-profile')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5">Đóng</button>
+      </div>
+    `;
+
+    openModal('modal-member-profile');
   }
 
   function toggleSelectMember(id, isChecked) {
@@ -1941,6 +2131,205 @@
     }
   }
 
+  function openAttendanceReportModal() {
+    const select = document.getElementById('report-att-quarter');
+    if (select) {
+      select.value = state.attendanceFilter ? state.attendanceFilter.quarter : 'current';
+    }
+    renderAttendanceReport();
+    openModal('modal-attendance-report');
+  }
+
+  function renderAttendanceReport() {
+    const container = document.getElementById('attendance-report-content');
+    if (!container) return;
+
+    const select = document.getElementById('report-att-quarter');
+    let qVal = select ? select.value : 'current';
+    if (qVal === 'current') {
+      qVal = state.attendanceFilter ? state.attendanceFilter.quarter : 'I';
+    }
+
+    // Filter schedules for target quarter
+    let targetSchedules = [...(state.schedules || [])];
+    if (qVal !== 'all') {
+      targetSchedules = targetSchedules.filter(s => String(s.quy || 'I').toUpperCase() === String(qVal).toUpperCase());
+    }
+
+    const sessionDates = new Set();
+    targetSchedules.forEach(s => {
+      const p = parseSessionDate(s.ngayNhom);
+      if (p) sessionDates.add(p.formatted);
+    });
+
+    const totalSessions = sessionDates.size || 1;
+
+    // Filter attendances for these dates
+    const relevantAtts = (state.attendances || []).filter(a => sessionDates.has(normalizeDateStr(a.ngayDiemDanh)));
+
+    const groupMap = {};
+    state.groups.forEach(g => { groupMap[g.id] = getGroupName(g); });
+
+    // Aggregate by Member
+    const memberStats = {};
+    (state.members || []).filter(m => (m.trangThai || 'active') === 'active').forEach(m => {
+      memberStats[m.id] = {
+        member: m,
+        name: getMemberName(m),
+        toName: groupMap[m.toId] || 'Chưa phân tổ',
+        toId: m.toId || 'unassigned',
+        presentCount: 0,
+        verseCount: 0,
+        quizScore: 0
+      };
+    });
+
+    relevantAtts.forEach(a => {
+      if (memberStats[a.thanhVienId]) {
+        if (a.coMat === 'CO_MAT' || a.coMat === true || a.coMat === '1' || a.coMat === 'TRUE') {
+          memberStats[a.thanhVienId].presentCount++;
+        }
+        if (a.thuocCauGoc === 'THUOC' || a.thuocCauGoc === true || a.thuocCauGoc === '1' || a.thuocCauGoc === 'TRUE') {
+          memberStats[a.thanhVienId].verseCount++;
+        }
+        memberStats[a.thanhVienId].quizScore += (parseInt(a.soCauKT, 10) || 0);
+      }
+    });
+
+    const membersArray = Object.values(memberStats);
+
+    // 1. Top Chuyên Cần (Sorted by presentCount desc)
+    const topAttendance = [...membersArray].sort((a, b) => b.presentCount - a.presentCount).slice(0, 10);
+
+    // 2. Top Vua Đố KT (Sorted by quizScore desc)
+    const topQuiz = [...membersArray].filter(m => m.quizScore > 0).sort((a, b) => b.quizScore - a.quizScore).slice(0, 10);
+
+    // 3. Group Ranking
+    const groupStats = {};
+    state.groups.forEach(g => {
+      groupStats[g.id] = { id: g.id, name: getGroupName(g), totalMembers: 0, totalPresents: 0 };
+    });
+    membersArray.forEach(m => {
+      if (groupStats[m.toId]) {
+        groupStats[m.toId].totalMembers++;
+        groupStats[m.toId].totalPresents += m.presentCount;
+      }
+    });
+
+    const groupRankings = Object.values(groupStats).map(g => {
+      const maxPossible = g.totalMembers * totalSessions;
+      const pct = maxPossible > 0 ? Math.round((g.totalPresents / maxPossible) * 100) : 0;
+      return { ...g, pct };
+    }).sort((a, b) => b.pct - a.pct);
+
+    container.innerHTML = `
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- Box 1: Bảng Vàng Chuyên Cần -->
+        <div class="glass-card rounded-3xl p-5 border border-emerald-500/30 bg-emerald-950/15 space-y-3 shadow-lg">
+          <div class="flex items-center gap-2 pb-2 border-b border-white/10">
+            <span class="material-symbols-outlined text-xl text-emerald-400">workspace_premium</span>
+            <h4 class="text-sm font-bold text-white">🥇 Bảng Vàng Chuyên Cần</h4>
+          </div>
+          <div class="space-y-2">
+            ${topAttendance.length === 0 ? `<div class="text-center py-8 text-xs text-text-secondary italic">Chưa có dữ liệu điểm danh.</div>` : topAttendance.map((m, idx) => {
+              const pct = Math.round((m.presentCount / totalSessions) * 100);
+              const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+              return `
+                <div class="flex items-center justify-between p-2 rounded-xl bg-surface-elevated/70 text-xs">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="font-bold w-6 text-center shrink-0 ${idx < 3 ? 'text-base' : 'text-text-secondary text-[11px] font-mono'}">${medal}</span>
+                    <div class="min-w-0">
+                      <div class="font-bold text-white truncate">${m.name}</div>
+                      <div class="text-[10px] text-text-secondary">${m.toName}</div>
+                    </div>
+                  </div>
+                  <div class="text-right shrink-0 font-mono">
+                    <div class="font-bold text-emerald-400">${m.presentCount}/${totalSessions}</div>
+                    <div class="text-[10px] text-text-secondary">${pct}%</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Box 2: Vua Đố Kinh Thánh -->
+        <div class="glass-card rounded-3xl p-5 border border-amber-500/30 bg-amber-950/15 space-y-3 shadow-lg">
+          <div class="flex items-center gap-2 pb-2 border-b border-white/10">
+            <span class="material-symbols-outlined text-xl text-amber-400">military_tech</span>
+            <h4 class="text-sm font-bold text-white">📖 Vua Đố Kinh Thánh</h4>
+          </div>
+          <div class="space-y-2">
+            ${topQuiz.length === 0 ? `<div class="text-center py-8 text-xs text-text-secondary italic">Chưa ghi nhận số câu Kinh Thánh đáp.</div>` : topQuiz.map((m, idx) => {
+              const medal = idx === 0 ? '👑' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+              return `
+                <div class="flex items-center justify-between p-2 rounded-xl bg-surface-elevated/70 text-xs">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="font-bold w-6 text-center shrink-0 ${idx < 3 ? 'text-base' : 'text-text-secondary text-[11px] font-mono'}">${medal}</span>
+                    <div class="min-w-0">
+                      <div class="font-bold text-white truncate">${m.name}</div>
+                      <div class="text-[10px] text-amber-300/80">${m.toName}</div>
+                    </div>
+                  </div>
+                  <div class="text-right shrink-0 font-mono">
+                    <div class="font-bold text-amber-300 text-sm">${m.quizScore} câu</div>
+                    <div class="text-[10px] text-text-secondary">Thuộc ${m.verseCount} câu gốc</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Box 3: Thi Đua Tổ Nhóm -->
+        <div class="glass-card rounded-3xl p-5 border border-sky-500/30 bg-sky-950/15 space-y-3 shadow-lg">
+          <div class="flex items-center gap-2 pb-2 border-b border-white/10">
+            <span class="material-symbols-outlined text-xl text-sky-400">groups_3</span>
+            <h4 class="text-sm font-bold text-white">👥 Thi Đua Tổ Nhóm</h4>
+          </div>
+          <div class="space-y-2.5">
+            ${groupRankings.length === 0 ? `<div class="text-center py-8 text-xs text-text-secondary italic">Chưa có tổ nhóm.</div>` : groupRankings.map((g, idx) => {
+              const medal = idx === 0 ? '🏆' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+              return `
+                <div class="p-3 rounded-2xl bg-surface-elevated/70 space-y-1.5">
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold text-white flex items-center gap-1.5">
+                      <span>${medal}</span>
+                      <span>${g.name}</span>
+                    </span>
+                    <span class="font-bold text-sky-400 font-mono">${g.pct}%</span>
+                  </div>
+                  <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-sky-500 to-emerald-400 transition-all duration-300" style="width: ${g.pct}%;"></div>
+                  </div>
+                  <div class="flex justify-between items-center text-[10px] text-text-secondary">
+                    <span>${g.totalMembers} ban viên</span>
+                    <span>${g.totalPresents} lượt có mặt</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function copyAttendanceReportZalo() {
+    const select = document.getElementById('report-att-quarter');
+    const qVal = select ? select.value : 'I';
+    const title = state.banNganhTitle || 'BAN THANH TRÁNG';
+    const text = `🏆 BẢNG VÀNG THI ĐUA & CHUYÊN CẦN ${qVal !== 'all' ? 'QUÝ ' + qVal : 'CẢ NĂM'}\n` +
+      `Chi Hội Thủ Thiêm - ${title.toUpperCase()}\n\n` +
+      `🎉 Kính chúc mừng các anh chị em đã xuất sắc giữ vững sự trung tín thờ phượng Chúa và học hỏi Lời Ngài trong quý vừa qua!\n\n` +
+      `📖 "Hãy tập tành sự tin kính; vì sự tập tành thân thể ích lợi ít bề, còn sự tin kính ích cho mọi sự..." (I Ti-mô-thê 4:7-8)\n\n` +
+      `👉 Xem chi tiết bảng điểm và xếp hạng trên Web App Quản Lý Ban Ngành!`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Đã sao chép nội dung bảng vinh danh vào bộ nhớ tạm để dán vào Zalo!', 'success');
+    });
+  }
+
   // =========================================================================
   // 4. GROUPS, FINANCE, VISITATIONS
   // =========================================================================
@@ -2072,42 +2461,73 @@
     }
   }
 
+  function filterFinanceByType(type) {
+    state.filterFinanceType = type;
+    document.querySelectorAll('.fin-tab-btn').forEach(btn => {
+      if (btn.getAttribute('data-type') === type) {
+        btn.className = 'fin-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 transition-all shrink-0';
+      } else {
+        btn.className = 'fin-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 border border-transparent transition-all shrink-0';
+      }
+    });
+    renderFinance();
+  }
+
   function renderFinance() {
     const balEl = document.getElementById('finance-total-balance');
     if (balEl) balEl.textContent = Number(state.kpis.total_balance || 0).toLocaleString('vi-VN') + ' đ';
 
     const container = document.getElementById('finance-transactions-container');
+    const countBadge = document.getElementById('finance-count-badge');
     if (!container) return;
 
-    const list = state.transactions || [];
+    let list = state.transactions || [];
+
+    // Filter by Type
+    if (state.filterFinanceType && state.filterFinanceType !== 'all') {
+      list = list.filter(t => (t.loaiGD || t.LoaiGD || 'THU').toUpperCase() === state.filterFinanceType.toUpperCase());
+    }
+
+    // Filter by Search Query
+    if (state.searchFinance) {
+      const q = state.searchFinance.toLowerCase().trim();
+      list = list.filter(t => 
+        (t.hangMuc || t.HangMuc || t.noidung || '').toLowerCase().includes(q) ||
+        (t.nguoiNopNhan || t.NguoiNopNhan || '').toLowerCase().includes(q) ||
+        (t.ghiChu || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (countBadge) countBadge.textContent = `${list.length} giao dịch`;
+
     if (list.length === 0) {
-      container.innerHTML = `<div class="text-center py-8 text-xs text-text-secondary">Chưa có giao dịch sổ quỹ nào.</div>`;
+      container.innerHTML = `<div class="text-center py-8 text-xs text-text-secondary">Không tìm thấy giao dịch nào.</div>`;
       return;
     }
 
     container.innerHTML = list.map(t => {
       const hm = t.hangMuc || t.HangMuc || t.noidung || 'Giao dịch';
       const st = Number(t.soTien || t.SoTien || 0);
-      const loai = t.loaiGD || t.LoaiGD || 'THU';
+      const loai = (t.loaiGD || t.LoaiGD || 'THU').toUpperCase();
       const ngay = t.ngayGD || t.NgayGD || '';
       const nguoi = t.nguoiNopNhan || t.NguoiNopNhan || '';
 
       return `
-        <div class="p-3.5 rounded-2xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-3">
+        <div class="p-3.5 rounded-2xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-3 hover:border-white/10 transition-colors">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl ${loai === 'THU' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'} flex items-center justify-center font-bold shrink-0">
               <span class="material-symbols-outlined text-lg">${loai === 'THU' ? 'arrow_downward' : 'arrow_upward'}</span>
             </div>
             <div>
               <h4 class="text-xs sm:text-sm font-bold text-white">${hm}</h4>
-              <p class="text-[11px] text-text-secondary">${ngay} &bull; ${nguoi}</p>
+              <p class="text-[11px] text-text-secondary">${ngay} ${nguoi ? '&bull; ' + nguoi : ''}</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-xs sm:text-sm font-bold font-mono ${loai === 'THU' ? 'text-emerald-400' : 'text-rose-400'}">
               ${loai === 'THU' ? '+' : '-'}${st.toLocaleString('vi-VN')} đ
             </span>
-            <button onclick="deleteTransaction('${t.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+            <button onclick="deleteTransaction('${t.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5 transition-colors" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
           </div>
         </div>
       `;
