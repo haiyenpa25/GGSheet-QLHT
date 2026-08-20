@@ -279,11 +279,12 @@
     </section>
 
     <!-- VIEW 2: MEMBERS (BAN VIÊN) -->
-    <section id="view-members" class="app-view hidden space-y-6">
+    <section id="view-members" class="app-view hidden space-y-5">
+      <!-- Header & Action Buttons -->
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h2 class="text-2xl font-bold text-white tracking-tight">Danh Sách Ban Viên</h2>
-          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý danh sách thành viên, ban điều hành, tổ nhóm, ngày sinh và phím tắt liên hệ.</p>
+          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý danh sách thành viên, phân chia tổ nhóm, sắp xếp ABC, lọc nâng cao và gán tổ hàng loạt.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <button onclick="openBulkImportModal()" class="py-2.5 px-4 rounded-full bg-surface-elevated hover:bg-white/10 text-emerald-400 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
@@ -297,29 +298,83 @@
         </div>
       </div>
 
-      <div class="glass-card rounded-2xl p-3 sm:p-4 border border-white/10 flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div class="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto flex-1">
-          <div class="relative w-full sm:w-80">
+      <!-- Advanced Filter & Control Bar -->
+      <div class="glass-card rounded-2xl p-3 sm:p-4 border border-white/10 space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <!-- 1. Search Box -->
+          <div class="relative">
             <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-[18px]">search</span>
             <input
               id="members-search-input"
               oninput="state.searchMember = this.value; renderMembers();"
-              class="glass-input w-full rounded-full pl-10 pr-4 py-2 text-xs"
-              placeholder="Tìm theo tên, mã BV, SĐT, chức vụ..."
+              class="glass-input w-full rounded-xl pl-10 pr-4 py-2 text-xs"
+              placeholder="Tìm tên, SĐT, mã, chức vụ..."
             />
           </div>
 
-          <select id="member-filter-group" onchange="state.filterMemberGroup = this.value; renderMembers();" class="glass-input w-full sm:w-56 rounded-full px-3 py-2 text-xs font-semibold">
-            <option value="all">Tất cả Tổ Nhóm</option>
-          </select>
+          <!-- 2. Group Filter (Tổ Nhóm / Chưa Có Tổ) -->
+          <div>
+            <select id="member-filter-group" onchange="state.filterMemberGroup = this.value; renderMembers();" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold">
+              <option value="all">👥 Tất cả Tổ Nhóm</option>
+              <option value="unassigned">⚠️ CHƯA CÓ TỔ (Chưa phân tổ)</option>
+              <option value="assigned">✅ Đã có tổ</option>
+            </select>
+          </div>
+
+          <!-- 3. Sort Mode (Sắp Xếp ABC Tiếng Việt) -->
+          <div>
+            <select id="member-sort-mode" onchange="state.sortMemberMode = this.value; renderMembers();" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold">
+              <option value="name_asc">🔤 Tên: A ➔ Z (Chuẩn Tiếng Việt)</option>
+              <option value="name_desc">🔤 Tên: Z ➔ A</option>
+              <option value="fullname_asc">🔠 Họ và Tên: A ➔ Z</option>
+              <option value="code_asc">🏷️ Mã Ban Viên (Tăng dần)</option>
+              <option value="dob_desc">🎂 Ngày Sinh (Trẻ tuổi trước)</option>
+              <option value="dob_asc">🎂 Ngày Sinh (Lớn tuổi trước)</option>
+              <option value="group">👥 Gom theo Tổ Nhóm</option>
+            </select>
+          </div>
+
+          <!-- 4. Gender Filter -->
+          <div>
+            <select id="member-filter-gender" onchange="state.filterMemberGender = this.value; renderMembers();" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold">
+              <option value="all">⚧️ Tất cả giới tính</option>
+              <option value="Nam">👨 Nam</option>
+              <option value="Nữ">👩 Nữ</option>
+            </select>
+          </div>
         </div>
 
-        <div class="flex items-center gap-3 shrink-0">
-          <label class="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-white cursor-pointer select-none">
-            <input type="checkbox" id="member-select-all" onchange="toggleSelectAllMembers(this.checked)" class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4" />
-            <span>Chọn tất cả</span>
-          </label>
-          <span id="members-count-badge" class="text-xs text-text-secondary font-semibold shrink-0">Đang tải...</span>
+        <!-- View Mode Switcher & Counter -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-white/5">
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <label class="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-white cursor-pointer select-none bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
+              <input type="checkbox" id="member-select-all" onchange="toggleSelectAllMembers(this.checked)" class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4" />
+              <span class="font-semibold">Chọn tất cả</span>
+            </label>
+            <span id="members-count-badge" class="text-xs text-emerald-400 font-bold">Đang tải...</span>
+          </div>
+
+          <!-- Switch: Cards View vs Table View -->
+          <div class="flex items-center gap-1 bg-surface-elevated/70 p-1 rounded-xl border border-white/10 self-end sm:self-auto">
+            <button
+              id="btn-view-cards"
+              onclick="setMemberViewMode('cards')"
+              class="px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 bg-emerald-600 text-white shadow-sm"
+              title="Xem dạng thẻ trực quan"
+            >
+              <span class="material-symbols-outlined text-[16px]">grid_view</span>
+              <span>Dạng Thẻ</span>
+            </button>
+            <button
+              id="btn-view-table"
+              onclick="setMemberViewMode('table')"
+              class="px-3 py-1 rounded-lg text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1"
+              title="Xem dạng bảng chi tiết danh sách"
+            >
+              <span class="material-symbols-outlined text-[16px]">table_rows</span>
+              <span>Dạng Bảng</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -346,8 +401,39 @@
         </div>
       </div>
 
+      <!-- Cards Grid Container -->
       <div id="members-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div class="col-span-3 text-center py-12 text-xs text-text-secondary">Đang tải danh sách ban viên...</div>
+      </div>
+
+      <!-- Detail Table Container (Dạng bảng chi tiết) -->
+      <div id="members-table-container" class="hidden overflow-hidden rounded-2xl border border-white/10 glass-card">
+        <div class="overflow-x-auto max-h-[70vh]">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-surface-elevated/90 sticky top-0 z-10 text-text-secondary border-b border-white/10 backdrop-blur-md">
+              <tr>
+                <th class="p-3 w-10 text-center">
+                  <input type="checkbox" id="member-table-select-all" onchange="toggleSelectAllMembers(this.checked)" class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4" />
+                </th>
+                <th class="p-3 w-12 text-center">STT</th>
+                <th class="p-3 w-20">Mã BV</th>
+                <th class="p-3">Họ Và Tên</th>
+                <th class="p-3 w-20">Giới Tính</th>
+                <th class="p-3 w-28">Ngày Sinh</th>
+                <th class="p-3 w-36">Tổ Nhóm</th>
+                <th class="p-3 w-28">Chức Vụ</th>
+                <th class="p-3 w-32">Số Điện Thoại</th>
+                <th class="p-3">Địa Chỉ</th>
+                <th class="p-3 w-28 text-center">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="members-table-tbody" class="divide-y divide-white/5 font-sans">
+              <tr>
+                <td colspan="11" class="p-8 text-center text-text-secondary">Đang tải dữ liệu bảng...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 

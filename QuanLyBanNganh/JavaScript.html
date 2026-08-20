@@ -21,6 +21,9 @@
     currentView: 'dashboard',
     searchMember: '',
     filterMemberGroup: 'all',
+    sortMemberMode: 'name_asc',
+    filterMemberGender: 'all',
+    memberViewMode: 'cards',
     selectedMemberIds: new Set(),
     searchFinance: '',
     activeModal: null,
@@ -511,21 +514,122 @@
   // 2. MEMBERS VIEW (BAN VIÊN) & QUICK ACTIONS
   // =========================================================================
 
+  function extractVietnameseFirstName(fullName) {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    return parts[parts.length - 1] || fullName;
+  }
+
+  function parseDateForSort(dateStr) {
+    if (!dateStr) return 0;
+    const parts = String(dateStr).trim().split(/[\/\-\.]/);
+    if (parts.length === 3) {
+      const d = parseInt(parts[0], 10) || 1;
+      const m = parseInt(parts[1], 10) || 1;
+      let y = parseInt(parts[2], 10) || 1900;
+      if (y < 100) y += 1900;
+      return new Date(y, m - 1, d).getTime();
+    }
+    return 0;
+  }
+
   function getFilteredMembers() {
     let list = state.members || [];
-    if (state.filterMemberGroup !== 'all') {
+
+    // 1. Filter by Group
+    if (state.filterMemberGroup === 'unassigned') {
+      list = list.filter(m => !m.toId || m.toId === '' || m.toId === 'null');
+    } else if (state.filterMemberGroup === 'assigned') {
+      list = list.filter(m => m.toId && m.toId !== '' && m.toId !== 'null');
+    } else if (state.filterMemberGroup && state.filterMemberGroup !== 'all') {
       list = list.filter(m => String(m.toId) === String(state.filterMemberGroup));
     }
+
+    // 2. Filter by Gender
+    if (state.filterMemberGender && state.filterMemberGender !== 'all') {
+      list = list.filter(m => String(m.gioiTinh || 'Nam').toLowerCase() === state.filterMemberGender.toLowerCase());
+    }
+
+    // 3. Search query
     if (state.searchMember) {
-      const q = state.searchMember.toLowerCase();
+      const q = state.searchMember.toLowerCase().trim();
       list = list.filter(m => 
         getMemberName(m).toLowerCase().includes(q) ||
         getMemberCode(m).toLowerCase().includes(q) ||
         getMemberPhone(m).toLowerCase().includes(q) ||
-        getMemberRole(m).toLowerCase().includes(q)
+        getMemberRole(m).toLowerCase().includes(q) ||
+        getMemberAddress(m).toLowerCase().includes(q)
       );
     }
+
+    // 4. Sort Algorithm (Chuẩn tiếng Việt với Intl.Collator)
+    const collator = new Intl.Collator('vi', { sensitivity: 'base', numeric: true });
+    const sortMode = state.sortMemberMode || 'name_asc';
+
+    list = [...list].sort((a, b) => {
+      const nameA = getMemberName(a);
+      const nameB = getMemberName(b);
+      const firstNameA = extractVietnameseFirstName(nameA);
+      const firstNameB = extractVietnameseFirstName(nameB);
+
+      switch (sortMode) {
+        case 'name_asc': {
+          const cmp = collator.compare(firstNameA, firstNameB);
+          return cmp !== 0 ? cmp : collator.compare(nameA, nameB);
+        }
+        case 'name_desc': {
+          const cmp = collator.compare(firstNameB, firstNameA);
+          return cmp !== 0 ? cmp : collator.compare(nameB, nameA);
+        }
+        case 'fullname_asc':
+          return collator.compare(nameA, nameB);
+        case 'code_asc':
+          return collator.compare(getMemberCode(a), getMemberCode(b));
+        case 'dob_desc':
+          return parseDateForSort(b.ngaySinh || b.NgaySinh) - parseDateForSort(a.ngaySinh || a.NgaySinh);
+        case 'dob_asc':
+          return parseDateForSort(a.ngaySinh || a.NgaySinh) - parseDateForSort(b.ngaySinh || b.NgaySinh);
+        case 'group': {
+          const gA = a.toId || 'ZZZ';
+          const gB = b.toId || 'ZZZ';
+          const gCmp = collator.compare(gA, gB);
+          return gCmp !== 0 ? gCmp : collator.compare(firstNameA, firstNameB);
+        }
+        default:
+          return 0;
+      }
+    });
+
     return list;
+  }
+
+  function setMemberViewMode(mode) {
+    state.memberViewMode = mode;
+    const btnCards = document.getElementById('btn-view-cards');
+    const btnTable = document.getElementById('btn-view-table');
+    const gridEl = document.getElementById('members-grid-container');
+    const tableEl = document.getElementById('members-table-container');
+
+    if (mode === 'cards') {
+      if (btnCards) {
+        btnCards.className = 'px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 bg-emerald-600 text-white shadow-sm';
+      }
+      if (btnTable) {
+        btnTable.className = 'px-3 py-1 rounded-lg text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1';
+      }
+      if (gridEl) gridEl.classList.remove('hidden');
+      if (tableEl) tableEl.classList.add('hidden');
+    } else {
+      if (btnCards) {
+        btnCards.className = 'px-3 py-1 rounded-lg text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1';
+      }
+      if (btnTable) {
+        btnTable.className = 'px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 bg-emerald-600 text-white shadow-sm';
+      }
+      if (gridEl) gridEl.classList.add('hidden');
+      if (tableEl) tableEl.classList.remove('hidden');
+    }
+    renderMembers();
   }
 
   function renderMembers() {
@@ -541,7 +645,15 @@
 
     const groupOpts = (state.groups || []).map(g => `<option value="${getGroupName(g)}">${getGroupName(g)}</option>`).join('');
 
-    if (fGroup) fGroup.innerHTML = `<option value="all">Tất cả Tổ Nhóm</option>` + (state.groups || []).map(g => `<option value="${g.id}">${getGroupName(g)}</option>`).join('');
+    if (fGroup && fGroup.options.length <= 3) {
+      let currentVal = state.filterMemberGroup || 'all';
+      fGroup.innerHTML = `
+        <option value="all">👥 Tất cả Tổ Nhóm</option>
+        <option value="unassigned">⚠️ CHƯA CÓ TỔ (Chưa phân tổ)</option>
+        <option value="assigned">✅ Đã có tổ</option>
+      ` + (state.groups || []).map(g => `<option value="${g.id}">📍 ${getGroupName(g)}</option>`).join('');
+      fGroup.value = currentVal;
+    }
     if (mGroup) mGroup.innerHTML = `<option value="">-- Không thuộc tổ --</option>` + (state.groups || []).map(g => `<option value="${g.id}">${getGroupName(g)}</option>`).join('');
     if (attFGroup) attFGroup.innerHTML = `<option value="all">Tất cả tổ nhóm</option>` + (state.groups || []).map(g => `<option value="${g.id}">${getGroupName(g)}</option>`).join('');
     if (schToGroup) schToGroup.innerHTML = `<option value="BĐH">BĐH (Ban Điều Hành)</option><option value="Nam ban">Nam ban</option><option value="Nữ ban">Nữ ban</option>` + groupOpts;
@@ -555,108 +667,179 @@
     if (schHdct) schHdct.innerHTML = memberOptions;
     if (schDoKt) schDoKt.innerHTML = memberOptions;
 
-    const container = document.getElementById('members-grid-container');
-    if (!container) return;
-
-    if (list.length === 0) {
-      container.innerHTML = `
-        <div class="col-span-3 glass-card rounded-3xl p-12 text-center text-xs text-text-secondary space-y-3">
-          <span class="material-symbols-outlined text-4xl text-emerald-400/60">person</span>
-          <p class="font-medium text-sm text-white">Chưa có ban viên nào</p>
-          <p>Bấm nút <strong>"+ Thêm Ban Viên Mới"</strong> để tạo hồ sơ.</p>
-        </div>
-      `;
-      return;
-    }
+    const gridContainer = document.getElementById('members-grid-container');
+    const tableTbody = document.getElementById('members-table-tbody');
 
     const groupMap = {};
     state.groups.forEach(g => { groupMap[g.id] = getGroupName(g); });
 
-    container.innerHTML = list.map(m => {
-      const name = getMemberName(m);
-      const phone = getMemberPhone(m);
-      const cleanPhone = cleanPhoneNumber(phone);
-      const role = getMemberRole(m);
-      const code = getMemberCode(m);
-      const address = getMemberAddress(m);
-      const dob = m.ngaySinh || m.NgaySinh || '';
-      const toName = groupMap[m.toId] || 'Chưa phân tổ';
-      const isFemale = (m.gioiTinh === 'Nữ' || m.gioiTinh === 'Nu');
-      const isSelected = state.selectedMemberIds && state.selectedMemberIds.has(String(m.id));
+    // Sync Select All Checkboxes
+    const allSelected = list.length > 0 && list.every(m => state.selectedMemberIds && state.selectedMemberIds.has(String(m.id)));
+    const selectAllEl = document.getElementById('member-select-all');
+    const tableSelectAllEl = document.getElementById('member-table-select-all');
+    if (selectAllEl) selectAllEl.checked = allSelected;
+    if (tableSelectAllEl) tableSelectAllEl.checked = allSelected;
 
-      return `
-        <div class="glass-card rounded-3xl p-5 border ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-950/20' : 'border-white/10 hover:border-emerald-500/40'} flex flex-col justify-between shadow-lg transition-all duration-200 group">
-          <div>
-            <div class="flex justify-between items-start gap-2 mb-3">
-              <div class="flex items-center gap-3 min-w-0">
-                <input
-                  type="checkbox"
-                  onchange="toggleSelectMember('${m.id}', this.checked)"
-                  ${isSelected ? 'checked' : ''}
-                  class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4 shrink-0 cursor-pointer"
-                  title="Chọn để gán tổ"
-                />
-                <div class="w-10 h-10 rounded-2xl ${isFemale ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'} border flex items-center justify-center font-bold text-sm shrink-0">
-                  <span class="material-symbols-outlined text-lg">${isFemale ? 'face_3' : 'person'}</span>
-                </div>
-                <div class="min-w-0">
-                  <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-white/5 text-emerald-400 border border-white/10 inline-block">${code}</span>
-                  <h3 class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors truncate">${name}</h3>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-1 shrink-0">
-                <button onclick="openEditMemberModal('${m.id}')" class="p-1.5 text-text-secondary hover:text-white rounded-full hover:bg-white/5 transition-colors" title="Sửa"><span class="material-symbols-outlined text-[16px]">edit</span></button>
-                <button onclick="deleteMember('${m.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5 transition-colors" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
-              </div>
-            </div>
-
-            <div class="space-y-1.5 text-[11px] text-text-secondary pt-1">
-              <div class="flex items-center justify-between">
-                <span class="text-text-secondary/70">Chức vụ:</span>
-                <span class="text-white font-semibold">${role}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-text-secondary/70">Tổ nhóm:</span>
-                <span class="text-emerald-400 font-medium">${toName}</span>
-              </div>
-              ${dob ? `
-                <div class="flex items-center justify-between">
-                  <span class="text-text-secondary/70">Ngày sinh:</span>
-                  <span class="text-white font-mono">${dob}</span>
-                </div>
-              ` : ''}
-              ${address ? `
-                <div class="truncate">
-                  <span class="text-text-secondary/70">Địa chỉ:</span>
-                  <span class="text-white">${address}</span>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-
-          <!-- Quick Action Buttons Toolbar -->
-          <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-1.5">
-            ${cleanPhone ? `
-              <a href="tel:${cleanPhone}" class="flex-1 py-1.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Gọi điện">
-                <span class="material-symbols-outlined text-sm">call</span>
-                <span>Gọi</span>
-              </a>
-              <a href="https://zalo.me/${cleanPhone}" target="_blank" class="flex-1 py-1.5 rounded-xl bg-sky-600/20 hover:bg-sky-600/40 text-sky-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Mở Zalo">
-                <span class="material-symbols-outlined text-sm">chat</span>
-                <span>Zalo</span>
-              </a>
-            ` : `
-              <span class="text-[10px] text-text-secondary italic">Chưa có số điện thoại</span>
-            `}
-            <button onclick="openQuickVisitModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-pink-500/20 text-pink-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Tạo phiếu thăm viếng">
-              <span class="material-symbols-outlined text-sm">volunteer_activism</span>
-              <span>Thăm</span>
-            </button>
-          </div>
+    if (list.length === 0) {
+      const emptyHtml = `
+        <div class="col-span-3 glass-card rounded-3xl p-12 text-center text-xs text-text-secondary space-y-3">
+          <span class="material-symbols-outlined text-4xl text-emerald-400/60">person_search</span>
+          <p class="font-medium text-sm text-white">Không tìm thấy ban viên nào phù hợp</p>
+          <p>Thử đổi bộ lọc hoặc bấm nút <strong>"+ Thêm Ban Viên"</strong> để tạo mới.</p>
         </div>
       `;
-    }).join('');
+      if (gridContainer) gridContainer.innerHTML = emptyHtml;
+      if (tableTbody) tableTbody.innerHTML = `<tr><td colspan="11" class="p-8 text-center text-text-secondary">Không tìm thấy ban viên nào</td></tr>`;
+      updateBatchActionBar();
+      return;
+    }
+
+    // 1. Render Cards View (Grid)
+    if (gridContainer) {
+      gridContainer.innerHTML = list.map(m => {
+        const name = getMemberName(m);
+        const phone = getMemberPhone(m);
+        const cleanPhone = cleanPhoneNumber(phone);
+        const role = getMemberRole(m);
+        const code = getMemberCode(m);
+        const address = getMemberAddress(m);
+        const dob = m.ngaySinh || m.NgaySinh || '';
+        const toName = groupMap[m.toId] || null;
+        const isFemale = (m.gioiTinh === 'Nữ' || m.gioiTinh === 'Nu');
+        const isSelected = state.selectedMemberIds && state.selectedMemberIds.has(String(m.id));
+
+        return `
+          <div class="glass-card rounded-3xl p-5 border ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-950/20' : 'border-white/10 hover:border-emerald-500/40'} flex flex-col justify-between shadow-lg transition-all duration-200 group">
+            <div>
+              <div class="flex justify-between items-start gap-2 mb-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <input
+                    type="checkbox"
+                    onchange="toggleSelectMember('${m.id}', this.checked)"
+                    ${isSelected ? 'checked' : ''}
+                    class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4 shrink-0 cursor-pointer"
+                    title="Chọn để gán tổ"
+                  />
+                  <div class="w-10 h-10 rounded-2xl ${isFemale ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'} border flex items-center justify-center font-bold text-sm shrink-0">
+                    <span class="material-symbols-outlined text-lg">${isFemale ? 'face_3' : 'person'}</span>
+                  </div>
+                  <div class="min-w-0">
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-white/5 text-emerald-400 border border-white/10 inline-block">${code}</span>
+                    <h3 class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors truncate">${name}</h3>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1 shrink-0">
+                  <button onclick="openEditMemberModal('${m.id}')" class="p-1.5 text-text-secondary hover:text-white rounded-full hover:bg-white/5 transition-colors" title="Sửa"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                  <button onclick="deleteMember('${m.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5 transition-colors" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+                </div>
+              </div>
+
+              <div class="space-y-1.5 text-[11px] text-text-secondary pt-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-text-secondary/70">Chức vụ:</span>
+                  <span class="text-white font-semibold">${role}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-text-secondary/70">Tổ nhóm:</span>
+                  ${toName ? `<span class="text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">${toName}</span>` : `<span class="text-amber-400 font-bold px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30">⚠️ Chưa có tổ</span>`}
+                </div>
+                ${dob ? `
+                  <div class="flex items-center justify-between">
+                    <span class="text-text-secondary/70">Ngày sinh:</span>
+                    <span class="text-white font-mono">${dob}</span>
+                  </div>
+                ` : ''}
+                ${address ? `
+                  <div class="truncate">
+                    <span class="text-text-secondary/70">Địa chỉ:</span>
+                    <span class="text-white">${address}</span>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Quick Action Buttons Toolbar -->
+            <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-1.5">
+              ${cleanPhone ? `
+                <a href="tel:${cleanPhone}" class="flex-1 py-1.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Gọi điện">
+                  <span class="material-symbols-outlined text-sm">call</span>
+                  <span>Gọi</span>
+                </a>
+                <a href="https://zalo.me/${cleanPhone}" target="_blank" class="flex-1 py-1.5 rounded-xl bg-sky-600/20 hover:bg-sky-600/40 text-sky-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Mở Zalo">
+                  <span class="material-symbols-outlined text-sm">chat</span>
+                  <span>Zalo</span>
+                </a>
+              ` : `
+                <span class="text-[10px] text-text-secondary italic">Chưa có số điện thoại</span>
+              `}
+              <button onclick="openQuickVisitModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-pink-500/20 text-pink-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Tạo phiếu thăm viếng">
+                <span class="material-symbols-outlined text-sm">volunteer_activism</span>
+                <span>Thăm</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 2. Render Detail Table View (Bảng chi tiết)
+    if (tableTbody) {
+      tableTbody.innerHTML = list.map((m, idx) => {
+        const name = getMemberName(m);
+        const phone = getMemberPhone(m);
+        const cleanPhone = cleanPhoneNumber(phone);
+        const role = getMemberRole(m);
+        const code = getMemberCode(m);
+        const address = getMemberAddress(m);
+        const dob = m.ngaySinh || m.NgaySinh || '--';
+        const toName = groupMap[m.toId] || null;
+        const gender = m.gioiTinh || 'Nam';
+        const isFemale = (gender === 'Nữ' || gender === 'Nu');
+        const isSelected = state.selectedMemberIds && state.selectedMemberIds.has(String(m.id));
+
+        return `
+          <tr class="hover:bg-white/5 transition-colors ${isSelected ? 'bg-emerald-950/30' : ''}">
+            <td class="p-3 text-center">
+              <input
+                type="checkbox"
+                onchange="toggleSelectMember('${m.id}', this.checked)"
+                ${isSelected ? 'checked' : ''}
+                class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4 cursor-pointer"
+              />
+            </td>
+            <td class="p-3 text-center text-text-secondary font-mono">${idx + 1}</td>
+            <td class="p-3 font-mono font-bold text-emerald-400">${code}</td>
+            <td class="p-3 font-bold text-white whitespace-nowrap">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full ${isFemale ? 'bg-pink-500/20 text-pink-400' : 'bg-emerald-500/20 text-emerald-400'} flex items-center justify-center text-xs">
+                  <span class="material-symbols-outlined text-[14px]">${isFemale ? 'face_3' : 'person'}</span>
+                </span>
+                <span>${name}</span>
+              </div>
+            </td>
+            <td class="p-3 whitespace-nowrap">${isFemale ? '👩 Nữ' : '👨 Nam'}</td>
+            <td class="p-3 font-mono text-text-secondary whitespace-nowrap">${dob}</td>
+            <td class="p-3 whitespace-nowrap">
+              ${toName ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">${toName}</span>` : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">⚠️ Chưa có tổ</span>`}
+            </td>
+            <td class="p-3 text-text-secondary whitespace-nowrap">${role}</td>
+            <td class="p-3 font-mono text-emerald-400 whitespace-nowrap">
+              ${cleanPhone ? `<a href="tel:${cleanPhone}" class="hover:underline flex items-center gap-1"><span class="material-symbols-outlined text-xs">call</span>${phone}</a>` : '<span class="text-text-secondary/50 italic">--</span>'}
+            </td>
+            <td class="p-3 text-text-secondary max-w-xs truncate" title="${address}">${address || '--'}</td>
+            <td class="p-3 text-center whitespace-nowrap">
+              <div class="flex items-center justify-center gap-1">
+                ${cleanPhone ? `<a href="https://zalo.me/${cleanPhone}" target="_blank" class="p-1 text-sky-400 hover:bg-white/10 rounded-lg" title="Nhắn Zalo"><span class="material-symbols-outlined text-[16px]">chat</span></a>` : ''}
+                <button onclick="openQuickVisitModal('${m.id}')" class="p-1 text-pink-400 hover:bg-white/10 rounded-lg" title="Lập phiếu thăm viếng"><span class="material-symbols-outlined text-[16px]">volunteer_activism</span></button>
+                <button onclick="openEditMemberModal('${m.id}')" class="p-1 text-text-secondary hover:text-white hover:bg-white/10 rounded-lg" title="Sửa"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                <button onclick="deleteMember('${m.id}')" class="p-1 text-text-secondary hover:text-rose-400 hover:bg-white/10 rounded-lg" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
 
     updateBatchActionBar();
   }
