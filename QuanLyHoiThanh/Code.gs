@@ -291,7 +291,7 @@ function sheetInsert(sheetName, record) {
 
 function sheetUpdate(sheetName, id, updates) {
   const lock = LockService.getScriptLock();
-  try { lock.waitLock(6000); } catch(e) {}
+  try { lock.waitLock(5000); } catch(e) {}
   try {
     const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(sheetName);
@@ -311,13 +311,16 @@ function sheetUpdate(sheetName, id, updates) {
     if (rowIndex === -1) throw new Error('Không tìm thấy bản ghi ID: ' + id);
 
     const currentRow = data[rowIndex - 1];
+    const updatedObj = {};
     const newRow = headers.map((h, idx) => {
-      if (updates[h] !== undefined) return updates[h];
-      return currentRow[idx];
+      let val = currentRow[idx];
+      if (updates[h] !== undefined) val = updates[h];
+      updatedObj[h] = val;
+      return val;
     });
 
     sheet.getRange(rowIndex, 1, 1, headers.length).setValues([newRow]);
-    return { id, ...updates };
+    return { ...updatedObj, id };
   } finally {
     try { lock.releaseLock(); } catch(e) {}
   }
@@ -325,7 +328,7 @@ function sheetUpdate(sheetName, id, updates) {
 
 function sheetDelete(sheetName, id) {
   const lock = LockService.getScriptLock();
-  try { lock.waitLock(6000); } catch(e) {}
+  try { lock.waitLock(5000); } catch(e) {}
   try {
     const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(sheetName);
@@ -334,7 +337,7 @@ function sheetDelete(sheetName, id) {
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
         sheet.deleteRow(i + 1);
-        return true;
+        return { success: true, id: id };
       }
     }
     throw new Error('Không tìm thấy bản ghi để xóa (ID: ' + id + ')');
@@ -356,10 +359,16 @@ function apiGetInitialData() {
     const churches = sheetFindAll(SHEET_NAMES.HOI_THANH);
     const ministries = sheetFindAll(SHEET_NAMES.BAN_NGANH);
 
+    const ministryCountByChurch = new Map();
+    ministries.forEach(m => {
+      const k = String(m.hoiThanhId);
+      ministryCountByChurch.set(k, (ministryCountByChurch.get(k) || 0) + 1);
+    });
+
     const churchMap = {};
     churches.forEach(c => {
       churchMap[c.id] = c.tenHT;
-      c.soLuongBanNganh = ministries.filter(m => String(m.hoiThanhId) === String(c.id)).length;
+      c.soLuongBanNganh = ministryCountByChurch.get(String(c.id)) || 0;
     });
 
     ministries.forEach(m => {

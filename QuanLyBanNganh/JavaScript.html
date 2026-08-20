@@ -79,6 +79,29 @@
   }
 
   // =========================================================================
+  // HIGH-PERFORMANCE IN-MEMORY STATE HELPERS
+  // =========================================================================
+  function upsertById(collection, record) {
+    if (!collection || !record) return;
+    const recId = String(record.id || record.ID || '');
+    const index = collection.findIndex(item => String(item.id || item.ID || '') === recId);
+    if (index === -1) {
+      collection.unshift(record);
+    } else {
+      collection[index] = { ...collection[index], ...record };
+    }
+  }
+
+  function removeById(collection, id) {
+    if (!collection || id === undefined || id === null) return;
+    const targetId = String(id);
+    const index = collection.findIndex(item => String(item.id || item.ID || '') === targetId);
+    if (index !== -1) {
+      collection.splice(index, 1);
+    }
+  }
+
+  // =========================================================================
   // GAS RUNNER WITH FALLBACK
   // =========================================================================
   function runGAS(functionName) {
@@ -211,7 +234,7 @@
       if (res && res.success && res.data) {
         applyData(res.data);
         saveToLocalCache(res.data);
-        renderAll();
+        renderCurrentView();
         if (showLoader) showToast('Đồng bộ dữ liệu thành công!', 'success');
       } else {
         if (!state.members.length) {
@@ -253,6 +276,41 @@
     });
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    renderCurrentView();
+  }
+
+  function renderCurrentView() {
+    switch (state.currentView) {
+      case 'dashboard':
+        renderDashboard();
+        renderBirthdays();
+        renderAbsenceWarnings();
+        break;
+      case 'members':
+        renderMembers();
+        break;
+      case 'groups':
+        renderGroups();
+        break;
+      case 'attendance':
+        renderAttendance();
+        break;
+      case 'finance':
+        renderFinance();
+        break;
+      case 'schedule':
+        renderSchedule();
+        break;
+      case 'visitations':
+        renderVisitations();
+        break;
+      case 'settings':
+        renderSettings();
+        break;
+      default:
+        renderDashboard();
+        break;
+    }
   }
 
   function renderAll() {
@@ -918,8 +976,16 @@
       const res = await runGAS('apiBatchAssignGroup', memberIds, toId, state.activeSheetId);
       if (res && res.success) {
         showToast(res.message || `Đã gán ${memberIds.length} ban viên vào ${groupName}!`, 'success');
+        const idSet = new Set(memberIds.map(String));
+        (state.members || []).forEach(m => {
+          if (idSet.has(String(m.id))) {
+            m.toId = toId;
+          }
+        });
         clearSelectedMembers();
-        await refreshData(true);
+        renderMembers();
+        renderGroups();
+        renderDashboard();
       } else {
         showToast(res.message || 'Lỗi khi gán tổ nhóm', 'error');
       }
@@ -1007,7 +1073,12 @@
       if (res && res.success) {
         showToast(res.message || 'Lưu ban viên thành công!', 'success');
         closeModal('modal-member');
-        await refreshData(false);
+        const saved = (res.data && res.data.id) ? res.data : { ...payload, id: (res.data && res.data.id) || payload.id || ('id_' + Date.now()) };
+        upsertById(state.members, saved);
+        state.kpis.total_members = state.members.length;
+        state.kpis.active_members = state.members.filter(m => (m.trangThai || 'active') === 'active').length;
+        renderMembers();
+        renderDashboard();
       } else {
         showToast(res.message || 'Lỗi khi lưu ban viên', 'error');
       }
@@ -1028,7 +1099,7 @@
     if (groupSelect) {
       let opts = '<option value="">Tự động nhận diện / Không chỉ định</option>';
       (state.groups || []).forEach(g => {
-        opts += `<option value="${g.id}">${g.tenTo || g.name}</option>`;
+        opts += `<option value="${g.id}">${g.tenTo || g.name}</option>';
       });
       groupSelect.innerHTML = opts;
     }
@@ -1100,20 +1171,17 @@
     return parsed;
   }
 
-  function previewBulkMembers() {
+  function handlePreviewBulkInput() {
     const raw = document.getElementById('bulk-members-input').value.trim();
-    if (!raw) {
-      showToast('Vui lòng dán dữ liệu vào ô trước', 'warning');
-      return;
-    }
-
     const list = parseBulkMembersText(raw);
     const container = document.getElementById('bulk-preview-container');
     const tbody = document.getElementById('bulk-preview-tbody');
     const countEl = document.getElementById('bulk-preview-count');
 
+    if (!container || !tbody || !countEl) return;
+
     if (list.length === 0) {
-      showToast('Không thể nhận diện dữ liệu', 'error');
+      container.classList.add('hidden');
       return;
     }
 
@@ -1165,7 +1233,12 @@
       const res = await runGAS('apiDeleteMember', id, state.activeSheetId);
       if (res && res.success) {
         showToast('Đã xóa ban viên!', 'info');
-        await refreshData(false);
+        removeById(state.members, id);
+        if (state.selectedMemberIds) state.selectedMemberIds.delete(String(id));
+        state.kpis.total_members = state.members.length;
+        state.kpis.active_members = state.members.filter(m => (m.trangThai || 'active') === 'active').length;
+        renderMembers();
+        renderDashboard();
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -1299,7 +1372,17 @@
       state.liveAttendance[memberId] = { coMat: false, thuocCauGoc: false, ghiChu: '' };
     }
     state.liveAttendance[memberId][field] = val;
-    renderAttendanceList();
+
+    // Tính toán lại thanh thống kê KPI ngay lập tức mà không vẽ lại toàn bộ DOM
+    const list = getFilteredAttendanceMembers();
+    let presentCount = 0;
+    let verseCount = 0;
+    list.forEach(m => {
+      const att = state.liveAttendance[m.id] || { coMat: false, thuocCauGoc: false };
+      if (att.coMat) presentCount++;
+      if (att.thuocCauGoc) verseCount++;
+    });
+    updateAttendanceStats(presentCount, verseCount, list.length);
   }
 
   function handleLiveAttendanceNote(memberId, val) {
@@ -1361,7 +1444,8 @@
       const res = await runGAS('apiSaveAttendance', payload, state.activeSheetId);
       if (res && res.success) {
         showToast(res.message || 'Đã lưu điểm danh thành công!', 'success');
-        await refreshData(false);
+        state.kpis.total_attendance_records = (state.kpis.total_attendance_records || 0) + records.length;
+        renderDashboard();
       } else {
         showToast(res.message || 'Lỗi lưu điểm danh', 'error');
       }
@@ -1465,7 +1549,12 @@
       if (res && res.success) {
         showToast('Lưu tổ nhóm thành công!', 'success');
         closeModal('modal-group');
-        await refreshData(false);
+        const saved = (res.data && res.data.id) ? res.data : { ...payload, id: (res.data && res.data.id) || payload.id || ('id_' + Date.now()) };
+        upsertById(state.groups, saved);
+        state.kpis.group_count = state.groups.length;
+        renderGroups();
+        renderMembers();
+        renderDashboard();
       } else {
         showToast(res.message || 'Lỗi lưu tổ', 'error');
       }
@@ -1483,7 +1572,11 @@
       const res = await runGAS('apiDeleteGroup', id, state.activeSheetId);
       if (res && res.success) {
         showToast('Đã xóa tổ nhóm!', 'info');
-        await refreshData(false);
+        removeById(state.groups, id);
+        state.kpis.group_count = state.groups.length;
+        renderGroups();
+        renderMembers();
+        renderDashboard();
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -1561,7 +1654,19 @@
       if (res && res.success) {
         showToast('Lưu phiếu thành công!', 'success');
         closeModal('modal-transaction');
-        await refreshData(false);
+        const saved = (res.data && res.data.id) ? res.data : { ...payload, id: (res.data && res.data.id) || ('id_' + Date.now()), ngayGD: new Date().toLocaleDateString('vi-VN') };
+        upsertById(state.transactions, saved);
+
+        let totalBalance = 0;
+        state.transactions.forEach(t => {
+          const amount = Number(t.soTien) || 0;
+          const type = (t.loaiGD || '').toUpperCase();
+          if (type === 'THU') totalBalance += amount;
+          else if (type === 'CHI') totalBalance -= amount;
+        });
+        state.kpis.total_balance = totalBalance;
+        renderFinance();
+        renderDashboard();
       } else {
         showToast(res.message || 'Lỗi lưu giao dịch', 'error');
       }
@@ -1579,7 +1684,17 @@
       const res = await runGAS('apiDeleteTransaction', id, state.activeSheetId);
       if (res && res.success) {
         showToast('Đã xóa giao dịch!', 'info');
-        await refreshData(false);
+        removeById(state.transactions, id);
+        let totalBalance = 0;
+        state.transactions.forEach(t => {
+          const amount = Number(t.soTien) || 0;
+          const type = (t.loaiGD || '').toUpperCase();
+          if (type === 'THU') totalBalance += amount;
+          else if (type === 'CHI') totalBalance -= amount;
+        });
+        state.kpis.total_balance = totalBalance;
+        renderFinance();
+        renderDashboard();
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -1904,7 +2019,9 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
       if (res && res.success) {
         showToast('Lưu buổi sinh hoạt thành công!', 'success');
         closeModal('modal-schedule');
-        await refreshData(false);
+        const saved = (res.data && res.data.id) ? res.data : { ...payload, id: (res.data && res.data.id) || payload.id || ('sch_' + Date.now()) };
+        upsertById(state.schedules, saved);
+        renderSchedule();
       } else {
         showToast(res.message || 'Lỗi lưu lịch', 'error');
       }
@@ -1922,7 +2039,8 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
       const res = await runGAS('apiDeleteSchedule', id, state.activeSheetId);
       if (res && res.success) {
         showToast('Đã xóa buổi sinh hoạt!', 'info');
-        await refreshData(false);
+        removeById(state.schedules, id);
+        renderSchedule();
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -1955,7 +2073,7 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
       if (res && res.success) {
         showToast(res.message || `Đã sinh 52 buổi nhóm năm ${year} thành công!`, 'success');
         closeModal('modal-generate-year');
-        await refreshData(false);
+        await refreshData(true);
       } else {
         showToast(res.message || 'Lỗi sinh lịch', 'error');
       }
@@ -2047,7 +2165,17 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
       if (res && res.success) {
         showToast('Lưu chủ đề năm và 4 quý thành công!', 'success');
         closeModal('modal-themes');
-        await refreshData(false);
+        state.themes = themesList;
+        const yearTheme = themesList.find(t => t.quy === 'NAM') || themesList[0];
+        if (yearTheme) {
+          state.theme = {
+            chuDe: yearTheme.chuDe,
+            cauGoc: yearTheme.cauGoc,
+            noiDungCauGoc: yearTheme.noiDungCauGoc
+          };
+        }
+        renderSchedule();
+        renderDashboard();
       } else {
         showToast(res.message || 'Lỗi lưu chủ đề', 'error');
       }
@@ -2138,7 +2266,11 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
       if (res && res.success) {
         showToast('Đã lưu phiếu thăm viếng!', 'success');
         closeModal('modal-visitation');
-        await refreshData(false);
+        const saved = (res.data && res.data.id) ? res.data : { ...payload, id: (res.data && res.data.id) || payload.id || ('vis_' + Date.now()) };
+        upsertById(state.visits, saved);
+        state.kpis.total_visits = state.visits.length;
+        renderVisitations();
+        renderDashboard();
       } else {
         showToast(res.message || 'Lỗi lưu phiếu thăm', 'error');
       }
@@ -2156,7 +2288,10 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
       const res = await runGAS('apiDeleteVisitation', id, state.activeSheetId);
       if (res && res.success) {
         showToast('Đã xóa phiếu thăm viếng!', 'info');
-        await refreshData(false);
+        removeById(state.visits, id);
+        state.kpis.total_visits = state.visits.length;
+        renderVisitations();
+        renderDashboard();
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }

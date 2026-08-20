@@ -17,6 +17,29 @@
     activeModal: null
   };
 
+  // =========================================================================
+  // HIGH-PERFORMANCE IN-MEMORY STATE HELPERS
+  // =========================================================================
+  function upsertById(collection, record) {
+    if (!collection || !record) return;
+    const recId = String(record.id || record.ID || '');
+    const index = collection.findIndex(item => String(item.id || item.ID || '') === recId);
+    if (index === -1) {
+      collection.unshift(record);
+    } else {
+      collection[index] = { ...collection[index], ...record };
+    }
+  }
+
+  function removeById(collection, id) {
+    if (!collection || id === undefined || id === null) return;
+    const targetId = String(id);
+    const index = collection.findIndex(item => String(item.id || item.ID || '') === targetId);
+    if (index !== -1) {
+      collection.splice(index, 1);
+    }
+  }
+
   function runGAS(functionName) {
     var args = Array.prototype.slice.call(arguments, 1);
     return new Promise(function(resolve) {
@@ -330,7 +353,11 @@
       if (res && res.success) {
         showToast(res.message || 'Lưu Hội Thánh thành công!', 'success');
         closeModal('modal-church');
-        await initApp();
+        const saved = (res.data && res.data.id) ? res.data : { ...payload, id: (res.data && res.data.id) || payload.id || ('HT_' + Date.now()) };
+        upsertById(state.churches, saved);
+        state.kpis.total_churches = state.churches.length;
+        renderChurches();
+        renderDashboard();
       } else {
         showToast(res.message || 'Lỗi khi lưu Hội Thánh', 'error');
       }
@@ -348,7 +375,10 @@
       const res = await runGAS('apiDeleteChurch', id);
       if (res && res.success) {
         showToast('Đã xóa Hội Thánh!', 'info');
-        await initApp();
+        removeById(state.churches, id);
+        state.kpis.total_churches = state.churches.length;
+        renderChurches();
+        renderDashboard();
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -535,7 +565,12 @@
       if (res && res.success) {
         showToast(res.message || 'Lưu Ban Ngành thành công!', 'success');
         closeModal('modal-ministry');
-        await initApp();
+        const church = (state.churches || []).find(c => String(c.id) === String(payload.hoiThanhId));
+        const saved = (res.data && res.data.id) ? res.data : { ...payload, id: (res.data && res.data.id) || payload.id || ('BN_' + Date.now()), tenHoiThanh: church ? church.tenHT : '' };
+        upsertById(state.ministries, saved);
+        state.kpis.total_ministries = state.ministries.length;
+        renderMinistries();
+        renderDashboard();
       } else {
         showToast(res.message || 'Lỗi lưu Ban Ngành', 'error');
       }
@@ -553,7 +588,10 @@
       const res = await runGAS('apiDeleteMinistry', id);
       if (res && res.success) {
         showToast('Đã xóa Ban Ngành', 'info');
-        await initApp();
+        removeById(state.ministries, id);
+        state.kpis.total_ministries = state.ministries.length;
+        renderMinistries();
+        renderDashboard();
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -575,7 +613,15 @@
       const res = await runGAS('apiCreateMinistrySheet', id);
       if (res && res.success) {
         showToast(res.message || 'Tạo Sheet thành công!', 'success');
-        await initApp();
+        if (res.data && res.data.sheetId) {
+          m.spreadsheetId = res.data.sheetId;
+          m.spreadsheetUrl = res.data.url;
+          m.webAppUrl = res.data.webAppUrl;
+          renderMinistries();
+          renderDashboard();
+        } else {
+          await initApp();
+        }
         if (res.data && res.data.webAppUrl) {
           if (confirm(`Đã tạo Sheet và tạo Link Web App cho "${m.tenBN}". Bạn có muốn mở Web App của ban ngành ngay không?`)) {
             window.open(res.data.webAppUrl, '_blank');
@@ -615,7 +661,16 @@
       if (res && res.success) {
         showToast(res.message || 'Gán Sheet thành công!', 'success');
         closeModal('modal-link-sheet');
-        await initApp();
+        const m = (state.ministries || []).find(item => String(item.id) === String(banNganhId));
+        if (m) {
+          m.spreadsheetId = res.data && res.data.sheetId ? res.data.sheetId : rawSheet;
+          m.spreadsheetUrl = res.data && res.data.spreadsheetUrl ? res.data.spreadsheetUrl : `https://docs.google.com/spreadsheets/d/${m.spreadsheetId}/edit`;
+          m.webAppUrl = res.data && res.data.webAppUrl ? res.data.webAppUrl : '';
+          renderMinistries();
+          renderDashboard();
+        } else {
+          await initApp();
+        }
       } else {
         showToast(res.message || 'Lỗi gán Sheet', 'error');
       }

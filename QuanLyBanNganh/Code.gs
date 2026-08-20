@@ -402,7 +402,7 @@ function sheetFindAll(sheetName, customSheetId) {
 
 function sheetInsert(sheetName, record, customSheetId) {
   const lock = LockService.getScriptLock();
-  try { lock.waitLock(6000); } catch(e) {}
+  try { lock.waitLock(5000); } catch(e) {}
   try {
     const ss = getSpreadsheet(customSheetId);
     let sheet = ss.getSheetByName(sheetName);
@@ -411,7 +411,8 @@ function sheetInsert(sheetName, record, customSheetId) {
       sheet = ss.getSheetByName(sheetName);
     }
 
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+    const lastCol = sheet.getLastColumn();
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
     if (!record.id) {
       record.id = 'id_' + Utilities.getUuid().substring(0, 8);
     }
@@ -422,7 +423,7 @@ function sheetInsert(sheetName, record, customSheetId) {
     const row = headers.map(h => {
       const norm = normalizeHeaderKey(h);
       if (record[h] !== undefined) return record[h];
-      if (record[norm] !== undefined) return record[norm];
+      if (norm && record[norm] !== undefined) return record[norm];
       return '';
     });
 
@@ -435,26 +436,40 @@ function sheetInsert(sheetName, record, customSheetId) {
 
 function sheetUpdate(sheetName, id, updates, customSheetId) {
   const lock = LockService.getScriptLock();
-  try { lock.waitLock(6000); } catch(e) {}
+  try { lock.waitLock(5000); } catch(e) {}
   try {
     const ss = getSpreadsheet(customSheetId);
     const sheet = ss.getSheetByName(sheetName);
     if (!sheet) throw new Error(`Không tìm thấy sheet ${sheetName}`);
 
-    const data = sheet.getDataRange().getValues();
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow <= 1 || lastCol === 0) throw new Error(`Không tìm thấy bản ghi với ID ${id}`);
+
+    const data = sheet.getRange(1, 1, lastRow, lastCol).getValues();
     const headers = data[0].map(h => String(h).trim());
+    const idIdx = headers.indexOf('id') !== -1 ? headers.indexOf('id') : 0;
 
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id) || String(data[i][headers.indexOf('id')]) === String(id)) {
+      if (String(data[i][idIdx]) === String(id) || String(data[i][0]) === String(id)) {
+        const currentRow = data[i];
+        const updatedRow = [...currentRow];
+        const updatedObj = { id: id };
+
         headers.forEach((h, colIdx) => {
           const norm = normalizeHeaderKey(h);
           if (updates[h] !== undefined) {
-            sheet.getRange(i + 1, colIdx + 1).setValue(updates[h]);
-          } else if (updates[norm] !== undefined) {
-            sheet.getRange(i + 1, colIdx + 1).setValue(updates[norm]);
+            updatedRow[colIdx] = updates[h];
+          } else if (norm && updates[norm] !== undefined) {
+            updatedRow[colIdx] = updates[norm];
           }
+          updatedObj[h] = updatedRow[colIdx];
+          if (norm) updatedObj[norm] = updatedRow[colIdx];
         });
-        return { success: true, id: id };
+
+        // 1 LẦN BATCH WRITE DUY NHẤT CHO TOÀN BỘ DÒNG
+        sheet.getRange(i + 1, 1, 1, updatedRow.length).setValues([updatedRow]);
+        return updatedObj;
       }
     }
     throw new Error(`Không tìm thấy bản ghi với ID ${id}`);
@@ -465,20 +480,24 @@ function sheetUpdate(sheetName, id, updates, customSheetId) {
 
 function sheetDelete(sheetName, id, customSheetId) {
   const lock = LockService.getScriptLock();
-  try { lock.waitLock(6000); } catch(e) {}
+  try { lock.waitLock(5000); } catch(e) {}
   try {
     const ss = getSpreadsheet(customSheetId);
     const sheet = ss.getSheetByName(sheetName);
     if (!sheet) throw new Error(`Không tìm thấy sheet ${sheetName}`);
 
-    const data = sheet.getDataRange().getValues();
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow <= 1 || lastCol === 0) throw new Error(`Không tìm thấy bản ghi với ID ${id}`);
+
+    const data = sheet.getRange(1, 1, lastRow, lastCol).getValues();
     const headers = data[0].map(h => String(h).trim());
     const idColIdx = headers.indexOf('id') !== -1 ? headers.indexOf('id') : 0;
 
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][idColIdx]) === String(id)) {
+      if (String(data[i][idColIdx]) === String(id) || String(data[i][0]) === String(id)) {
         sheet.deleteRow(i + 1);
-        return { success: true, message: 'Đã xóa bản ghi' };
+        return { success: true, id: id, message: 'Đã xóa bản ghi' };
       }
     }
     throw new Error(`Không tìm thấy bản ghi với ID ${id}`);
@@ -493,9 +512,6 @@ function sheetDelete(sheetName, id, customSheetId) {
 
 function apiGetInitialData(customSheetId) {
   try {
-    // Tự động kiểm tra và chuẩn hóa cấu trúc các tab và cột cho file Sheet này
-    setupDatabase(customSheetId);
-
     const ss = getSpreadsheet(customSheetId);
     const allSheets = ss.getSheets();
     const sheetMap = {};
@@ -510,6 +526,11 @@ function apiGetInitialData(customSheetId) {
         sheetMap[name] = [];
       }
     });
+
+    // Chỉ tự động chạy setupDatabase nếu chưa có sheet thành viên
+    if (!sheetMap[SHEET_NAMES.THANH_VIEN]) {
+      setupDatabase(customSheetId);
+    }
 
     const members = parseRowsFromValues(sheetMap[SHEET_NAMES.THANH_VIEN] || []);
     const groups = parseRowsFromValues(sheetMap[SHEET_NAMES.TO_NHOM] || []);
@@ -600,51 +621,105 @@ function apiSaveMember(payload, customSheetId) {
 function apiDeleteMember(id, customSheetId) {
   try {
     sheetDelete(SHEET_NAMES.THANH_VIEN, id, customSheetId);
-    return { success: true, message: 'Đã xóa ban viên thành công!' };
+    return { success: true, id: id, message: 'Đã xóa ban viên thành công!' };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
 }
 
 function apiBulkImportMembers(payload, customSheetId) {
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(6000); } catch(e) {}
   try {
-    setupDatabase(customSheetId);
-
     const membersList = payload.members || payload.list || [];
     if (!Array.isArray(membersList) || membersList.length === 0) {
       throw new Error('Danh sách ban viên nhập vào trống');
     }
 
-    let existingGroups = sheetFindAll(SHEET_NAMES.TO_NHOM, customSheetId);
-    let existingMembers = sheetFindAll(SHEET_NAMES.THANH_VIEN, customSheetId);
-    let count = 0;
+    const ss = getSpreadsheet(customSheetId);
+    let groupSheet = ss.getSheetByName(SHEET_NAMES.TO_NHOM);
+    let memberSheet = ss.getSheetByName(SHEET_NAMES.THANH_VIEN);
 
-    membersList.forEach((m, idx) => {
+    if (!groupSheet || !memberSheet) {
+      setupDatabase(customSheetId);
+      groupSheet = ss.getSheetByName(SHEET_NAMES.TO_NHOM);
+      memberSheet = ss.getSheetByName(SHEET_NAMES.THANH_VIEN);
+    }
+
+    // 1. Group Map
+    const groupLastRow = groupSheet.getLastRow();
+    const groupLastCol = groupSheet.getLastColumn();
+    let groupHeaders = groupSheet.getRange(1, 1, 1, groupLastCol).getValues()[0].map(h => String(h).trim());
+    let groupData = groupLastRow > 1 ? groupSheet.getRange(2, 1, groupLastRow - 1, groupLastCol).getValues() : [];
+
+    const groupMapByName = new Map();
+    const groupMapById = new Map();
+    const groupNormHeaders = groupHeaders.map(h => normalizeHeaderKey(h));
+    const gIdIdx = groupNormHeaders.indexOf('id') !== -1 ? groupNormHeaders.indexOf('id') : 0;
+    const gNameIdx = groupNormHeaders.indexOf('tento') !== -1 ? groupNormHeaders.indexOf('tento') : 1;
+
+    groupData.forEach(r => {
+      const id = String(r[gIdIdx]);
+      const name = String(r[gNameIdx]).trim();
+      if (id) groupMapById.set(id, { id, name });
+      if (name) groupMapByName.set(normalizeHeaderKey(name), { id, name });
+    });
+
+    const newGroupRows = [];
+
+    // 2. Member Map
+    const memberLastRow = memberSheet.getLastRow();
+    const memberLastCol = memberSheet.getLastColumn();
+    let memberHeaders = memberSheet.getRange(1, 1, 1, memberLastCol).getValues()[0].map(h => String(h).trim());
+    let memberData = memberLastRow > 1 ? memberSheet.getRange(2, 1, memberLastRow - 1, memberLastCol).getValues() : [];
+
+    const memberNormHeaders = memberHeaders.map(h => normalizeHeaderKey(h));
+    const mIdIdx = memberNormHeaders.indexOf('id') !== -1 ? memberNormHeaders.indexOf('id') : 0;
+    const mNameIdx = memberNormHeaders.indexOf('hoten') !== -1 ? memberNormHeaders.indexOf('hoten') : 1;
+
+    const memberMapByName = new Map();
+    memberData.forEach((r, rowIdx) => {
+      const name = String(r[mNameIdx]).trim().toLowerCase();
+      if (name) memberMapByName.set(name, { rowIndex: rowIdx + 2, row: r });
+    });
+
+    const newMemberRows = [];
+    let updatedCount = 0;
+    let createdCount = 0;
+
+    membersList.forEach((m) => {
       const hoTen = (m.hoTen || m.HoTen || m['HỌ VÀ TÊN'] || m.name || '').trim();
       if (!hoTen) return;
 
       let toId = m.toId || '';
       const toName = (m.to || m.toName || m.tenTo || '').trim();
 
-      // Nếu có tên tổ mà chưa có ID -> tìm hoặc tạo tổ mới tự động
       if (!toId && toName) {
-        let foundGroup = existingGroups.find(g => normalizeHeaderKey(g.tenTo) === normalizeHeaderKey(toName));
-        if (!foundGroup) {
-          foundGroup = sheetInsert(SHEET_NAMES.TO_NHOM, {
-            maTo: 'TO_' + Math.floor(10 + Math.random() * 90),
-            tenTo: toName,
-            toTruong: '',
-            toPho: '',
-            ghiChu: 'Tổ sinh hoạt ' + toName
-          }, customSheetId);
-          existingGroups.push(foundGroup);
+        const normToName = normalizeHeaderKey(toName);
+        if (groupMapByName.has(normToName)) {
+          toId = groupMapByName.get(normToName).id;
+        } else {
+          // Tạo tổ mới trong RAM
+          const newGId = 'TO_' + Math.floor(100 + Math.random() * 900);
+          const newGRow = groupHeaders.map(h => {
+            const norm = normalizeHeaderKey(h);
+            if (norm === 'id') return newGId;
+            if (norm === 'mato') return 'TO_' + (groupMapByName.size + newGroupRows.length + 1);
+            if (norm === 'tento') return toName;
+            if (norm === 'ghichu') return 'Tổ sinh hoạt ' + toName;
+            return '';
+          });
+          newGroupRows.push(newGRow);
+          const gObj = { id: newGId, name: toName };
+          groupMapByName.set(normToName, gObj);
+          toId = newGId;
         }
-        toId = foundGroup.id;
       }
 
-      const exist = existingMembers.find(em => em.hoTen && em.hoTen.toLowerCase().trim() === hoTen.toLowerCase());
+      const existing = memberMapByName.get(hoTen.toLowerCase());
       const memberObj = {
-        maTV: m.maTV || ('BV' + String(idx + 1).padStart(3, '0')),
+        id: existing ? existing.row[mIdIdx] : ('id_' + Utilities.getUuid().substring(0, 8)),
+        maTV: m.maTV || ('BV' + String(memberMapByName.size + newMemberRows.length + 1).padStart(3, '0')),
         hoTen: hoTen,
         sdt: m.sdt || m.SDT || m.phone || '',
         ngaySinh: m.ngaySinh || m['NGÀY SINH'] || m.dob || '',
@@ -653,24 +728,52 @@ function apiBulkImportMembers(payload, customSheetId) {
         chucVu: m.chucVu || m.role || 'Ban viên',
         diaChi: m.diaChi || m['ĐỊA CHỈ'] || m.address || '',
         trangThai: m.trangThai || 'active',
-        ghiChu: m.ghiChu || ''
+        ghiChu: m.ghiChu || '',
+        ngayTao: Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss')
       };
 
-      if (exist && exist.id) {
-        sheetUpdate(SHEET_NAMES.THANH_VIEN, exist.id, memberObj, customSheetId);
+      if (existing) {
+        // Cập nhật dòng hiện có
+        const updatedRow = [...existing.row];
+        memberHeaders.forEach((h, cIdx) => {
+          const norm = normalizeHeaderKey(h);
+          if (memberObj[h] !== undefined) updatedRow[cIdx] = memberObj[h];
+          else if (norm && memberObj[norm] !== undefined) updatedRow[cIdx] = memberObj[norm];
+        });
+        memberSheet.getRange(existing.rowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
+        updatedCount++;
       } else {
-        sheetInsert(SHEET_NAMES.THANH_VIEN, memberObj, customSheetId);
+        // Chuẩn bị batch insert
+        const row = memberHeaders.map(h => {
+          const norm = normalizeHeaderKey(h);
+          if (memberObj[h] !== undefined) return memberObj[h];
+          if (norm && memberObj[norm] !== undefined) return memberObj[norm];
+          return '';
+        });
+        newMemberRows.push(row);
+        createdCount++;
       }
-      count++;
     });
+
+    // Batch insert new groups if any
+    if (newGroupRows.length > 0) {
+      groupSheet.getRange(groupLastRow + 1, 1, newGroupRows.length, groupHeaders.length).setValues(newGroupRows);
+    }
+
+    // Batch insert new members if any
+    if (newMemberRows.length > 0) {
+      memberSheet.getRange(memberLastRow + 1, 1, newMemberRows.length, memberHeaders.length).setValues(newMemberRows);
+    }
 
     return {
       success: true,
-      message: `Đã nhập thành công ${count} ban viên vào Google Sheet!`,
-      count: count
+      message: `Đã nhập thành công ${createdCount + updatedCount} ban viên (${createdCount} thêm mới, ${updatedCount} cập nhật)!`,
+      count: createdCount + updatedCount,
+      createdCount: createdCount,
+      updatedCount: updatedCount
     };
-  } catch (err) {
-    return { success: false, message: err.message || String(err) };
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
   }
 }
 
@@ -691,7 +794,7 @@ function apiSaveGroup(payload, customSheetId) {
 function apiDeleteGroup(id, customSheetId) {
   try {
     sheetDelete(SHEET_NAMES.TO_NHOM, id, customSheetId);
-    return { success: true, message: 'Đã xóa tổ nhóm thành công!' };
+    return { success: true, id: id, message: 'Đã xóa tổ nhóm thành công!' };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
@@ -946,7 +1049,7 @@ function apiSaveVisitation(payload, customSheetId) {
 function apiDeleteVisitation(id, customSheetId) {
   try {
     sheetDelete(SHEET_NAMES.THAM_VIENG, id, customSheetId);
-    return { success: true, message: 'Đã xóa phiếu thăm viếng thành công!' };
+    return { success: true, id: id, message: 'Đã xóa phiếu thăm viếng thành công!' };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
@@ -957,6 +1060,8 @@ function apiSyncDatabaseSchema(customSheetId) {
 }
 
 function apiBatchAssignGroup(memberIds, toId, customSheetId) {
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(5000); } catch(e) {}
   try {
     if (!Array.isArray(memberIds) || memberIds.length === 0) {
       throw new Error('Chưa chọn ban viên nào');
@@ -970,32 +1075,43 @@ function apiBatchAssignGroup(memberIds, toId, customSheetId) {
     const lastCol = sheet.getLastColumn();
     if (lastRow <= 1) return { success: true, count: 0 };
 
-    const data = sheet.getRange(1, 1, lastRow, lastCol).getValues();
-    const headers = data[0].map(h => normalizeHeaderKey(h));
-    const idColIdx = headers.indexOf('id');
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => normalizeHeaderKey(h));
+    const idColIdx = headers.indexOf('id') !== -1 ? headers.indexOf('id') : 0;
     const toIdColIdx = headers.indexOf('toid');
 
-    if (idColIdx === -1 || toIdColIdx === -1) {
-      throw new Error('Cấu trúc sheet ThanhVien thiếu cột ID hoặc toId');
+    if (toIdColIdx === -1) {
+      throw new Error('Cấu trúc sheet ThanhVien thiếu cột toId');
     }
+
+    const idValues = sheet.getRange(2, idColIdx + 1, lastRow - 1, 1).getValues();
+    const toValues = sheet.getRange(2, toIdColIdx + 1, lastRow - 1, 1).getValues();
 
     let count = 0;
     const memberIdSet = new Set(memberIds.map(String));
 
-    for (let i = 1; i < data.length; i++) {
-      const rowId = String(data[i][idColIdx]);
+    for (let i = 0; i < idValues.length; i++) {
+      const rowId = String(idValues[i][0]);
       if (memberIdSet.has(rowId)) {
-        sheet.getRange(i + 1, toIdColIdx + 1).setValue(toId || '');
+        toValues[i][0] = toId || '';
         count++;
       }
+    }
+
+    if (count > 0) {
+      // 1 LẦN BATCH WRITE DUY NHẤT CHO CỘT TỔ NHÓM!
+      sheet.getRange(2, toIdColIdx + 1, lastRow - 1, 1).setValues(toValues);
     }
 
     return {
       success: true,
       message: `Đã gán thành công ${count} ban viên vào tổ!`,
-      count: count
+      count: count,
+      memberIds: memberIds,
+      toId: toId
     };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
   }
 }
