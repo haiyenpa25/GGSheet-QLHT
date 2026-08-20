@@ -552,18 +552,9 @@ function sheetDelete(sheetName, id, customSheetId) {
 function apiGetInitialData(customSheetId) {
   try {
     const ss = getSpreadsheet(customSheetId);
-    let allSheets = ss.getSheets();
-    const existingNames = allSheets.map(s => s.getName());
-    const requiredSheets = Object.values(SHEET_NAMES);
-    
-    // Tự động chạy setupDatabase nếu file Google Sheet bị thiếu bất kỳ tab nào
-    const hasMissingTabs = requiredSheets.some(req => !existingNames.some(ext => ext.toLowerCase().replace(/[\s_-]/g, '') === req.toLowerCase().replace(/[\s_-]/g, '')));
-    if (hasMissingTabs || existingNames.length <= 1) {
-      setupDatabase(customSheetId);
-      allSheets = ss.getSheets();
-    }
-
+    const allSheets = ss.getSheets();
     const sheetMap = {};
+
     allSheets.forEach(s => {
       const name = s.getName();
       const lastRow = s.getLastRow();
@@ -608,7 +599,15 @@ function apiGetInitialData(customSheetId) {
     const visits = parseRowsFromValues(visitValues);
     const schedules = parseRowsFromValues(schedValues);
     const themes = parseRowsFromValues(themeValues);
-    const templates = parseRowsFromValues(tplValues);
+    let templates = parseRowsFromValues(tplValues);
+
+    if (!templates || templates.length === 0) {
+      templates = [
+        { id: 'tpl_1', maMau: 'SINH_NHAT', tieuDe: 'Chúc Mừng Sinh Nhật', loai: 'birthday', noiDung: '🎂 Kính chúc mừng sinh nhật {{hoTen}}! Chúc bạn tuổi mới tràn đầy ơn phước từ Chúa Giê-xu!', moTa: 'Mẫu tin nhắn chúc mừng sinh nhật', trangThai: 'active' },
+        { id: 'tpl_2', maMau: 'THAM_HOI', tieuDe: 'Thăm Hỏi Vắng Nhóm', loai: 'absence_care', noiDung: '❤️ Thân gửi {{hoTen}} ({{tenTo}})! Chúa Nhật vừa qua Ban rất nhớ bạn. Mong gặp lại bạn chiều CN tuần này!', moTa: 'Mẫu thăm hỏi khích lệ', trangThai: 'active' },
+        { id: 'tpl_3', maMau: 'LICH_TRUC', tieuDe: 'Nhắc Lịch Phân Công', loai: 'schedule_duty', noiDung: '📅 Thông báo lịch phân công Chúa Nhật: {{ngayNhom}} lúc 16h00. Kính mời {{hoTen}} sắp xếp tham dự!', moTa: 'Mẫu nhắc phân công trực', trangThai: 'active' }
+      ];
+    }
 
     let totalBalance = 0;
     transactions.forEach(t => {
