@@ -101,47 +101,113 @@
     vertical-align: middle;
   }
 
-  /* Print Stylesheet for A4/A5 */
+  /* Printable Dedicated Container */
+  .print-only-container {
+    display: none;
+  }
+
+  /* Professional Church Print Stylesheet for A4 (Landscape / Portrait) & A5 */
   @media print {
-    body {
-      background: #ffffff !important;
-      color: #000000 !important;
-      font-size: 10pt;
+    @page {
+      size: auto;
+      margin: 8mm 10mm 8mm 10mm;
     }
-    .no-print, header, nav, #toast-container, .bottom-nav-btn, button, .ambient-glow, .app-view:not(#view-schedule) {
+
+    html, body {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      font-family: "Times New Roman", Times, "Liberation Serif", serif !important;
+      font-size: 9pt !important;
+      line-height: 1.25 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* Ẩn hoàn toàn tất cả giao diện ứng dụng web */
+    body > *:not(.print-only-container) {
       display: none !important;
     }
-    #view-schedule {
+
+    .no-print, header, nav, footer, #toast-container, .bottom-nav-btn, .modal-backdrop, .app-modal,
+    .ambient-glow, .app-view, button, input, select, textarea {
+      display: none !important;
+    }
+
+    /* Hiển thị container in chuyên biệt */
+    .print-only-container {
       display: block !important;
-    }
-    .print-only {
-      display: block !important;
-    }
-    main {
-      padding: 0 !important;
-      max-width: 100% !important;
-    }
-    .glass-card, .glass-card-solid {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
       background: #ffffff !important;
-      border: 1px solid #000000 !important;
-      box-shadow: none !important;
-      backdrop-filter: none !important;
-      color: #000000 !important;
-      page-break-inside: avoid;
+      color: #0f172a !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
-    .text-white, .text-on-surface, .text-text-secondary, .text-emerald-400, .text-sky-300, .text-warning-amber {
-      color: #000000 !important;
+
+    .church-print-header {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: flex-start !important;
+      border-bottom: 2px solid #0f172a !important;
+      padding-bottom: 6px !important;
+      margin-bottom: 8px !important;
     }
-    .schedule-custom-table {
-      border: 1px solid #000000 !important;
+
+    .church-print-theme-box {
+      background: #f8fafc !important;
+      border: 1.5px solid #334155 !important;
+      padding: 6px 10px !important;
+      margin-bottom: 10px !important;
+      border-radius: 4px !important;
+      text-align: center !important;
     }
-    .schedule-custom-table th, .schedule-custom-table td {
-      border: 1px solid #000000 !important;
-      padding: 6px 4px !important;
-      color: #000000 !important;
+
+    .church-print-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      margin-bottom: 10px !important;
     }
-    .schedule-custom-table thead tr {
-      background-color: #f3f4f6 !important;
+
+    .church-print-table th {
+      background-color: #f1f5f9 !important;
+      color: #0f172a !important;
+      font-weight: bold !important;
+      border: 1px solid #334155 !important;
+      padding: 5px 3px !important;
+      text-align: center !important;
+      font-size: 8.5pt !important;
+      text-transform: uppercase !important;
+    }
+
+    .church-print-table td {
+      border: 1px solid #475569 !important;
+      padding: 4.5px 3.5px !important;
+      font-size: 8pt !important;
+      color: #0f172a !important;
+      vertical-align: middle !important;
+    }
+
+    .church-print-table tr:nth-child(even) td {
+      background-color: #fafafa !important;
+    }
+
+    .church-print-table tr.event-row td {
+      background-color: #fef3c7 !important;
+      font-weight: bold !important;
+      text-align: center !important;
+      color: #92400e !important;
+    }
+
+    .church-print-footer {
+      page-break-inside: avoid !important;
+      margin-top: 10px !important;
+      padding-top: 6px !important;
+    }
+
+    .church-signature-space {
+      height: 55px !important;
     }
   }
 </style>

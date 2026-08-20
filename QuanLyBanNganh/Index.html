@@ -724,9 +724,9 @@
             <span class="material-symbols-outlined text-[16px]">bolt</span>
             <span>⚡ Tạo Lịch Cả Năm</span>
           </button>
-          <button onclick="triggerPrintSchedule()" class="py-2 px-3.5 rounded-xl glass-card hover:bg-white/10 text-white text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md">
+          <button onclick="openPrintScheduleModal()" class="py-2 px-3.5 rounded-xl glass-card hover:bg-white/10 text-white text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md" title="Mở hộp thoại tùy chỉnh và in lịch sinh hoạt">
             <span class="material-symbols-outlined text-[16px]">print</span>
-            <span>In A4 / A5</span>
+            <span>🖨️ In Lịch A4 / A5</span>
           </button>
           <button onclick="openAddScheduleModal()" class="py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all">
             <span class="material-symbols-outlined text-[16px]">add</span>
@@ -1429,12 +1429,120 @@
           <textarea id="vis-noidung" rows="3" class="glass-input w-full rounded-xl px-4 py-2 text-xs" placeholder="Ghi nhận tình hình sức khỏe, đức tin, nhu cầu cầu nguyện..."></textarea>
         </div>
 
-        <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
-          <button type="button" onclick="closeModal('modal-visitation')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5">Hủy</button>
-          <button type="submit" class="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Phiếu</button>
+  <!-- MODAL: HỘP THOẠI TÙY CHỌN & XEM TRƯỚC IN LỊCH SINH HOẠT CHUYÊN NGHIỆP -->
+  <div id="modal-print-schedule" class="app-modal hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md items-center justify-center p-3 sm:p-5">
+    <div class="glass-card-solid rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl border border-white/20 animate-fade-in flex flex-col max-h-[94vh]">
+      <!-- Modal Header -->
+      <div class="p-4 sm:p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/60">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-xl">print</span>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-white">In Lịch Sinh Hoạt Chuẩn Hội Thánh (A4 / A5)</h3>
+            <p class="text-[11px] text-text-secondary">Tùy chỉnh tiêu đề giáo hội, chọn in theo từng Quý hoặc Cả Năm, xuất bản in trang nhã.</p>
+          </div>
         </div>
-      </form>
+        <button onclick="closeModal('modal-print-schedule')" class="text-text-secondary hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="p-4 sm:p-6 space-y-5 overflow-y-auto">
+        <!-- Cụm Tùy Chọn Cấu Hình In -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-surface-elevated/70 p-4 rounded-2xl border border-white/5">
+          <!-- Phạm vi in -->
+          <div>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Phạm Vi In *</label>
+            <select id="print-cfg-range" onchange="updatePrintPreview()" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-bold text-emerald-400">
+              <option value="current">Quý Đang Chọn Trên Màn Hình</option>
+              <option value="I">Quý I (Tháng 1 - Tháng 3)</option>
+              <option value="II">Quý II (Tháng 4 - Tháng 6)</option>
+              <option value="III">Quý III (Tháng 7 - Tháng 9)</option>
+              <option value="IV">Quý IV (Tháng 10 - Tháng 12)</option>
+              <option value="all">Toàn Bộ Lịch Cả Năm (52 Tuần)</option>
+            </select>
+          </div>
+
+          <!-- Hướng Giấy In -->
+          <div>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Hướng Giấy &amp; Khổ In *</label>
+            <select id="print-cfg-orientation" onchange="updatePrintPreview()" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-bold text-white">
+              <option value="landscape" selected>Khổ A4 Ngang (Đẹp &amp; Thoáng nhất)</option>
+              <option value="portrait">Khổ A4 Dọc (Chuẩn A4)</option>
+              <option value="a5">Khổ A5 (Sổ tay nhỏ gọn)</option>
+            </select>
+          </div>
+
+          <!-- Tên Giáo Hội -->
+          <div>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Tên Tổng Hội / Giáo Hội</label>
+            <input id="print-cfg-church-name" oninput="updatePrintPreview()" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold text-white" value="HỘI THÁNH TIN LÀNH VIỆT NAM" />
+          </div>
+
+          <!-- Chi Hội & Ban Ngành -->
+          <div>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Chi Hội &amp; Ban Ngành</label>
+            <input id="print-cfg-branch-name" oninput="updatePrintPreview()" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold text-white" value="CHI HỘI THỦ THIÊM - BAN THANH TRÁNG" />
+          </div>
+
+          <!-- Giờ sinh hoạt -->
+          <div class="sm:col-span-2">
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Giờ Sinh Hoạt</label>
+            <input id="print-cfg-time" oninput="updatePrintPreview()" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold text-white" value="16h00 Chiều Chúa Nhật Hàng Tuần" />
+          </div>
+
+          <!-- Tùy chọn hiển thị -->
+          <div class="sm:col-span-2 flex items-center gap-4 flex-wrap pt-4">
+            <label class="flex items-center gap-2 text-xs text-white font-medium cursor-pointer select-none">
+              <input type="checkbox" id="print-cfg-show-signatures" checked onchange="updatePrintPreview()" class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4" />
+              <span>Hiện phần ký tên Quản Nhiệm &amp; Trưởng Ban</span>
+            </label>
+            <label class="flex items-center gap-2 text-xs text-white font-medium cursor-pointer select-none">
+              <input type="checkbox" id="print-cfg-show-theme" checked onchange="updatePrintPreview()" class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4" />
+              <span>Hiện khung Chủ Đề &amp; Câu Gốc</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Khung Xem Trước Bản In (Live Print Preview Container) -->
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm text-emerald-400">visibility</span>
+              <span>Xem Trước Bản In (Live Preview)</span>
+            </span>
+            <span class="text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">Chuẩn In Ấn Sắc Nét 100%</span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-4 sm:p-6 overflow-x-auto shadow-inner border border-white/20 max-h-[48vh]">
+            <div id="print-preview-content" class="min-w-[650px] text-slate-900 font-serif text-[12px] bg-white">
+              <!-- Live Preview rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer Action Buttons -->
+      <div class="p-4 sm:p-5 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-3 bg-surface-container-low/60">
+        <div class="text-[11px] text-text-secondary flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-sm text-emerald-400">info</span>
+          <span>Gợi ý: Trong hộp thoại in của trình duyệt, chọn <strong>Destination: Save as PDF</strong> hoặc máy in của bạn.</span>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button type="button" onclick="closeModal('modal-print-schedule')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5">Đóng</button>
+          <button type="button" onclick="triggerPrintScheduleNow()" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition-all shadow-lg active:scale-95 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base">print</span>
+            <span>🖨️ In Lịch Ra Giấy / Lưu PDF</span>
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- CONTAINER DÀNH RIÊNG CHO MÁY IN (PRINT-ONLY CONTAINER) -->
+  <div id="print-schedule-container" class="print-only-container">
+    <!-- Populated by JavaScript right before window.print() -->
   </div>
 
   <?!= include('JavaScript'); ?>
