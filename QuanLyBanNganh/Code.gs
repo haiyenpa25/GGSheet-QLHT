@@ -38,6 +38,10 @@ const SCHEMAS = {
 // =========================================================================
 
 function doGet(e) {
+  if (e && e.parameter && e.parameter.action) {
+    return handleApiRequest(e.parameter.action, e.parameter);
+  }
+
   const sheetId = (e && e.parameter && e.parameter.sheetId) || DEFAULT_SPREADSHEET_ID;
   const banNganhId = (e && e.parameter && e.parameter.banNganhId) || 'id_41451e0a';
   const title = (e && e.parameter && e.parameter.title) || 'Ban Thanh Tráng';
