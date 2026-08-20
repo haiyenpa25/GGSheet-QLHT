@@ -21,6 +21,7 @@
     currentView: 'dashboard',
     searchMember: '',
     filterMemberGroup: 'all',
+    selectedMemberIds: new Set(),
     searchFinance: '',
     activeModal: null,
 
@@ -510,7 +511,7 @@
   // 2. MEMBERS VIEW (BAN VIÊN) & QUICK ACTIONS
   // =========================================================================
 
-  function renderMembers() {
+  function getFilteredMembers() {
     let list = state.members || [];
     if (state.filterMemberGroup !== 'all') {
       list = list.filter(m => String(m.toId) === String(state.filterMemberGroup));
@@ -524,6 +525,11 @@
         getMemberRole(m).toLowerCase().includes(q)
       );
     }
+    return list;
+  }
+
+  function renderMembers() {
+    const list = getFilteredMembers();
 
     const countBadge = document.getElementById('members-count-badge');
     if (countBadge) countBadge.textContent = `Tổng cộng: ${list.length} Ban Viên`;
@@ -576,14 +582,22 @@
       const dob = m.ngaySinh || m.NgaySinh || '';
       const toName = groupMap[m.toId] || 'Chưa phân tổ';
       const isFemale = (m.gioiTinh === 'Nữ' || m.gioiTinh === 'Nu');
+      const isSelected = state.selectedMemberIds && state.selectedMemberIds.has(String(m.id));
 
       return `
-        <div class="glass-card rounded-3xl p-5 border border-white/10 hover:border-emerald-500/40 flex flex-col justify-between shadow-lg transition-all duration-200 group">
+        <div class="glass-card rounded-3xl p-5 border ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-950/20' : 'border-white/10 hover:border-emerald-500/40'} flex flex-col justify-between shadow-lg transition-all duration-200 group">
           <div>
             <div class="flex justify-between items-start gap-2 mb-3">
               <div class="flex items-center gap-3 min-w-0">
-                <div class="w-11 h-11 rounded-2xl ${isFemale ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'} border flex items-center justify-center font-bold text-sm shrink-0">
-                  <span class="material-symbols-outlined">${isFemale ? 'face_3' : 'person'}</span>
+                <input
+                  type="checkbox"
+                  onchange="toggleSelectMember('${m.id}', this.checked)"
+                  ${isSelected ? 'checked' : ''}
+                  class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4 shrink-0 cursor-pointer"
+                  title="Chọn để gán tổ"
+                />
+                <div class="w-10 h-10 rounded-2xl ${isFemale ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'} border flex items-center justify-center font-bold text-sm shrink-0">
+                  <span class="material-symbols-outlined text-lg">${isFemale ? 'face_3' : 'person'}</span>
                 </div>
                 <div class="min-w-0">
                   <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-white/5 text-emerald-400 border border-white/10 inline-block">${code}</span>
@@ -643,6 +657,121 @@
         </div>
       `;
     }).join('');
+
+    updateBatchActionBar();
+  }
+
+  function toggleSelectMember(id, isChecked) {
+    if (!state.selectedMemberIds) state.selectedMemberIds = new Set();
+    if (isChecked) state.selectedMemberIds.add(String(id));
+    else state.selectedMemberIds.delete(String(id));
+    renderMembers();
+  }
+
+  function toggleSelectAllMembers(isChecked) {
+    if (!state.selectedMemberIds) state.selectedMemberIds = new Set();
+    const visibleMembers = getFilteredMembers();
+    if (isChecked) {
+      visibleMembers.forEach(m => state.selectedMemberIds.add(String(m.id)));
+    } else {
+      visibleMembers.forEach(m => state.selectedMemberIds.delete(String(m.id)));
+    }
+    renderMembers();
+  }
+
+  function clearSelectedMembers() {
+    if (state.selectedMemberIds) state.selectedMemberIds.clear();
+    const selectAllEl = document.getElementById('member-select-all');
+    if (selectAllEl) selectAllEl.checked = false;
+    renderMembers();
+  }
+
+  function updateBatchActionBar() {
+    const count = state.selectedMemberIds ? state.selectedMemberIds.size : 0;
+    const bar = document.getElementById('members-batch-action-bar');
+    const countEl = document.getElementById('batch-selected-count');
+    const groupSelect = document.getElementById('batch-target-group');
+    const selectAllEl = document.getElementById('member-select-all');
+
+    if (!bar) return;
+
+    if (count > 0) {
+      bar.classList.remove('hidden');
+      if (countEl) countEl.textContent = `Đã chọn ${count} ban viên`;
+
+      if (groupSelect) {
+        let opts = '<option value="">-- Chọn Tổ để gán --</option>';
+        (state.groups || []).forEach(g => {
+          opts += `<option value="${g.id}">${g.tenTo || g.name}</option>`;
+        });
+        groupSelect.innerHTML = opts;
+      }
+    } else {
+      bar.classList.add('hidden');
+      if (selectAllEl) selectAllEl.checked = false;
+    }
+  }
+
+  async function handleBatchAssignGroup() {
+    const toId = (document.getElementById('batch-target-group') || {}).value || '';
+    if (!toId) {
+      showToast('Vui lòng chọn Tổ nhóm muốn gán vào', 'warning');
+      return;
+    }
+
+    const memberIds = Array.from(state.selectedMemberIds || []);
+    if (memberIds.length === 0) {
+      showToast('Chưa chọn ban viên nào', 'warning');
+      return;
+    }
+
+    const targetGroup = (state.groups || []).find(g => String(g.id) === String(toId));
+    const groupName = targetGroup ? (targetGroup.tenTo || targetGroup.name) : 'Tổ đã chọn';
+
+    if (!confirm(`Bạn có chắc muốn gán ${memberIds.length} ban viên đã chọn vào "${groupName}"?`)) return;
+
+    showLoading(true);
+    try {
+      const res = await runGAS('apiBatchAssignGroup', memberIds, toId, state.activeSheetId);
+      if (res && res.success) {
+        showToast(res.message || `Đã gán ${memberIds.length} ban viên vào ${groupName}!`, 'success');
+        clearSelectedMembers();
+        await refreshData(true);
+      } else {
+        showToast(res.message || 'Lỗi khi gán tổ nhóm', 'error');
+      }
+    } catch (e) {
+      showToast(e.message, 'error');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function downloadSampleExcelCSV() {
+    const csvHeader = "\uFEFFSTT,Họ Và Tên,Ngày Sinh,Địa Chỉ,Số Điện Thoại,Tổ Nhóm,Chức Vụ\n";
+    const sampleRows = [
+      '1,"Nguyễn Văn An","12/04/1995","407/5 Nguyễn Thị Định, Thủ Đức","0901234567","Tổ Phao-lô","Ban viên"',
+      '2,"Lê Thị Bình","15/10/1998","154 Đường 67, Cát Lái","0912345678","Tổ Đa-ni-ên","Ban viên"',
+      '3,"Trần Minh Cường","20/05/1990","20 Đường 38, Bình Trưng Tây","0987654321","Tổ Phao-lô","Ban viên"'
+    ].join("\n");
+
+    const blob = new Blob([csvHeader + sampleRows], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'Mau_Nhap_Ban_Vien.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Đã tải xuống file mẫu Excel (Mau_Nhap_Ban_Vien.csv)!', 'success');
+  }
+
+  function copySampleTemplateHeader() {
+    const text = "STT\tHỌ VÀ TÊN\tNGÀY SINH\tĐỊA CHỈ\tSDT\tTỔ NHÓM";
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Đã copy tiêu đề cột mẫu vào Clipboard! Bạn có thể dán vào Excel.', 'success');
+    }).catch(() => {
+      showToast(text, 'info');
+    });
   }
 
   function openAddMemberModal() {

@@ -125,6 +125,9 @@ function handleApiRequest(action, params) {
       case 'apiBulkImportMembers':
         result = apiBulkImportMembers(params.data || params, sheetId);
         break;
+      case 'apiBatchAssignGroup':
+        result = apiBatchAssignGroup(params.memberIds || params.ids, params.toId, sheetId);
+        break;
       default:
         result = { success: false, message: `Hành động "${action}" không tồn tại` };
     }
@@ -951,4 +954,48 @@ function apiDeleteVisitation(id, customSheetId) {
 
 function apiSyncDatabaseSchema(customSheetId) {
   return setupDatabase(customSheetId);
+}
+
+function apiBatchAssignGroup(memberIds, toId, customSheetId) {
+  try {
+    if (!Array.isArray(memberIds) || memberIds.length === 0) {
+      throw new Error('Chưa chọn ban viên nào');
+    }
+
+    const ss = getSpreadsheet(customSheetId);
+    const sheet = ss.getSheetByName(SHEET_NAMES.THANH_VIEN);
+    if (!sheet) throw new Error('Không tìm thấy sheet ThanhVien');
+
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow <= 1) return { success: true, count: 0 };
+
+    const data = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+    const headers = data[0].map(h => normalizeHeaderKey(h));
+    const idColIdx = headers.indexOf('id');
+    const toIdColIdx = headers.indexOf('toid');
+
+    if (idColIdx === -1 || toIdColIdx === -1) {
+      throw new Error('Cấu trúc sheet ThanhVien thiếu cột ID hoặc toId');
+    }
+
+    let count = 0;
+    const memberIdSet = new Set(memberIds.map(String));
+
+    for (let i = 1; i < data.length; i++) {
+      const rowId = String(data[i][idColIdx]);
+      if (memberIdSet.has(rowId)) {
+        sheet.getRange(i + 1, toIdColIdx + 1).setValue(toId || '');
+        count++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Đã gán thành công ${count} ban viên vào tổ!`,
+      count: count
+    };
+  } catch (err) {
+    return { success: false, message: err.message || String(err) };
+  }
 }

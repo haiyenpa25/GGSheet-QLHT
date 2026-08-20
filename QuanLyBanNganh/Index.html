@@ -314,7 +314,36 @@
           </select>
         </div>
 
-        <span id="members-count-badge" class="text-xs text-text-secondary font-semibold shrink-0">Đang tải...</span>
+        <div class="flex items-center gap-3 shrink-0">
+          <label class="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-white cursor-pointer select-none">
+            <input type="checkbox" id="member-select-all" onchange="toggleSelectAllMembers(this.checked)" class="rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-surface-elevated h-4 w-4" />
+            <span>Chọn tất cả</span>
+          </label>
+          <span id="members-count-badge" class="text-xs text-text-secondary font-semibold shrink-0">Đang tải...</span>
+        </div>
+      </div>
+
+      <!-- Floating Batch Action Bar (Xuất hiện khi chọn 1 hoặc nhiều ban viên) -->
+      <div id="members-batch-action-bar" class="hidden sticky top-20 z-30 p-3.5 rounded-2xl bg-surface-elevated/95 border border-emerald-500/50 backdrop-blur-2xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-lg">check_circle</span>
+          </span>
+          <span id="batch-selected-count" class="text-xs font-bold text-white">Đã chọn 0 ban viên</span>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <select id="batch-target-group" class="glass-input flex-1 sm:w-52 rounded-xl px-3 py-1.5 text-xs font-semibold">
+            <option value="">-- Chọn Tổ để gán --</option>
+          </select>
+          <button onclick="handleBatchAssignGroup()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1 shrink-0">
+            <span class="material-symbols-outlined text-sm">groups</span>
+            <span>Gán Vào Tổ</span>
+          </button>
+          <button onclick="clearSelectedMembers()" class="px-3 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-text-secondary hover:text-white text-xs font-semibold shrink-0">
+            Bỏ chọn
+          </button>
+        </div>
       </div>
 
       <div id="members-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -800,6 +829,16 @@
       <div class="p-6 space-y-4 overflow-y-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <label class="block text-xs font-semibold text-text-secondary">Dán dữ liệu từ bảng (Các cột: STT | Họ Tên | Ngày Sinh | Địa Chỉ | SĐT | Tổ Nhóm)</label>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button type="button" onclick="downloadSampleExcelCSV()" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-[16px]">download</span>
+              <span>Tải File Mẫu Excel (.csv)</span>
+            </button>
+            <button type="button" onclick="copySampleTemplateHeader()" class="text-xs text-text-secondary hover:text-white font-semibold flex items-center gap-1 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-[16px]">content_copy</span>
+              <span>Copy Cột Mẫu</span>
+            </button>
+          </div>
         </div>
 
         <textarea id="bulk-members-input" rows="8" class="glass-input w-full rounded-2xl p-4 text-xs font-mono" placeholder="Dán danh sách từ Excel hoặc Google Sheet vào đây...&#10;Cột phân cách bằng Tab hoặc Dấu phẩy (,)&#10;Ví dụ:&#10;1	Trần Văn Bình	12/04/1995	Thủ Đức	0901234567	Tổ 1&#10;2	Lê Thị Hoa	15/10/1998	Quận 2	0912345678	Tổ 2"></textarea>
