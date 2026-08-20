@@ -199,7 +199,24 @@ function setupDatabase(sheetIdOrUrl) {
         .setBackground('#10b981')
         .setFontColor('#ffffff');
       sheet.setFrozenRows(1);
-      if (sheetName === SHEET_NAMES.DANH_MUC_QUY && sheet.getLastRow() === 1) {
+      if (sheetName === SHEET_NAMES.TO_NHOM && sheet.getLastRow() === 1) {
+        const defaultGroups = [
+          ['to_1', 'TO_01', 'Tổ 1 - Ái Năng', 'Nguyễn Văn An', 'Trần Thị Mai', 5, 'Chiều Chúa Nhật 16h00', 'Phòng Nhóm 1', 'Tổ sinh hoạt tích cực'],
+          ['to_2', 'TO_02', 'Tổ 2 - Trung Tín', 'Lê Hoàng Long', 'Phạm Thị Cúc', 6, 'Chiều Chúa Nhật 16h00', 'Phòng Nhóm 2', 'Tổ sinh hoạt trung tín'],
+          ['to_3', 'TO_03', 'Tổ 3 - Đắc Thắng', 'Võ Minh Trí', 'Đặng Thùy Dung', 4, 'Chiều Chúa Nhật 16h00', 'Phòng Nhóm 3', 'Tổ thanh tráng trẻ']
+        ];
+        defaultGroups.forEach(r => sheet.appendRow(r));
+      } else if (sheetName === SHEET_NAMES.THANH_VIEN && sheet.getLastRow() === 1) {
+        const curDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy');
+        const defaultMembers = [
+          ['bv_1', 'BV01', 'Nguyễn Văn An', '0901234567', '15/05/1990', 'Nam', 'to_1', 'Trưởng Ban', '123 Đường Số 1, TP.HCM', 'active', 'Trưởng Ban Điều Hành', curDate],
+          ['bv_2', 'BV02', 'Trần Thị Mai', '0912345678', '20/08/1992', 'Nữ', 'to_1', 'Thư Ký', '456 Đường Số 2, TP.HCM', 'active', 'Thư ký Ban', curDate],
+          ['bv_3', 'BV03', 'Lê Hoàng Long', '0987654321', '10/12/1988', 'Nam', 'to_2', 'Thủ Quỹ', '789 Đường Số 3, TP.HCM', 'active', 'Thủ quỹ Ban', curDate],
+          ['bv_4', 'BV04', 'Phạm Thị Cúc', '0933445566', '25/08/1995', 'Nữ', 'to_2', 'Ban viên', '101 Đường Số 4, TP.HCM', 'active', 'Ban viên tích cực', curDate],
+          ['bv_5', 'BV05', 'Võ Minh Trí', '0977889900', '02/09/1991', 'Nam', 'to_3', 'Ban viên', '202 Đường Số 5, TP.HCM', 'active', 'Nhạc công Ban', curDate]
+        ];
+        defaultMembers.forEach(r => sheet.appendRow(r));
+      } else if (sheetName === SHEET_NAMES.DANH_MUC_QUY && sheet.getLastRow() === 1) {
         sheet.appendRow(['q_ban', 'QUY_BAN', 'Quỹ Ban', 0, 'Quỹ sinh hoạt chính của Ban', 'active', Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy')]);
       } else if (sheetName === SHEET_NAMES.CHU_DE && sheet.getLastRow() === 1) {
         const curY = new Date().getFullYear();
@@ -531,9 +548,18 @@ function sheetDelete(sheetName, id, customSheetId) {
 function apiGetInitialData(customSheetId) {
   try {
     const ss = getSpreadsheet(customSheetId);
-    const allSheets = ss.getSheets();
-    const sheetMap = {};
+    let allSheets = ss.getSheets();
+    const existingNames = allSheets.map(s => s.getName());
+    const requiredSheets = Object.values(SHEET_NAMES);
+    
+    // Tự động chạy setupDatabase nếu file Google Sheet bị thiếu bất kỳ tab nào
+    const hasMissingTabs = requiredSheets.some(req => !existingNames.some(ext => ext.toLowerCase().replace(/[\s_-]/g, '') === req.toLowerCase().replace(/[\s_-]/g, '')));
+    if (hasMissingTabs || existingNames.length <= 1) {
+      setupDatabase(customSheetId);
+      allSheets = ss.getSheets();
+    }
 
+    const sheetMap = {};
     allSheets.forEach(s => {
       const name = s.getName();
       const lastRow = s.getLastRow();
@@ -569,11 +595,6 @@ function apiGetInitialData(customSheetId) {
     const schedValues = getSheetValuesByName(SHEET_NAMES.LICH_QUY, ['Lịch Quý', 'Lich Quy', 'LichSinhHoat', 'Lịch Sinh Hoạt']);
     const themeValues = getSheetValuesByName(SHEET_NAMES.CHU_DE, ['Chủ Đề', 'Chu De']);
     const tplValues = getSheetValuesByName(SHEET_NAMES.MAU_TIN_NHAN, ['Mẫu Tin Nhắn', 'Mau Tin Nhan']);
-
-    // Chỉ tự động chạy setupDatabase nếu hoàn toàn không có dữ liệu thành viên
-    if (memberValues.length === 0 && Object.keys(sheetMap).length === 0) {
-      setupDatabase(customSheetId);
-    }
 
     const members = parseRowsFromValues(memberValues);
     const groups = parseRowsFromValues(groupValues);
