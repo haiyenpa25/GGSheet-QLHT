@@ -97,15 +97,28 @@ Khi ban ngành đã có file Google Sheet riêng:
 
 ---
 
-## 💻 3. HƯỚNG DẪN ĐỒNG BỘ CODE LÊN GOOGLE (1-CLICK)
+## 💻 3. HƯỚNG DẪN ĐỒNG BỘ CODE TỰ ĐỘNG (KHÔNG BAO GIỜ BỊ LỖI)
 
-Khi bạn chỉnh sửa bất kỳ code nào trên máy tính, chỉ cần nhấp đúp vào các file batch có sẵn ở thư mục gốc:
+Từ bây giờ, bạn có **2 cách cực kỳ tiện lợi** để code tự động cập nhật lên Web App & GitHub:
 
-| Tên File Batch | Thao Tác |
+### ✨ CÁCH 1: Bật Auto-Sync Realtime (Khuyên dùng - Tiện nhất)
+* Nhấp đúp chuột vào file **`auto_watch_and_sync.bat`** ở thư mục gốc và để cửa sổ đó chạy ngầm.
+* Mỗi khi bạn sửa code và bấm **`Ctrl + S` (Lưu file)**:
+  * ⚡ Hệ thống sẽ **tự động đẩy code lên Google Apps Script**.
+  * ⚡ **Tự động deploy bản live Web App** (không cần vào Apps Script bấm deploy thủ công).
+  * ⚡ **Tự động push lên GitHub Pages**.
+  * 👉 Bạn chỉ việc F5 trình duyệt là thấy thay đổi ngay lập tức!
+
+---
+
+### 🚀 CÁCH 2: Nhấp Đúp File Batch 1-Click Khi Cần
+Nếu không muốn bật chạy ngầm, bạn chỉ cần nhấp đúp file batch:
+
+| Tên File Batch | Tính Năng Tự Động |
 | :--- | :--- |
-| **`update_hoi_thanh.bat`** | Nhấp đúp chuột ➔ Tự động cập nhật code lên dự án **Quản Lý Hội Thánh**. |
-| **`update_ban_nganh.bat`** | Nhấp đúp chuột ➔ Tự động cập nhật code lên dự án **Ban Thanh Tráng**. |
-| **`update_all.bat`** | Nhấp đúp chuột ➔ Tự động cập nhật **cả 2 dự án cùng một lúc**. |
+| **`update_all.bat`** | *(Khuyên dùng)* **1 cú nhấp chuột làm tất cả**: Đẩy code + Tự động deploy cả 2 Web App + Đẩy GitHub Pages. |
+| **`update_ban_nganh.bat`** | Đẩy code & Auto-deploy Web App **Ban Thanh Tráng** + GitHub. |
+| **`update_hoi_thanh.bat`** | Đẩy code & Auto-deploy Web App **Quản Lý Hội Thánh** + GitHub. |
 
 ---
 
