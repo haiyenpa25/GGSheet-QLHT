@@ -285,10 +285,20 @@
           <h2 class="text-2xl font-bold text-white tracking-tight">Danh Sách Ban Viên</h2>
           <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý danh sách thành viên, ban điều hành, tổ nhóm, ngày sinh và phím tắt liên hệ.</p>
         </div>
-        <button onclick="openAddMemberModal()" class="py-2.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
-          <span class="material-symbols-outlined text-[18px]">person_add</span>
-          <span>Thêm Ban Viên Mới</span>
-        </button>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="handleSeed55Members()" class="py-2.5 px-4 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[18px]">bolt</span>
+            <span>⚡ Nạp Sẵn 55 Ban Viên &amp; 2 Tổ</span>
+          </button>
+          <button onclick="openBulkImportModal()" class="py-2.5 px-4 rounded-full bg-surface-elevated hover:bg-white/10 text-emerald-400 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[18px]">file_upload</span>
+            <span>Nhập Từ Excel</span>
+          </button>
+          <button onclick="openAddMemberModal()" class="py-2.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[18px]">person_add</span>
+            <span>Thêm Mới</span>
+          </button>
+        </div>
       </div>
 
       <div class="glass-card rounded-2xl p-3 sm:p-4 border border-white/10 flex flex-col sm:flex-row gap-3 items-center justify-between">
@@ -772,6 +782,84 @@
           <button type="submit" class="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Ban Viên</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: NHẬP HÀNG LOẠT BAN VIÊN (EXCEL / COPY PASTE) -->
+  <div id="modal-bulk-import-members" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="glass-card-solid rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
+        <div class="flex items-center gap-2.5">
+          <span class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-xl">file_upload</span>
+          </span>
+          <div>
+            <h3 class="text-base font-bold text-white">Nhập Ban Viên Hàng Loạt (Excel / Bảng)</h3>
+            <p class="text-[11px] text-text-secondary">Copy từ Excel/Google Sheet rồi dán vào đây để nhập hàng chục người cùng lúc.</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-bulk-import-members')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <div class="p-6 space-y-4 overflow-y-auto">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <label class="block text-xs font-semibold text-text-secondary">Dán dữ liệu từ bảng (Cột: STT | Họ Tên | Ngày Sinh | Địa Chỉ | SĐT)</label>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="pasteSample55Members()" class="text-xs text-emerald-400 hover:underline font-semibold flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">content_paste</span>
+              <span>Dán danh sách mẫu (55 người)</span>
+            </button>
+          </div>
+        </div>
+
+        <textarea id="bulk-members-input" rows="7" class="glass-input w-full rounded-2xl p-4 text-xs font-mono" placeholder="Dán danh sách từ Excel vào đây...&#10;Ví dụ:&#10;1	Ksor H' Miram	12/04/2000		&#10;2	Rmah Toàn	15/10/1999		&#10;3	Trần Thị Thanh Thảo	01/06/1995		971520748"></textarea>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Tổ nhóm mặc định (nếu trong bảng không ghi)</label>
+            <select id="bulk-default-group" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold">
+              <option value="auto">Tự động phân theo mẫu (Phao-lô &amp; Đa-ni-ên)</option>
+              <option value="to_danien">Tổ Đa-ni-ên</option>
+              <option value="to_phaolo">Tổ Phao-lô</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button type="button" onclick="previewBulkMembers()" class="w-full py-2 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-sm">preview</span>
+              <span>Phân Tích &amp; Xem Trước</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Preview Table -->
+        <div id="bulk-preview-container" class="hidden space-y-2 pt-2 border-t border-white/10">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold text-emerald-400" id="bulk-preview-count">Đã nhận diện: 0 ban viên</span>
+          </div>
+          <div class="max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-surface-elevated/50">
+            <table class="w-full text-left text-[11px]">
+              <thead class="bg-surface-elevated sticky top-0 text-text-secondary border-b border-white/10">
+                <tr>
+                  <th class="p-2 w-10 text-center">STT</th>
+                  <th class="p-2">Họ Và Tên</th>
+                  <th class="p-2">Ngày Sinh</th>
+                  <th class="p-2">SĐT</th>
+                  <th class="p-2">Phân Tổ</th>
+                </tr>
+              </thead>
+              <tbody id="bulk-preview-tbody" class="divide-y divide-white/5"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-5 border-t border-white/10 flex justify-end gap-2 bg-surface-container-low/50">
+        <button type="button" onclick="closeModal('modal-bulk-import-members')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5">Hủy</button>
+        <button type="button" onclick="executeBulkImport()" class="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-sm">save_as</span>
+          <span>Bắt Đầu Nhập Dữ Liệu</span>
+        </button>
+      </div>
     </div>
   </div>
 
