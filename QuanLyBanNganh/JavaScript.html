@@ -26,7 +26,12 @@
 
     // Smart Attendance state
     liveAttendance: {},
-    attendanceFilterGroup: 'all'
+    attendanceFilterGroup: 'all',
+
+    // Schedule state
+    selectedScheduleQuarter: 'all',
+    selectedScheduleYear: new Date().getFullYear(),
+    searchSchedule: ''
   };
 
   const CACHE_PREFIX = 'qlnb_cache_';
@@ -109,9 +114,9 @@
       if (state.banNganhTitle) {
         document.title = 'Quản Lý ' + state.banNganhTitle;
         const brandH1 = document.getElementById('brand-title');
-        const printTitle = document.getElementById('print-ban-title');
+        const schBanner = document.getElementById('sch-banner-title');
         if (brandH1) brandH1.textContent = 'Quản Lý ' + state.banNganhTitle;
-        if (printTitle) printTitle.textContent = 'CHƯƠNG TRÌNH SINH HOẠT - ' + state.banNganhTitle.toUpperCase();
+        if (schBanner) schBanner.textContent = 'CHƯƠNG TRÌNH THỜ PHƯỢNG CHÚA & SINH HOẠT ' + state.banNganhTitle.toUpperCase();
       }
 
       // Default attendance date: current Sunday
@@ -270,7 +275,7 @@
       document.getElementById('dash-sheet-link').href = state.spreadsheet.url || ('https://docs.google.com/spreadsheets/d/' + state.activeSheetId + '/edit');
     }
 
-    // Recent Members (Ban viên gần đây)
+    // Recent Members
     const rMembersEl = document.getElementById('dash-recent-members');
     if (state.members.length > 0) {
       rMembersEl.innerHTML = state.members.slice(0, 5).map(m => {
@@ -516,13 +521,23 @@
     const fGroup = document.getElementById('member-filter-group');
     const mGroup = document.getElementById('member-modal-group');
     const attFGroup = document.getElementById('attendance-filter-group');
-    const groupOpts = (state.groups || []).map(g => `<option value="${g.id}">${getGroupName(g)}</option>`).join('');
+    const schToGroup = document.getElementById('sch-tophutrach');
 
-    if (fGroup) fGroup.innerHTML = `<option value="all">Tất cả Tổ Nhóm</option>` + groupOpts;
-    if (mGroup) mGroup.innerHTML = `<option value="">-- Không thuộc tổ --</option>` + groupOpts;
-    if (attFGroup) attFGroup.innerHTML = `<option value="all">Tất cả tổ nhóm</option>` + groupOpts;
+    const groupOpts = (state.groups || []).map(g => `<option value="${getGroupName(g)}">${getGroupName(g)}</option>`).join('');
 
-    if (fGroup && state.filterMemberGroup) fGroup.value = state.filterMemberGroup;
+    if (fGroup) fGroup.innerHTML = `<option value="all">Tất cả Tổ Nhóm</option>` + (state.groups || []).map(g => `<option value="${g.id}">${getGroupName(g)}</option>`).join('');
+    if (mGroup) mGroup.innerHTML = `<option value="">-- Không thuộc tổ --</option>` + (state.groups || []).map(g => `<option value="${g.id}">${getGroupName(g)}</option>`).join('');
+    if (attFGroup) attFGroup.innerHTML = `<option value="all">Tất cả tổ nhóm</option>` + (state.groups || []).map(g => `<option value="${g.id}">${getGroupName(g)}</option>`).join('');
+    if (schToGroup) schToGroup.innerHTML = `<option value="BĐH">BĐH (Ban Điều Hành)</option><option value="Nam ban">Nam ban</option><option value="Nữ ban">Nữ ban</option>` + groupOpts;
+
+    // Member Selects for Schedule
+    const schHdct = document.getElementById('sch-huongdan');
+    const schDoKt = document.getElementById('sch-nguoidokt');
+    const memberOptions = `<option value="">-- Chọn hoặc để trống --</option><option value="BĐH">BĐH (Ban Điều Hành)</option>` + 
+      (state.members || []).map(m => `<option value="${getMemberName(m)}">${getMemberName(m)} (${getMemberRole(m)})</option>`).join('');
+
+    if (schHdct) schHdct.innerHTML = memberOptions;
+    if (schDoKt) schDoKt.innerHTML = memberOptions;
 
     const container = document.getElementById('members-grid-container');
     if (!container) return;
@@ -896,7 +911,7 @@
   }
 
   // =========================================================================
-  // 4. GROUPS, FINANCE, SCHEDULE, VISITATIONS
+  // 4. GROUPS, FINANCE, VISITATIONS
   // =========================================================================
 
   function renderGroups() {
@@ -1113,46 +1128,292 @@
     }
   }
 
+  // =========================================================================
+  // 5. SCHEDULE ENGINE (YEARLY 52 WEEKS, 4 QUARTERS, ZALO COPY)
+  // =========================================================================
+
   function renderSchedule() {
-    const container = document.getElementById('schedule-list-container');
+    renderThemesBento();
+    renderScheduleTable();
+  }
+
+  function getThemeForQuarter(quy) {
+    const qUpper = String(quy || '').toUpperCase();
+    const found = (state.themes || []).find(t => String(t.quy || '').toUpperCase() === qUpper);
+    if (found) return found;
+
+    // Default Fallbacks
+    const defaults = {
+      'I': { chuDe: 'GIỮ VỮNG', cauGoc: 'Giô-suê 1:8', noiDungCauGoc: 'Quyển sách luật pháp này chớ xa miệng ngươi, hãy suy gẫm ngày và đêm...', baiHatChuDe: 'DÂNG CHÚA LỜI NGỢI CA' },
+      'II': { chuDe: 'QUYẾT TÂM', cauGoc: 'Giê-rê-mi 29:13', noiDungCauGoc: 'Các ngươi sẽ tìm ta, và gặp được, khi các ngươi tìm kiếm ta hết lòng.', baiHatChuDe: 'BÀI CA TÔN VINH' },
+      'III': { chuDe: 'BỀN ĐỖ', cauGoc: 'Cô-lô-se 4:2', noiDungCauGoc: 'Phải bền đỗ và tỉnh thức trong sự cầu nguyện, mà thêm sự tạ ơn vào.', baiHatChuDe: 'TẠ ƠN CHÚA' },
+      'IV': { chuDe: 'ĐẮC THẮNG', cauGoc: 'I Giăng 5:4', noiDungCauGoc: 'Vì hễ sự gì sanh bởi Đức Chúa Trời, thì thắng hơn thế gian; và sự thắng hơn thế gian, ấy là đức tin của chúng ta.', baiHatChuDe: 'ĐẮC THẮNG CHO NGÀI' },
+      'NAM': { chuDe: 'KỶ LUẬT THUỘC LINH', cauGoc: 'I Ti-mô-thê 4:7-8', noiDungCauGoc: 'Hãy tập tành sự tin kính; vì sự tập tành thân thể ích lợi ít bề...' }
+    };
+    return defaults[qUpper] || defaults['I'];
+  }
+
+  function renderThemesBento() {
+    const container = document.getElementById('schedule-themes-bento');
     if (!container) return;
 
-    const list = state.schedules || [];
-    if (list.length === 0) {
-      container.innerHTML = `<div class="col-span-3 text-center py-12 text-xs text-text-secondary">Chưa có lịch sinh hoạt nào được lập.</div>`;
-      return;
-    }
+    const quarters = [
+      { id: 'I', name: 'QUÝ I (T1-T3)', color: 'border-blue-500/30 text-blue-400 bg-blue-950/15' },
+      { id: 'II', name: 'QUÝ II (T4-T6)', color: 'border-amber-500/30 text-warning-amber bg-amber-950/15' },
+      { id: 'III', name: 'QUÝ III (T7-T9)', color: 'border-purple-500/30 text-purple-400 bg-purple-950/15' },
+      { id: 'IV', name: 'QUÝ IV (T10-T12)', color: 'border-pink-500/30 text-pink-400 bg-pink-950/15' }
+    ];
 
-    container.innerHTML = list.map(s => {
+    container.innerHTML = quarters.map(q => {
+      const theme = getThemeForQuarter(q.id);
+      const isSelected = state.selectedScheduleQuarter === q.id;
+
       return `
-        <div class="glass-card rounded-3xl p-5 border border-white/10 flex flex-col justify-between shadow-lg space-y-3">
-          <div>
-            <div class="flex justify-between items-start gap-2 mb-2">
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">${s.ngayNhom || 'Chúa Nhật'}</span>
-              <button onclick="deleteSchedule('${s.id}')" class="no-print p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5"><span class="material-symbols-outlined text-[16px]">delete</span></button>
-            </div>
-            <h3 class="text-sm sm:text-base font-bold text-white leading-snug">${s.deTai || 'Chương Trình Thờ Phượng'}</h3>
-            ${s.cauGoc ? `<p class="text-xs text-emerald-400 font-semibold mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-sm">menu_book</span> ${s.cauGoc}</p>` : ''}
+        <div onclick="filterScheduleByQuarter('${q.id}')" class="glass-card rounded-2xl p-4 border ${q.color} ${isSelected ? 'ring-2 ring-emerald-400 shadow-xl' : ''} cursor-pointer transition-all hover:scale-[1.02] active:scale-95 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider">${q.name}</span>
+            <span class="material-symbols-outlined text-xs opacity-70">filter_alt</span>
           </div>
-
-          <div class="space-y-1 text-xs text-text-secondary pt-2 border-t border-white/10">
-            ${s.toPhuTrach ? `<div><span class="text-text-secondary/70">Tổ phụ trách:</span> <span class="text-white font-medium">${s.toPhuTrach}</span></div>` : ''}
-            ${s.phuTrach ? `<div><span class="text-text-secondary/70">Giảng luận / Diễn giả:</span> <span class="text-white font-medium">${s.phuTrach}</span></div>` : ''}
-            ${s.huongDan ? `<div><span class="text-text-secondary/70">Hướng dẫn chương trình:</span> <span class="text-white">${s.huongDan}</span></div>` : ''}
-            ${s.cauNguyen ? `<div><span class="text-text-secondary/70">Cầu nguyện khai lễ:</span> <span class="text-white">${s.cauNguyen}</span></div>` : ''}
-          </div>
+          <h4 class="text-sm font-extrabold text-white truncate">${theme.chuDe || 'Chưa đặt chủ đề'}</h4>
+          <p class="text-xs text-emerald-400 font-semibold truncate flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">menu_book</span>
+            ${theme.cauGoc || '--'}
+          </p>
+          ${theme.baiHatChuDe ? `<p class="text-[10px] text-text-secondary truncate italic">Bài hát: "${theme.baiHatChuDe}"</p>` : ''}
         </div>
       `;
     }).join('');
   }
 
-  function triggerPrintSchedule() {
-    window.print();
+  function filterScheduleByQuarter(quarter) {
+    state.selectedScheduleQuarter = quarter;
+
+    document.querySelectorAll('.schedule-tab-btn').forEach(btn => {
+      if (btn.getAttribute('data-quarter') === quarter) {
+        btn.className = 'schedule-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 transition-all shrink-0';
+      } else {
+        btn.className = 'schedule-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 border border-transparent transition-all shrink-0';
+      }
+    });
+
+    renderThemesBento();
+    renderScheduleTable();
   }
+
+  function renderScheduleTable() {
+    const tbody = document.getElementById('schedule-table-body');
+    const countBadge = document.getElementById('schedule-count-badge');
+    const bannerSubtitle = document.getElementById('sch-banner-subtitle');
+    const bannerTheme = document.getElementById('sch-banner-theme');
+
+    let list = state.schedules || [];
+
+    // Filter by Quarter
+    if (state.selectedScheduleQuarter !== 'all') {
+      list = list.filter(s => String(s.quy || '').toUpperCase() === state.selectedScheduleQuarter);
+    }
+
+    // Filter by Search Query
+    if (state.searchSchedule) {
+      const q = state.searchSchedule.toLowerCase();
+      list = list.filter(s => 
+        (s.deTai || '').toLowerCase().includes(q) ||
+        (s.cauGoc || '').toLowerCase().includes(q) ||
+        (s.huongDan || '').toLowerCase().includes(q) ||
+        (s.phuTrach || '').toLowerCase().includes(q) ||
+        (s.toPhuTrach || '').toLowerCase().includes(q) ||
+        (s.doKT || '').toLowerCase().includes(q) ||
+        (s.nguoiDoKT || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (countBadge) countBadge.textContent = `${list.length} buổi nhóm`;
+
+    // Update banner for current Quarter
+    const activeQ = state.selectedScheduleQuarter !== 'all' ? state.selectedScheduleQuarter : 'I';
+    const currentTheme = getThemeForQuarter(activeQ);
+
+    if (bannerSubtitle) {
+      bannerSubtitle.textContent = state.selectedScheduleQuarter !== 'all' 
+        ? `QUÝ ${state.selectedScheduleQuarter} NĂM ${state.selectedScheduleYear} (Vào lúc 16h00 chiều Chúa Nhật hàng tuần)`
+        : `LỊCH SINH HOẠT CẢ NĂM ${state.selectedScheduleYear} (Vào lúc 16h00 chiều Chúa Nhật hàng tuần)`;
+    }
+
+    if (bannerTheme) {
+      bannerTheme.innerHTML = `Chủ đề: <span class="text-white font-bold not-italic">${currentTheme.chuDe || 'GIỮ VỮNG'}</span> &bull; Câu gốc: <span class="text-emerald-400 font-bold not-italic">${currentTheme.cauGoc || 'Giô-suê 1:8'}</span>`;
+    }
+
+    if (!tbody) return;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-12 text-xs text-text-secondary">
+            <span class="material-symbols-outlined text-3xl text-emerald-400/50 block mb-2">calendar_month</span>
+            Chưa có buổi sinh hoạt nào trong danh sách.
+            <br />Bấm nút <strong>"⚡ Tạo Lịch Cả Năm"</strong> để tự động sinh 52 buổi nhóm.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = list.map(s => {
+      const isSpecialEvent = (s.deTai || '').toUpperCase().includes('NGHỈ') || 
+                             (s.deTai || '').toUpperCase().includes('DÃ NGOẠI') || 
+                             (s.deTai || '').toUpperCase().includes('LIÊN BAN');
+
+      if (isSpecialEvent && !s.huongDan && !s.phuTrach) {
+        // Special full-row banner (Nghỉ Tết, Nghỉ Phục Sinh...)
+        return `
+          <tr class="bg-amber-950/25 border-b border-white/5 font-semibold text-warning-amber">
+            <td class="py-3 px-3 font-mono text-center text-xs text-white font-bold">${s.ngayNhom || '--'}</td>
+            <td colspan="6" class="py-3 px-3 text-center uppercase tracking-widest text-xs">${s.deTai}</td>
+            <td class="no-print py-2 px-2 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button onclick="openEditScheduleModal('${s.id}')" class="p-1 text-text-secondary hover:text-white rounded" title="Sửa"><span class="material-symbols-outlined text-sm">edit</span></button>
+                <button onclick="deleteSchedule('${s.id}')" class="p-1 text-text-secondary hover:text-rose-400 rounded" title="Xóa"><span class="material-symbols-outlined text-sm">delete</span></button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+
+      const doKtFormatted = [s.doKT, s.nguoiDoKT].filter(Boolean).join(' - ');
+
+      return `
+        <tr class="hover:bg-white/5 transition-colors border-b border-white/5 group">
+          <td class="py-3 px-3 font-mono text-center font-bold text-emerald-400 text-xs">${s.ngayNhom || '--'}</td>
+          <td class="py-3 px-3 font-bold text-white">${s.deTai || '--'}</td>
+          <td class="py-3 px-3 font-medium text-emerald-300">${s.cauGoc || '--'}</td>
+          <td class="py-3 px-3 text-text-secondary">${doKtFormatted || '--'}</td>
+          <td class="py-3 px-3 font-medium text-white">${s.huongDan || '--'}</td>
+          <td class="py-3 px-3 text-emerald-400 font-semibold">${s.toPhuTrach || '--'}</td>
+          <td class="py-3 px-3 font-medium text-sky-300">${s.phuTrach || '--'}</td>
+          <td class="no-print py-2 px-2 text-center">
+            <div class="flex items-center justify-center gap-1">
+              <button onclick="copyZaloTemplate('${s.id}')" class="px-2 py-1 rounded-lg bg-sky-600/30 hover:bg-sky-600/60 text-sky-300 font-bold text-[10px] flex items-center gap-1 transition-all active:scale-95 shadow" title="Sao chép tin nhắn thông báo Zalo">
+                <span class="material-symbols-outlined text-xs">content_copy</span>
+                <span>Zalo</span>
+              </button>
+              <button onclick="openEditScheduleModal('${s.id}')" class="p-1.5 text-text-secondary hover:text-white rounded-lg hover:bg-white/5" title="Sửa"><span class="material-symbols-outlined text-sm">edit</span></button>
+              <button onclick="deleteSchedule('${s.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-lg hover:bg-white/5" title="Xóa"><span class="material-symbols-outlined text-sm">delete</span></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // =========================================================================
+  // 6. ZALO TEMPLATE COPY ENGINE (SAO CHÉP MẪU ZALO CHUẨN ĐẸP 1-CLICK)
+  // =========================================================================
+
+  function copyZaloTemplate(scheduleId) {
+    const s = (state.schedules || []).find(item => String(item.id) === String(scheduleId));
+    if (!s) {
+      showToast('Không tìm thấy thông tin buổi nhóm', 'error');
+      return;
+    }
+
+    const theme = getThemeForQuarter(s.quy || 'I');
+    const banTitle = state.banNganhTitle || 'Thanh Tráng';
+    const gioNhom = s.gioNhom || '16h00';
+    const ngayNhom = s.ngayNhom || '';
+    const baiHat = s.baiHatTonVinh || theme.baiHatChuDe || 'DÂNG CHÚA LỜI NGỢI CA';
+    const trangPhuc = s.trangPhuc || 'Nam áo sơ mi + cavat\nNữ áo dài tự do';
+    const cauGoc = s.cauGoc || theme.cauGoc || '';
+    const noiDungCauGoc = s.noiDungCauGoc || theme.noiDungCauGoc || '';
+    const doKtText = s.doKT ? s.doKT : 'Tự do';
+    const nguoiDoKtText = s.nguoiDoKT ? `   ${s.nguoiDoKT}` : '';
+
+    const text = `@All   📣THÔNG BÁO 📣
+Kính gửi các Anh Chị Em trong ban ${banTitle} chương trình nhóm lại
+Chúa Nhật ${ngayNhom}
+
+💒 7h30 : HỌC TRƯỜNG CHÚA NHẬT
+
+💒 8h30 : THỜ PHƯỢNG CHÚA
+-Ban ${banTitle} Tôn Vinh Chúa
+-Bài hát "${baiHat}"
+-Trang phục: 
+${trangPhuc}
+
+💒 ${gioNhom}: CHƯƠNG TRÌNH THỜ PHƯỢNG-SINH HOẠT BAN ${banTitle.toUpperCase()}
+-Chủ Đề: ${s.deTai || 'SINH HOẠT THỜ PHƯỢNG'}
+-Phụ trách: ${s.phuTrach || 'BĐH'}
+-Tổ phụ trách: ${s.toPhuTrach || 'BĐH'}
+-HCDT: ${s.huongDan || 'Ban Điều Hành'}
+-Đố Kinh Thánh:  ${doKtText}${nguoiDoKtText}
+-Câu gốc: ${cauGoc}
+“${noiDungCauGoc}”
+
+Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
+
+    // Copy to clipboard
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`Đã sao chép thông báo Zalo ngày ${ngayNhom}! Hãy dán vào Zalo ngay.`, 'success');
+      }).catch(err => {
+        fallbackCopyText(text, ngayNhom);
+      });
+    } else {
+      fallbackCopyText(text, ngayNhom);
+    }
+  }
+
+  function fallbackCopyText(text, ngay) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showToast(`Đã sao chép thông báo Zalo ngày ${ngay}!`, 'success');
+    } catch (e) {
+      showToast('Không thể sao chép tự động, vui lòng thử lại', 'error');
+    }
+    document.body.removeChild(ta);
+  }
+
+  // =========================================================================
+  // 7. SCHEDULE MODALS & ACTIONS
+  // =========================================================================
 
   function openAddScheduleModal() {
     document.getElementById('form-schedule').reset();
     document.getElementById('schedule-id').value = '';
+    document.getElementById('modal-schedule-title').innerHTML = `<span class="material-symbols-outlined text-emerald-400">add</span> Thêm Buổi Sinh Hoạt Mới`;
+
+    const activeQ = state.selectedScheduleQuarter !== 'all' ? state.selectedScheduleQuarter : 'I';
+    const qTheme = getThemeForQuarter(activeQ);
+
+    document.getElementById('sch-quy').value = activeQ;
+    document.getElementById('sch-baihat').value = qTheme.baiHatChuDe || 'DÂNG CHÚA LỜI NGỢI CA';
+
+    openModal('modal-schedule');
+  }
+
+  function openEditScheduleModal(id) {
+    const s = (state.schedules || []).find(item => String(item.id) === String(id));
+    if (!s) return;
+
+    document.getElementById('schedule-id').value = s.id;
+    document.getElementById('sch-ngay').value = s.ngayNhom || '';
+    document.getElementById('sch-quy').value = s.quy || 'I';
+    document.getElementById('sch-gio').value = s.gioNhom || '16h00';
+    document.getElementById('sch-detai').value = s.deTai || '';
+    document.getElementById('sch-caugoc').value = s.cauGoc || '';
+    document.getElementById('sch-noidungcaugoc').value = s.noiDungCauGoc || '';
+    document.getElementById('sch-dokt').value = s.doKT || '';
+    document.getElementById('sch-nguoidokt').value = s.nguoiDoKT || '';
+    document.getElementById('sch-huongdan').value = s.huongDan || '';
+    document.getElementById('sch-tophutrach').value = s.toPhuTrach || 'BĐH';
+    document.getElementById('sch-phutrach').value = s.phuTrach || '';
+    document.getElementById('sch-baihat').value = s.baiHatTonVinh || 'DÂNG CHÚA LỜI NGỢI CA';
+    document.getElementById('sch-trangphuc').value = s.trangPhuc || 'Nam: sơ mi + cavat, Nữ: áo dài tự do';
+
+    document.getElementById('modal-schedule-title').innerHTML = `<span class="material-symbols-outlined text-emerald-400">edit</span> Cập Nhật Buổi Sinh Hoạt`;
     openModal('modal-schedule');
   }
 
@@ -1161,23 +1422,29 @@
     const payload = {
       id: document.getElementById('schedule-id').value || null,
       ngayNhom: document.getElementById('sch-ngay').value.trim(),
+      quy: document.getElementById('sch-quy').value,
+      gioNhom: document.getElementById('sch-gio').value.trim(),
       deTai: document.getElementById('sch-detai').value.trim(),
       cauGoc: document.getElementById('sch-caugoc').value.trim(),
+      noiDungCauGoc: document.getElementById('sch-noidungcaugoc').value.trim(),
+      doKT: document.getElementById('sch-dokt').value.trim(),
+      nguoiDoKT: document.getElementById('sch-nguoidokt').value.trim(),
+      huongDan: document.getElementById('sch-huongdan').value.trim(),
       toPhuTrach: document.getElementById('sch-tophutrach').value.trim(),
       phuTrach: document.getElementById('sch-phutrach').value.trim(),
-      huongDan: document.getElementById('sch-huongdan').value.trim(),
-      cauNguyen: document.getElementById('sch-caunguyen').value.trim()
+      baiHatTonVinh: document.getElementById('sch-baihat').value.trim(),
+      trangPhuc: document.getElementById('sch-trangphuc').value.trim()
     };
 
     showLoading(true);
     try {
       const res = await runGAS('apiSaveSchedule', payload, state.activeSheetId);
       if (res && res.success) {
-        showToast('Lưu lịch sinh hoạt thành công!', 'success');
+        showToast('Lưu buổi sinh hoạt thành công!', 'success');
         closeModal('modal-schedule');
         await refreshData(false);
       } else {
-        showToast(res.message || 'Lỗi lưu lịch sinh hoạt', 'error');
+        showToast(res.message || 'Lỗi lưu lịch', 'error');
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -1187,12 +1454,12 @@
   }
 
   async function deleteSchedule(id) {
-    if (!confirm('Bạn có chắc muốn xóa lịch sinh hoạt này?')) return;
+    if (!confirm('Bạn có chắc muốn xóa buổi sinh hoạt này?')) return;
     showLoading(true);
     try {
       const res = await runGAS('apiDeleteSchedule', id, state.activeSheetId);
       if (res && res.success) {
-        showToast('Đã xóa lịch sinh hoạt!', 'info');
+        showToast('Đã xóa buổi sinh hoạt!', 'info');
         await refreshData(false);
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
@@ -1203,6 +1470,139 @@
       showLoading(false);
     }
   }
+
+  function openGenerateYearlyModal() {
+    openModal('modal-generate-year');
+  }
+
+  async function handleGenerateYearlySchedule(e) {
+    e.preventDefault();
+    const year = document.getElementById('gen-year').value;
+    const dayOfWeek = document.getElementById('gen-dayofweek').value;
+    const defaultTime = document.getElementById('gen-default-time').value.trim();
+
+    showLoading(true);
+    try {
+      const payload = {
+        year: year,
+        dayOfWeek: parseInt(dayOfWeek, 10),
+        defaultTime: defaultTime
+      };
+
+      const res = await runGAS('apiGenerateYearlySchedule', payload, state.activeSheetId);
+      if (res && res.success) {
+        showToast(res.message || `Đã sinh 52 buổi nhóm năm ${year} thành công!`, 'success');
+        closeModal('modal-generate-year');
+        await refreshData(false);
+      } else {
+        showToast(res.message || 'Lỗi sinh lịch', 'error');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function openThemeModal() {
+    const q1 = getThemeForQuarter('I');
+    const q2 = getThemeForQuarter('II');
+    const q3 = getThemeForQuarter('III');
+    const q4 = getThemeForQuarter('IV');
+    const y = getThemeForQuarter('NAM');
+
+    document.getElementById('theme-year-title').value = y.chuDe || '';
+    document.getElementById('theme-year-verse').value = y.cauGoc || '';
+    document.getElementById('theme-year-content').value = y.noiDungCauGoc || '';
+
+    document.getElementById('theme-q1-title').value = q1.chuDe || '';
+    document.getElementById('theme-q1-verse').value = q1.cauGoc || '';
+    document.getElementById('theme-q1-content').value = q1.noiDungCauGoc || '';
+
+    document.getElementById('theme-q2-title').value = q2.chuDe || '';
+    document.getElementById('theme-q2-verse').value = q2.cauGoc || '';
+    document.getElementById('theme-q2-content').value = q2.noiDungCauGoc || '';
+
+    document.getElementById('theme-q3-title').value = q3.chuDe || '';
+    document.getElementById('theme-q3-verse').value = q3.cauGoc || '';
+    document.getElementById('theme-q3-content').value = q3.noiDungCauGoc || '';
+
+    document.getElementById('theme-q4-title').value = q4.chuDe || '';
+    document.getElementById('theme-q4-verse').value = q4.cauGoc || '';
+    document.getElementById('theme-q4-content').value = q4.noiDungCauGoc || '';
+
+    openModal('modal-themes');
+  }
+
+  async function handleSaveThemes(e) {
+    e.preventDefault();
+    const themesList = [
+      {
+        id: 'theme_nam',
+        quy: 'NAM',
+        stt: 5,
+        chuDe: document.getElementById('theme-year-title').value.trim(),
+        cauGoc: document.getElementById('theme-year-verse').value.trim(),
+        noiDungCauGoc: document.getElementById('theme-year-content').value.trim()
+      },
+      {
+        id: 'theme_q1',
+        quy: 'I',
+        stt: 1,
+        chuDe: document.getElementById('theme-q1-title').value.trim(),
+        cauGoc: document.getElementById('theme-q1-verse').value.trim(),
+        noiDungCauGoc: document.getElementById('theme-q1-content').value.trim()
+      },
+      {
+        id: 'theme_q2',
+        quy: 'II',
+        stt: 2,
+        chuDe: document.getElementById('theme-q2-title').value.trim(),
+        cauGoc: document.getElementById('theme-q2-verse').value.trim(),
+        noiDungCauGoc: document.getElementById('theme-q2-content').value.trim()
+      },
+      {
+        id: 'theme_q3',
+        quy: 'III',
+        stt: 3,
+        chuDe: document.getElementById('theme-q3-title').value.trim(),
+        cauGoc: document.getElementById('theme-q3-verse').value.trim(),
+        noiDungCauGoc: document.getElementById('theme-q3-content').value.trim()
+      },
+      {
+        id: 'theme_q4',
+        quy: 'IV',
+        stt: 4,
+        chuDe: document.getElementById('theme-q4-title').value.trim(),
+        cauGoc: document.getElementById('theme-q4-verse').value.trim(),
+        noiDungCauGoc: document.getElementById('theme-q4-content').value.trim()
+      }
+    ];
+
+    showLoading(true);
+    try {
+      const res = await runGAS('apiSaveAllThemes', { themes: themesList }, state.activeSheetId);
+      if (res && res.success) {
+        showToast('Lưu chủ đề năm và 4 quý thành công!', 'success');
+        closeModal('modal-themes');
+        await refreshData(false);
+      } else {
+        showToast(res.message || 'Lỗi lưu chủ đề', 'error');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function triggerPrintSchedule() {
+    window.print();
+  }
+
+  // =========================================================================
+  // 8. VISITATIONS & SETTINGS
+  // =========================================================================
 
   function renderVisitations() {
     const container = document.getElementById('visitations-list-container');

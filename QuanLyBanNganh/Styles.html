@@ -95,15 +95,24 @@
     transform: translateX(20px);
   }
 
+  /* Schedule Table Styling */
+  .schedule-custom-table th, 
+  .schedule-custom-table td {
+    vertical-align: middle;
+  }
+
   /* Print Stylesheet for A4/A5 */
   @media print {
     body {
       background: #ffffff !important;
       color: #000000 !important;
-      font-size: 12pt;
+      font-size: 10pt;
     }
-    .no-print, header, nav, #toast-container, .bottom-nav-btn, button, .ambient-glow {
+    .no-print, header, nav, #toast-container, .bottom-nav-btn, button, .ambient-glow, .app-view:not(#view-schedule) {
       display: none !important;
+    }
+    #view-schedule {
+      display: block !important;
     }
     .print-only {
       display: block !important;
@@ -114,14 +123,25 @@
     }
     .glass-card, .glass-card-solid {
       background: #ffffff !important;
-      border: 1px solid #cccccc !important;
+      border: 1px solid #000000 !important;
       box-shadow: none !important;
       backdrop-filter: none !important;
       color: #000000 !important;
       page-break-inside: avoid;
     }
-    .text-white, .text-on-surface, .text-text-secondary {
+    .text-white, .text-on-surface, .text-text-secondary, .text-emerald-400, .text-sky-300, .text-warning-amber {
       color: #000000 !important;
+    }
+    .schedule-custom-table {
+      border: 1px solid #000000 !important;
+    }
+    .schedule-custom-table th, .schedule-custom-table td {
+      border: 1px solid #000000 !important;
+      padding: 6px 4px !important;
+      color: #000000 !important;
+    }
+    .schedule-custom-table thead tr {
+      background-color: #f3f4f6 !important;
     }
   }
 </style>

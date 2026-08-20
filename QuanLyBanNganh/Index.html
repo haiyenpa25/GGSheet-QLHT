@@ -126,9 +126,9 @@
               <span class="material-symbols-outlined text-[18px]">person_add</span>
               <span>Thêm Ban Viên</span>
             </button>
-            <button onclick="navigateTo('attendance')" class="px-4 py-2.5 rounded-2xl bg-surface-elevated hover:bg-white/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all">
-              <span class="material-symbols-outlined text-[18px]">fact_check</span>
-              <span>Điểm Danh Ngay</span>
+            <button onclick="navigateTo('schedule')" class="px-4 py-2.5 rounded-2xl bg-surface-elevated hover:bg-white/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all">
+              <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+              <span>Lịch Sinh Hoạt</span>
             </button>
           </div>
         </div>
@@ -449,35 +449,114 @@
       </div>
     </section>
 
-    <!-- VIEW 6: SCHEDULE (LỊCH SINH HOẠT - PRINT READY) -->
+    <!-- VIEW 6: SCHEDULE (LỊCH SINH HOẠT - FULL YEAR & 4 QUARTERS) -->
     <section id="view-schedule" class="app-view hidden space-y-6">
-      <div class="no-print flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <!-- Header Toolbar -->
+      <div class="no-print flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h2 class="text-2xl font-bold text-white tracking-tight">Lịch Sinh Hoạt &amp; In A4/A5</h2>
-          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Kế hoạch sinh hoạt hàng tuần, phân công nhân sự và in tờ chương trình.</p>
+          <h2 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+            <span>Lịch Sinh Hoạt &amp; Phân Công</span>
+            <span id="schedule-year-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Năm 2026</span>
+          </h2>
+          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Kế hoạch 52 tuần trong năm, phân công nhân sự, đố Kinh Thánh và sao chép mẫu Zalo 1-chạm.</p>
         </div>
-        <div class="flex items-center gap-2">
-          <button onclick="triggerPrintSchedule()" class="py-2.5 px-4 rounded-full glass-card hover:bg-white/10 text-white text-xs font-bold flex items-center gap-1 transition-all active:scale-95 shadow-md">
-            <span class="material-symbols-outlined text-[18px]">print</span>
-            <span>In Bản A4 / A5</span>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="openThemeModal()" class="py-2 px-3.5 rounded-xl glass-card hover:bg-white/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md" title="Chỉnh sửa chủ đề 4 quý & năm">
+            <span class="material-symbols-outlined text-[16px]">palette</span>
+            <span>Chủ Đề 4 Quý</span>
           </button>
-          <button onclick="openAddScheduleModal()" class="py-2.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-md active:scale-95 transition-all">
-            <span class="material-symbols-outlined text-[18px]">add</span>
-            <span>Thêm Lịch Mới</span>
+          <button onclick="openGenerateYearlyModal()" class="py-2 px-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all" title="Tự động sinh 52 buổi nhóm cho cả năm">
+            <span class="material-symbols-outlined text-[16px]">bolt</span>
+            <span>⚡ Tạo Lịch Cả Năm</span>
+          </button>
+          <button onclick="triggerPrintSchedule()" class="py-2 px-3.5 rounded-xl glass-card hover:bg-white/10 text-white text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md">
+            <span class="material-symbols-outlined text-[16px]">print</span>
+            <span>In A4 / A5</span>
+          </button>
+          <button onclick="openAddScheduleModal()" class="py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            <span>+ Buổi Nhóm</span>
           </button>
         </div>
       </div>
 
-      <!-- Print Title Header (Only appears when printing) -->
-      <div class="print-only hidden text-center mb-6">
-        <h1 class="text-xl font-bold uppercase">HỘI THÁNH TIN LÀNH VIỆT NAM</h1>
-        <h2 id="print-ban-title" class="text-lg font-bold uppercase mt-1">CHƯƠNG TRÌNH SINH HOẠT HÀNG TUẦN</h2>
-        <p class="text-xs text-gray-600 italic mt-0.5">Thời gian sinh hoạt chiều Chúa Nhật</p>
-        <hr class="my-3 border-gray-400" />
+      <!-- 4 Bento Cards for 4 Quarters + Year Theme -->
+      <div id="schedule-themes-bento" class="no-print grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Will be rendered dynamically -->
       </div>
 
-      <div id="schedule-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="col-span-3 text-center py-12 text-xs text-text-secondary">Đang tải lịch sinh hoạt...</div>
+      <!-- Quarter Filter Tabs & Search Bar -->
+      <div class="no-print glass-card rounded-2xl p-3 border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <!-- Quarter Tabs -->
+        <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+          <button data-quarter="all" onclick="filterScheduleByQuarter('all')" class="schedule-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 transition-all shrink-0">
+            Tất Cả Năm
+          </button>
+          <button data-quarter="I" onclick="filterScheduleByQuarter('I')" class="schedule-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 border border-transparent transition-all shrink-0">
+            Quý I (T1-T3)
+          </button>
+          <button data-quarter="II" onclick="filterScheduleByQuarter('II')" class="schedule-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 border border-transparent transition-all shrink-0">
+            Quý II (T4-T6)
+          </button>
+          <button data-quarter="III" onclick="filterScheduleByQuarter('III')" class="schedule-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 border border-transparent transition-all shrink-0">
+            Quý III (T7-T9)
+          </button>
+          <button data-quarter="IV" onclick="filterScheduleByQuarter('IV')" class="schedule-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 border border-transparent transition-all shrink-0">
+            Quý IV (T10-T12)
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <input
+            id="schedule-search-input"
+            oninput="state.searchSchedule = this.value; renderSchedule();"
+            class="glass-input rounded-xl px-3 py-1.5 text-xs w-full sm:w-48"
+            placeholder="Tìm đề tài, người HĐCT, đố KT..."
+          />
+          <span id="schedule-count-badge" class="text-xs font-bold text-emerald-400 shrink-0">0 buổi</span>
+        </div>
+      </div>
+
+      <!-- Schedule Table View (Identical to Church Google Sheet Format) -->
+      <div class="glass-card rounded-3xl p-4 sm:p-6 border border-white/10 shadow-2xl space-y-4 overflow-hidden">
+        <!-- Quarter Header Banner -->
+        <div id="schedule-table-header-banner" class="text-center p-4 rounded-2xl bg-surface-elevated/70 border border-white/5 space-y-1">
+          <h3 id="sch-banner-title" class="text-base sm:text-lg font-bold text-white uppercase tracking-wide">CHƯƠNG TRÌNH THỜ PHƯỢNG CHÚA &amp; SINH HOẠT</h3>
+          <p id="sch-banner-subtitle" class="text-xs text-emerald-400 font-semibold">(Vào lúc 16h00 chiều Chúa Nhật hàng tuần)</p>
+          <div id="sch-banner-theme" class="pt-1 text-xs text-text-secondary font-serif italic">
+            Chủ đề: <span class="text-white font-bold not-italic">GIỮ VỮNG</span> &bull; Câu gốc: <span class="text-emerald-400 font-bold not-italic">Giô-suê 1:8</span>
+          </div>
+        </div>
+
+        <!-- Table Responsive Container -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse schedule-custom-table">
+            <thead>
+              <tr class="bg-surface-elevated text-emerald-400 uppercase text-[11px] font-bold border-b border-white/10">
+                <th class="py-3 px-3 w-20 text-center">Ngày</th>
+                <th class="py-3 px-3 min-w-[150px]">Đề Tài</th>
+                <th class="py-3 px-3 min-w-[110px]">Câu Gốc</th>
+                <th class="py-3 px-3 min-w-[150px]">Đố Kinh Thánh</th>
+                <th class="py-3 px-3 min-w-[110px]">HĐCT</th>
+                <th class="py-3 px-3 min-w-[100px]">Tổ Phụ Trách</th>
+                <th class="py-3 px-3 min-w-[110px]">Giảng Luận</th>
+                <th class="no-print py-3 px-3 w-24 text-center">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="schedule-table-body" class="divide-y divide-white/5">
+              <tr>
+                <td colspan="8" class="text-center py-12 text-text-secondary">Đang tải lịch sinh hoạt...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Bottom Sign off for print -->
+        <div class="print-only text-center pt-4 border-t border-gray-300">
+          <p class="italic text-xs text-gray-700">"Chương trình này thay lời mời, xin các Anh/Chị thêm lời cầu nguyện và tham dự đầy đủ."</p>
+          <p class="font-bold text-xs uppercase mt-1">Ban Điều Hành</p>
+        </div>
       </div>
     </section>
 
@@ -564,9 +643,9 @@
       <span class="material-symbols-outlined text-2xl">fact_check</span>
       <span class="nav-label text-[10px] mt-0.5">Điểm danh</span>
     </button>
-    <button data-page="finance" onclick="navigateTo('finance')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
-      <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
-      <span class="nav-label text-[10px] mt-0.5">Sổ quỹ</span>
+    <button data-page="schedule" onclick="navigateTo('schedule')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-2xl">calendar_month</span>
+      <span class="nav-label text-[10px] mt-0.5">Lịch sinh hoạt</span>
     </button>
     <button data-page="settings" onclick="navigateTo('settings')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
       <span class="material-symbols-outlined text-2xl">settings</span>
@@ -760,53 +839,217 @@
     </div>
   </div>
 
-  <!-- MODAL: LỊCH SINH HOẠT -->
+  <!-- MODAL: THÊM / SỬA BUỔI SINH HOẠT -->
   <div id="modal-schedule" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
-    <div class="glass-card-solid rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col max-h-[90vh]">
+    <div class="glass-card-solid rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col max-h-[92vh]">
       <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
+        <h3 id="modal-schedule-title" class="text-base font-bold text-white flex items-center gap-2">
           <span class="material-symbols-outlined text-emerald-400">calendar_month</span>
-          Lịch Sinh Hoạt Buổi Nhóm
+          Phân Công Buổi Sinh Hoạt
         </h3>
         <button onclick="closeModal('modal-schedule')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
       </div>
 
       <form id="form-schedule" onsubmit="handleSaveSchedule(event)" class="p-6 space-y-4 overflow-y-auto">
         <input type="hidden" id="schedule-id" />
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-xs font-semibold text-text-secondary mb-1">Ngày Nhóm *</label>
-            <input id="sch-ngay" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold" placeholder="DD/MM/YYYY (VD: 24/08/2026)" />
+            <input id="sch-ngay" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold" placeholder="DD/MM/YYYY (VD: 16/08/2026)" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Chủ Đề / Đề Tài *</label>
-            <input id="sch-detai" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold" placeholder="VD: Đức Tin Vững Vàng" />
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Thuộc Quý *</label>
+            <select id="sch-quy" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold">
+              <option value="I">Quý I (Tháng 1 - 3)</option>
+              <option value="II">Quý II (Tháng 4 - 6)</option>
+              <option value="III">Quý III (Tháng 7 - 9)</option>
+              <option value="IV">Quý IV (Tháng 10 - 12)</option>
+            </select>
           </div>
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Giờ Sinh Hoạt</label>
+            <input id="sch-gio" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-mono" placeholder="16h00" value="16h00" />
+          </div>
+
           <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Câu Gốc &amp; Phân Đoạn Kinh Thánh</label>
-            <input id="sch-caugoc" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="VD: Hê-bơ-rơ 11:1" />
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Chủ Đề / Đề Tài *</label>
+            <input id="sch-detai" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold text-emerald-400" placeholder="VD: ĐỐ KINH THÁNH, HỌC KINH THÁNH..." />
           </div>
           <div>
             <label class="block text-xs font-semibold text-text-secondary mb-1">Tổ Phụ Trách</label>
-            <input id="sch-tophutrach" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="VD: Tổ 1" />
+            <select id="sch-tophutrach" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold">
+              <option value="BĐH">BĐH (Ban Điều Hành)</option>
+            </select>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Câu Gốc Buổi Nhóm</label>
+            <input id="sch-caugoc" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="VD: I Cô-rinh-tô 16:13" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Người Giảng Luận / Chia Sẻ</label>
-            <input id="sch-phutrach" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="Mục sư / Diễn giả" />
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Người Giảng Luận / Phụ Trách</label>
+            <input id="sch-phutrach" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold" placeholder="MS / Truyền Đạo / Diễn Giả / BĐH" />
+          </div>
+
+          <div class="sm:col-span-3">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Nội Dung Câu Gốc (Dùng tạo bài Zalo)</label>
+            <textarea id="sch-noidungcaugoc" rows="2" class="glass-input w-full rounded-xl px-4 py-2 text-xs italic font-serif" placeholder="“Anh em hãy tỉnh thức, hãy vững vàng trong đức tin, hãy dốc chí trượng phu và mạnh mẽ.”"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Phân Đoạn Đố KT</label>
+            <input id="sch-dokt" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="VD: Xuất Ê-díp-tô Ký 6-10" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Hướng Dẫn Chương Trình</label>
-            <input id="sch-huongdan" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="Họ và tên" />
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Người Đố Kinh Thánh (Ban viên)</label>
+            <select id="sch-nguoidokt" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold"></select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Cầu Nguyện Khai Lễ</label>
-            <input id="sch-caunguyen" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="Họ và tên" />
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Hướng Dẫn Chương Trình (HĐCT)</label>
+            <select id="sch-huongdan" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold"></select>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Bài Hát Tôn Vinh Chúa (Sáng CN 8h30)</label>
+            <input id="sch-baihat" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder='VD: Bài hát "DÂNG CHÚA LỜI NGỢI CA"' value="DÂNG CHÚA LỜI NGỢI CA" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Trang Phục Nhóm</label>
+            <input id="sch-trangphuc" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="Nam: Sơ mi + cavat, Nữ: Áo dài" value="Nam: sơ mi + cavat, Nữ: áo dài tự do" />
           </div>
         </div>
 
         <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
           <button type="button" onclick="closeModal('modal-schedule')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5">Hủy</button>
-          <button type="submit" class="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Lịch</button>
+          <button type="submit" class="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Buổi Nhóm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: TỰ ĐỘNG TẠO LỊCH CẢ NĂM (52 TUẦN) -->
+  <div id="modal-generate-year" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="glass-card-solid rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-emerald-500/30 animate-fade-in flex flex-col">
+      <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-emerald-400">bolt</span>
+          Tự Động Tạo Lịch 1 Năm (52 Tuần)
+        </h3>
+        <button onclick="closeModal('modal-generate-year')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form onsubmit="handleGenerateYearlySchedule(event)" class="p-6 space-y-4">
+        <p class="text-xs text-text-secondary leading-relaxed">
+          Hệ thống sẽ tự động tính toán toàn bộ các ngày sinh hoạt từ Tháng 1 đến Tháng 12, phân bổ sẵn vào 4 Quý để bạn chỉ việc điền phân công.
+        </p>
+
+        <div>
+          <label class="block text-xs font-semibold text-text-secondary mb-1">Chọn Năm Sinh Hoạt *</label>
+          <select id="gen-year" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-bold text-white">
+            <option value="2026" selected>Năm 2026</option>
+            <option value="2027">Năm 2027</option>
+            <option value="2028">Năm 2028</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-text-secondary mb-1">Thứ Sinh Hoạt Hàng Tuần *</label>
+          <select id="gen-dayofweek" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-bold text-emerald-400">
+            <option value="0" selected>Chúa Nhật (Mặc định)</option>
+            <option value="6">Thứ Bảy</option>
+            <option value="5">Thứ Sáu</option>
+            <option value="4">Thứ Năm</option>
+            <option value="3">Thứ Tư</option>
+            <option value="2">Thứ Ba</option>
+            <option value="1">Thứ Hai</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-text-secondary mb-1">Giờ Sinh Hoạt Mặc Định</label>
+          <input id="gen-default-time" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-mono" value="16h00" />
+        </div>
+
+        <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-generate-year')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5">Hủy</button>
+          <button type="submit" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition-all shadow-lg active:scale-95">⚡ Tạo 52 Buổi Nhóm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CÀI ĐẶT CHỦ ĐỀ NĂM & 4 QUÝ -->
+  <div id="modal-themes" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="glass-card-solid rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col max-h-[92vh]">
+      <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-emerald-400">palette</span>
+          Cài Đặt Chủ Đề Năm &amp; 4 Quý
+        </h3>
+        <button onclick="closeModal('modal-themes')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form onsubmit="handleSaveThemes(event)" class="p-6 space-y-5 overflow-y-auto">
+        <!-- Năm -->
+        <div class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-3">
+          <h4 class="text-xs font-bold text-emerald-400 uppercase flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base">stars</span>
+            Chủ Đề Chung Cho Cả Năm
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-text-secondary mb-1">Chủ Đề Năm *</label>
+              <input id="theme-year-title" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-bold text-white" placeholder="VD: KỶ LUẬT THUỘC LINH" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-text-secondary mb-1">Câu Gốc Năm</label>
+              <input id="theme-year-verse" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-bold text-emerald-400" placeholder="VD: I Ti-mô-thê 4:7-8" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-[11px] font-semibold text-text-secondary mb-1">Nội Dung Lời Câu Gốc</label>
+              <textarea id="theme-year-content" rows="2" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs italic font-serif" placeholder="Hãy tập tành sự tin kính..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Quý -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Quý I -->
+          <div class="p-3.5 rounded-2xl bg-surface-elevated/70 border border-white/5 space-y-2">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 inline-block">QUÝ I (T1 - T3)</span>
+            <input id="theme-q1-title" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs font-bold" placeholder="Chủ đề: GIỮ VỮNG" />
+            <input id="theme-q1-verse" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs text-emerald-400" placeholder="Câu gốc: Giô-suê 1:8" />
+            <textarea id="theme-q1-content" rows="2" class="glass-input w-full rounded-xl px-3 py-1.5 text-[11px] italic font-serif" placeholder="Quyển sách luật pháp này chớ xa miệng ngươi..."></textarea>
+          </div>
+
+          <!-- Quý II -->
+          <div class="p-3.5 rounded-2xl bg-surface-elevated/70 border border-white/5 space-y-2">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-warning-amber border border-amber-500/30 inline-block">QUÝ II (T4 - T6)</span>
+            <input id="theme-q2-title" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs font-bold" placeholder="Chủ đề: QUYẾT TÂM" />
+            <input id="theme-q2-verse" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs text-emerald-400" placeholder="Câu gốc: Giê-rê-mi 29:13" />
+            <textarea id="theme-q2-content" rows="2" class="glass-input w-full rounded-xl px-3 py-1.5 text-[11px] italic font-serif" placeholder="Các ngươi sẽ tìm ta, và gặp được..."></textarea>
+          </div>
+
+          <!-- Quý III -->
+          <div class="p-3.5 rounded-2xl bg-surface-elevated/70 border border-white/5 space-y-2">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 inline-block">QUÝ III (T7 - T9)</span>
+            <input id="theme-q3-title" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs font-bold" placeholder="Chủ đề: BỀN ĐỖ" />
+            <input id="theme-q3-verse" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs text-emerald-400" placeholder="Câu gốc: Cô-lô-se 4:2" />
+            <textarea id="theme-q3-content" rows="2" class="glass-input w-full rounded-xl px-3 py-1.5 text-[11px] italic font-serif" placeholder="Phải bền đỗ và tỉnh thức trong sự cầu nguyện..."></textarea>
+          </div>
+
+          <!-- Quý IV -->
+          <div class="p-3.5 rounded-2xl bg-surface-elevated/70 border border-white/5 space-y-2">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/20 text-pink-400 border border-pink-500/30 inline-block">QUÝ IV (T10 - T12)</span>
+            <input id="theme-q4-title" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs font-bold" placeholder="Chủ đề: ĐẮC THẮNG" />
+            <input id="theme-q4-verse" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs text-emerald-400" placeholder="Câu gốc: I Giăng 5:4" />
+            <textarea id="theme-q4-content" rows="2" class="glass-input w-full rounded-xl px-3 py-1.5 text-[11px] italic font-serif" placeholder="Vì hễ sự gì sanh bởi Đức Chúa Trời..."></textarea>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-themes')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5">Hủy</button>
+          <button type="submit" class="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Chủ Đề</button>
         </div>
       </form>
     </div>

@@ -25,7 +25,7 @@ const SCHEMAS = {
   [SHEET_NAMES.TO_NHOM]: ['id', 'maTo', 'tenTo', 'toTruong', 'toPho', 'soLuongThanhVien', 'lichSinhHoat', 'diaDiem', 'ghiChu'],
   [SHEET_NAMES.DIEM_DANH]: ['id', 'ngayDiemDanh', 'thanhVienId', 'coMat', 'thuocCauGoc', 'ghiChu', 'nguoiDiemDanh', 'createdAt'],
   [SHEET_NAMES.THAM_VIENG]: ['id', 'ngayTham', 'thanhVienId', 'nguoiTham', 'hinhThuc', 'noiDungCauNguyen', 'ketQua', 'ngayTao'],
-  [SHEET_NAMES.LICH_QUY]: ['id', 'nam', 'quy', 'tuanThu', 'ngayNhom', 'deTai', 'cauGoc', 'doKT', 'toPhuTrach', 'phuTrach', 'huongDan', 'cauNguyen', 'banHat', 'ghiChu', 'trangThai'],
+  [SHEET_NAMES.LICH_QUY]: ['id', 'nam', 'quy', 'tuanThu', 'ngayNhom', 'deTai', 'cauGoc', 'noiDungCauGoc', 'doKT', 'nguoiDoKT', 'huongDan', 'toPhuTrach', 'phuTrach', 'baiHatTonVinh', 'trangPhuc', 'gioNhom', 'ghiChu', 'trangThai'],
   [SHEET_NAMES.CHU_DE]: ['id', 'nam', 'quy', 'stt', 'chuDe', 'cauGoc', 'noiDungCauGoc', 'baiHatChuDe', 'mucTieu', 'khauHieu', 'trangThai'],
   [SHEET_NAMES.CAU_HINH]: ['key', 'value', 'description', 'updatedAt'],
   [SHEET_NAMES.DANH_MUC_QUY]: ['id', 'maQuy', 'tenQuy', 'soDuDauKy', 'moTa', 'trangThai', 'ngayTao'],
@@ -107,6 +107,12 @@ function handleApiRequest(action, params) {
       case 'apiDeleteSchedule':
         result = apiDeleteSchedule(params.id, sheetId);
         break;
+      case 'apiGenerateYearlySchedule':
+        result = apiGenerateYearlySchedule(params.data || params, sheetId);
+        break;
+      case 'apiSaveAllThemes':
+        result = apiSaveAllThemes(params.data || params, sheetId);
+        break;
       case 'apiSaveVisitation':
         result = apiSaveVisitation(params.data || params, sheetId);
         break;
@@ -178,7 +184,7 @@ function setupDatabase(sheetIdOrUrl) {
     let sheet = ss.getSheetByName(sheetName);
     if (!sheet) {
       const allSheets = ss.getSheets();
-      if (sheetName === SHEET_NAMES.THANH_VIEN && allSheets.length === 1 && (allSheets[0].getName().startsWith('Sheet') || allSheets[0].getName().startsWith('Trang'))) {
+      if (allSheets.length === 1 && (allSheets[0].getName() === 'Sheet1' || allSheets[0].getName() === 'Trang tính1')) {
         sheet = allSheets[0];
         sheet.setName(sheetName);
       } else {
@@ -186,14 +192,13 @@ function setupDatabase(sheetIdOrUrl) {
       }
     }
 
-    const headers = SCHEMAS[sheetName];
-    if (sheet.getLastRow() === 0 || sheet.getLastColumn() === 0) {
+    if (sheet.getLastRow() === 0) {
+      const headers = SCHEMAS[sheetName];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       sheet.getRange(1, 1, 1, headers.length)
-        .setBackground('#10b981')
-        .setFontColor('#ffffff')
         .setFontWeight('bold')
-        .setHorizontalAlignment('center');
+        .setBackground('#10b981')
+        .setFontColor('#ffffff');
       sheet.setFrozenRows(1);
     }
   });
@@ -215,12 +220,14 @@ function normalizeHeaderKey(header) {
   const map = {
     'id': 'id',
     'matv': 'maTV',
+    'mabv': 'maTV',
     'code': 'maTV',
     'hoten': 'hoTen',
     'hovaten': 'hoTen',
     'fullname': 'hoTen',
     'name': 'hoTen',
     'ten': 'hoTen',
+    'tenbanvien': 'hoTen',
     'sdt': 'sdt',
     'dienthoai': 'sdt',
     'phone': 'sdt',
@@ -276,7 +283,41 @@ function normalizeHeaderKey(header) {
     // Thăm viếng
     'ngaytham': 'ngayTham',
     'nguoitham': 'nguoiTham',
-    'noidungcaunguyen': 'noiDungCauNguyen'
+    'noidungcaunguyen': 'noiDungCauNguyen',
+
+    // Lịch sinh hoạt
+    'nam': 'nam',
+    'year': 'nam',
+    'quy': 'quy',
+    'quarter': 'quy',
+    'tuanthu': 'tuanThu',
+    'week': 'tuanThu',
+    'ngaynhom': 'ngayNhom',
+    'detai': 'deTai',
+    'topic': 'deTai',
+    'caugoc': 'cauGoc',
+    'verse': 'cauGoc',
+    'noidungcaugoc': 'noiDungCauGoc',
+    'dokt': 'doKT',
+    'nguoidokt': 'nguoiDoKT',
+    'tophutrach': 'toPhuTrach',
+    'phutrach': 'phuTrach',
+    'giangluan': 'phuTrach',
+    'huongdan': 'huongDan',
+    'hdct': 'huongDan',
+    'nguoihd': 'huongDan',
+    'caunguyen': 'cauNguyen',
+    'banhat': 'baiHatTonVinh',
+    'baihattonvinh': 'baiHatTonVinh',
+    'baihat': 'baiHatTonVinh',
+    'baihatchude': 'baiHatChuDe',
+    'trangphuc': 'trangPhuc',
+    'gionhom': 'gioNhom',
+    'time': 'gioNhom',
+
+    // Chủ đề
+    'chude': 'chuDe',
+    'theme': 'chuDe'
   };
 
   return map[raw] || header;
@@ -337,12 +378,12 @@ function sheetInsert(sheetName, record, customSheetId) {
       setupDatabase(customSheetId);
       sheet = ss.getSheetByName(sheetName);
     }
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
 
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
     if (!record.id) {
       record.id = 'id_' + Utilities.getUuid().substring(0, 8);
     }
-    if (!record.ngayTao) {
+    if (!record.ngayTao && !record.createdAt) {
       record.ngayTao = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss');
     }
 
@@ -352,6 +393,7 @@ function sheetInsert(sheetName, record, customSheetId) {
       if (record[norm] !== undefined) return record[norm];
       return '';
     });
+
     sheet.appendRow(row);
     return record;
   } finally {
@@ -365,31 +407,25 @@ function sheetUpdate(sheetName, id, updates, customSheetId) {
   try {
     const ss = getSpreadsheet(customSheetId);
     const sheet = ss.getSheetByName(sheetName);
-    const data = sheet.getDataRange().getValues();
-    if (data.length <= 1) throw new Error('Bảng dữ liệu trống');
+    if (!sheet) throw new Error(`Không tìm thấy sheet ${sheetName}`);
 
+    const data = sheet.getDataRange().getValues();
     const headers = data[0].map(h => String(h).trim());
-    let rowIndex = -1;
 
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
-        rowIndex = i + 1;
-        break;
+      if (String(data[i][0]) === String(id) || String(data[i][headers.indexOf('id')]) === String(id)) {
+        headers.forEach((h, colIdx) => {
+          const norm = normalizeHeaderKey(h);
+          if (updates[h] !== undefined) {
+            sheet.getRange(i + 1, colIdx + 1).setValue(updates[h]);
+          } else if (updates[norm] !== undefined) {
+            sheet.getRange(i + 1, colIdx + 1).setValue(updates[norm]);
+          }
+        });
+        return { success: true, id: id };
       }
     }
-
-    if (rowIndex === -1) throw new Error('Không tìm thấy bản ghi ID: ' + id);
-
-    const currentRow = data[rowIndex - 1];
-    const newRow = headers.map((h, idx) => {
-      const norm = normalizeHeaderKey(h);
-      if (updates[h] !== undefined) return updates[h];
-      if (updates[norm] !== undefined) return updates[norm];
-      return currentRow[idx];
-    });
-
-    sheet.getRange(rowIndex, 1, 1, headers.length).setValues([newRow]);
-    return { id, ...updates };
+    throw new Error(`Không tìm thấy bản ghi với ID ${id}`);
   } finally {
     try { lock.releaseLock(); } catch(e) {}
   }
@@ -401,41 +437,44 @@ function sheetDelete(sheetName, id, customSheetId) {
   try {
     const ss = getSpreadsheet(customSheetId);
     const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) throw new Error(`Không tìm thấy sheet ${sheetName}`);
+
     const data = sheet.getDataRange().getValues();
+    const headers = data[0].map(h => String(h).trim());
+    const idColIdx = headers.indexOf('id') !== -1 ? headers.indexOf('id') : 0;
 
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
+      if (String(data[i][idColIdx]) === String(id)) {
         sheet.deleteRow(i + 1);
-        return true;
+        return { success: true, message: 'Đã xóa bản ghi' };
       }
     }
-    throw new Error('Không tìm thấy bản ghi để xóa (ID: ' + id + ')');
+    throw new Error(`Không tìm thấy bản ghi với ID ${id}`);
   } finally {
     try { lock.releaseLock(); } catch(e) {}
   }
 }
 
-/**
- * Batch-Optimized apiGetInitialData (Reads entire spreadsheet in 1 single API call)
- */
+// =========================================================================
+// API HANDLERS (OPTIMIZED BATCH DATA INITIALIZATION)
+// =========================================================================
+
 function apiGetInitialData(customSheetId) {
   try {
     const ss = getSpreadsheet(customSheetId);
-    const sheets = ss.getSheets();
+    const allSheets = ss.getSheets();
     const sheetMap = {};
 
-    sheets.forEach(s => {
-      sheetMap[s.getName()] = s.getDataRange().getValues();
+    allSheets.forEach(s => {
+      const name = s.getName();
+      const lastRow = s.getLastRow();
+      const lastCol = s.getLastColumn();
+      if (lastRow > 0 && lastCol > 0) {
+        sheetMap[name] = s.getRange(1, 1, lastRow, lastCol).getValues();
+      } else {
+        sheetMap[name] = [];
+      }
     });
-
-    // Check if sheets exist; if not, initialize database
-    if (!sheetMap[SHEET_NAMES.THANH_VIEN]) {
-      setupDatabase(customSheetId);
-      const newSheets = ss.getSheets();
-      newSheets.forEach(s => {
-        sheetMap[s.getName()] = s.getDataRange().getValues();
-      });
-    }
 
     const members = parseRowsFromValues(sheetMap[SHEET_NAMES.THANH_VIEN] || []);
     const groups = parseRowsFromValues(sheetMap[SHEET_NAMES.TO_NHOM] || []);
@@ -448,20 +487,30 @@ function apiGetInitialData(customSheetId) {
     const templates = parseRowsFromValues(sheetMap[SHEET_NAMES.MAU_TIN_NHAN] || []);
 
     let totalBalance = 0;
-    funds.forEach(f => {
-      totalBalance += Number(f.soDuDauKy || 0);
-    });
     transactions.forEach(t => {
-      const amount = Number(t.soTien || 0);
-      if (t.loaiGD === 'THU') totalBalance += amount;
-      if (t.loaiGD === 'CHI') totalBalance -= amount;
+      const amount = Number(t.soTien) || 0;
+      const type = (t.loaiGD || '').toUpperCase();
+      if (type === 'THU') totalBalance += amount;
+      else if (type === 'CHI') totalBalance -= amount;
     });
 
-    const yearTheme = themes.find(t => String(t.nam) === '2026') || themes[0] || {
+    // Default Theme
+    let activeTheme = {
       chuDe: 'KỶ LUẬT THUỘC LINH',
       cauGoc: 'I Ti-mô-thê 4:7-8',
       noiDungCauGoc: 'Hãy tập tành sự tin kính; vì sự tập tành thân thể ích lợi ít bề, còn sự tin kính ích cho mọi sự, có lời hứa về đời này và đời sau nữa.'
     };
+
+    if (themes && themes.length > 0) {
+      const yearTheme = themes.find(t => String(t.quy || '').toUpperCase() === 'NAM') || themes[0];
+      if (yearTheme) {
+        activeTheme = {
+          chuDe: yearTheme.chuDe || activeTheme.chuDe,
+          cauGoc: yearTheme.cauGoc || activeTheme.cauGoc,
+          noiDungCauGoc: yearTheme.noiDungCauGoc || activeTheme.noiDungCauGoc
+        };
+      }
+    }
 
     return {
       success: true,
@@ -472,17 +521,18 @@ function apiGetInitialData(customSheetId) {
           group_count: groups.length,
           total_balance: totalBalance,
           total_attendance_records: attendances.length,
-          total_visits: visits.length
+          total_visits: visits.length,
+          total_schedules: schedules.length
         },
-        theme: yearTheme,
+        theme: activeTheme,
+        themes: themes,
         members: members,
         groups: groups,
         funds: funds,
-        transactions: transactions.slice(-20).reverse(),
-        attendances: attendances.slice(-50).reverse(),
-        visits: visits.slice(-20).reverse(),
+        transactions: transactions.reverse(),
+        attendances: attendances,
+        visits: visits.reverse(),
         schedules: schedules,
-        themes: themes,
         templates: templates,
         spreadsheet: {
           id: ss.getId(),
@@ -633,7 +683,7 @@ function apiSaveSchedule(payload, customSheetId) {
     if (!payload.deTai) throw new Error('Đề tài không được để trống');
 
     let res = payload.id ? sheetUpdate(SHEET_NAMES.LICH_QUY, payload.id, payload, customSheetId) : sheetInsert(SHEET_NAMES.LICH_QUY, payload, customSheetId);
-    return { success: true, data: res, message: 'Đã lưu lịch sinh hoạt thành công!' };
+    return { success: true, data: res, message: 'Đã lưu buổi sinh hoạt thành công!' };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
@@ -642,7 +692,137 @@ function apiSaveSchedule(payload, customSheetId) {
 function apiDeleteSchedule(id, customSheetId) {
   try {
     sheetDelete(SHEET_NAMES.LICH_QUY, id, customSheetId);
-    return { success: true, message: 'Đã xóa lịch sinh hoạt thành công!' };
+    return { success: true, message: 'Đã xóa buổi sinh hoạt thành công!' };
+  } catch (err) {
+    return { success: false, message: err.message || String(err) };
+  }
+}
+
+function apiGenerateYearlySchedule(payload, customSheetId) {
+  try {
+    const year = parseInt(payload.nam || payload.year || new Date().getFullYear(), 10);
+    const dayOfWeek = parseInt(payload.dayOfWeek !== undefined ? payload.dayOfWeek : 0, 10); // 0 = Sunday, 1 = Monday...
+    const defaultTime = payload.defaultTime || '16:00';
+    const defaultTopic = payload.defaultTopic || 'HỌC KINH THÁNH';
+
+    const ss = getSpreadsheet(customSheetId);
+    let sheet = ss.getSheetByName(SHEET_NAMES.LICH_QUY);
+    if (!sheet) {
+      setupDatabase(customSheetId);
+      sheet = ss.getSheetByName(SHEET_NAMES.LICH_QUY);
+    }
+
+    // Get existing dates to avoid duplicating
+    const existingRows = parseRowsFromValues(sheet.getDataRange().getValues());
+    const existingDates = {};
+    existingRows.forEach(r => {
+      if (r.ngayNhom) existingDates[r.ngayNhom] = true;
+    });
+
+    // Get Themes if available
+    let chuDeRows = [];
+    let sheetChuDe = ss.getSheetByName(SHEET_NAMES.CHU_DE);
+    if (sheetChuDe) {
+      chuDeRows = parseRowsFromValues(sheetChuDe.getDataRange().getValues());
+    }
+    const themeMap = {};
+    chuDeRows.forEach(cd => {
+      if (cd.quy) themeMap[String(cd.quy).toUpperCase()] = cd;
+    });
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+    const newRecords = [];
+
+    // Loop through all target days in the year
+    let curDate = new Date(year, 0, 1);
+    while (curDate.getDay() !== dayOfWeek) {
+      curDate.setDate(curDate.getDate() + 1);
+    }
+
+    let weekNum = 1;
+    while (curDate.getFullYear() === year) {
+      const month = curDate.getMonth() + 1; // 1 - 12
+      let quy = 'I';
+      if (month >= 4 && month <= 6) quy = 'II';
+      else if (month >= 7 && month <= 9) quy = 'III';
+      else if (month >= 10 && month <= 12) quy = 'IV';
+
+      const d = ('0' + curDate.getDate()).slice(-2);
+      const m = ('0' + month).slice(-2);
+      const ngayNhomFormatted = `${d}/${m}/${year}`;
+
+      if (!existingDates[ngayNhomFormatted]) {
+        const themeQ = themeMap[quy] || {};
+        const rec = {
+          id: 'sch_' + Utilities.getUuid().substring(0, 8),
+          nam: year,
+          quy: quy,
+          tuanThu: weekNum,
+          ngayNhom: ngayNhomFormatted,
+          deTai: defaultTopic,
+          cauGoc: themeQ.cauGoc || '',
+          noiDungCauGoc: themeQ.noiDungCauGoc || '',
+          doKT: '',
+          nguoiDoKT: '',
+          huongDan: '',
+          toPhuTrach: '',
+          phuTrach: 'BĐH',
+          baiHatTonVinh: themeQ.baiHatChuDe || 'DÂNG CHÚA LỜI NGỢI CA',
+          trangPhuc: 'Nam: áo sơ mi + cavat, Nữ: áo dài tự do',
+          gioNhom: defaultTime,
+          ghiChu: '',
+          trangThai: 'active'
+        };
+
+        const rowValues = headers.map(h => {
+          const norm = normalizeHeaderKey(h);
+          if (rec[h] !== undefined) return rec[h];
+          if (rec[norm] !== undefined) return rec[norm];
+          return '';
+        });
+        newRecords.push(rowValues);
+      }
+
+      curDate.setDate(curDate.getDate() + 7);
+      weekNum++;
+    }
+
+    if (newRecords.length > 0) {
+      const lastRow = sheet.getLastRow();
+      sheet.getRange(lastRow + 1, 1, newRecords.length, headers.length).setValues(newRecords);
+    }
+
+    return {
+      success: true,
+      count: newRecords.length,
+      message: `Đã tự động tạo thành công ${newRecords.length} buổi sinh hoạt cho năm ${year}!`
+    };
+  } catch (err) {
+    return { success: false, message: err.message || String(err) };
+  }
+}
+
+function apiSaveAllThemes(payload, customSheetId) {
+  try {
+    const list = payload.themes || payload.data || payload;
+    if (!Array.isArray(list)) throw new Error('Dữ liệu chủ đề không hợp lệ');
+
+    const ss = getSpreadsheet(customSheetId);
+    let sheet = ss.getSheetByName(SHEET_NAMES.CHU_DE);
+    if (!sheet) {
+      setupDatabase(customSheetId);
+      sheet = ss.getSheetByName(SHEET_NAMES.CHU_DE);
+    }
+
+    list.forEach(t => {
+      if (t.id) {
+        try { sheetUpdate(SHEET_NAMES.CHU_DE, t.id, t, customSheetId); } catch(e) { sheetInsert(SHEET_NAMES.CHU_DE, t, customSheetId); }
+      } else {
+        sheetInsert(SHEET_NAMES.CHU_DE, t, customSheetId);
+      }
+    });
+
+    return { success: true, message: 'Đã lưu thông tin chủ đề năm và 4 quý thành công!' };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
