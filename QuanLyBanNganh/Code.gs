@@ -207,26 +207,25 @@ function setupDatabase(sheetIdOrUrl) {
         .setBackground('#10b981')
         .setFontColor('#ffffff');
       sheet.setFrozenRows(1);
-    } else {
-      // Sheet already exists - check if any columns are missing and append them!
-      const currentHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
-      const normalizedCurrent = currentHeaders.map(h => normalizeHeaderKey(h));
-      
-      const missingHeaders = [];
-      expectedHeaders.forEach(exp => {
-        const normExp = normalizeHeaderKey(exp);
-        if (!normalizedCurrent.includes(normExp) && !currentHeaders.includes(exp)) {
-          missingHeaders.push(exp);
-        }
-      });
-
-      if (missingHeaders.length > 0) {
-        const startCol = lastCol + 1;
-        sheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
-        sheet.getRange(1, startCol, 1, missingHeaders.length)
-          .setFontWeight('bold')
-          .setBackground('#10b981')
-          .setFontColor('#ffffff');
+      if (sheetName === SHEET_NAMES.DANH_MUC_QUY && sheet.getLastRow() === 1) {
+        sheet.appendRow(['q_ban', 'QUY_BAN', 'Quỹ Ban', 0, 'Quỹ sinh hoạt chính của Ban', 'active', Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy')]);
+      } else if (sheetName === SHEET_NAMES.CHU_DE && sheet.getLastRow() === 1) {
+        const curY = new Date().getFullYear();
+        const defaultThemes = [
+          ['t_year', curY, 'NAM', 0, 'KỶ LUẬT THUỘC LINH', 'I Ti-mô-thê 4:7-8', 'Hãy tập tành sự tin kính; vì sự tập tành thân thể ích lợi ít bề...', '', '', '', 'active'],
+          ['t_q1', curY, 'I', 1, 'GIỮ VỮNG', 'Giô-suê 1:8', 'Quyển sách luật pháp này chớ xa miệng ngươi...', '', '', '', 'active'],
+          ['t_q2', curY, 'II', 2, 'TĂNG TRƯỞNG', 'II Phi-e-rơ 3:18', 'Hãy tấn tới trong ân điển và trong sự thông biết Chúa...', '', '', '', 'active'],
+          ['t_q3', curY, 'III', 3, 'VÂNG PHỤC', 'Hê-bơ-rơ 5:8', 'Dầu Ngài là Con, cũng đã học tập vâng lời...', '', '', '', 'active'],
+          ['t_q4', curY, 'IV', 4, 'ĐẮC THẮNG', 'I Giăng 5:4', 'Vì hễ sự gì sanh bởi Đức Chúa Trời, thì thắng hơn thế gian...', '', '', '', 'active']
+        ];
+        defaultThemes.forEach(r => sheet.appendRow(r));
+      } else if (sheetName === SHEET_NAMES.MAU_TIN_NHAN && sheet.getLastRow() === 1) {
+        const defaultTpls = [
+          ['tpl_1', 'SINH_NHAT', 'Chúc Mừng Sinh Nhật', 'birthday', '🎂 Kính chúc mừng sinh nhật {{hoTen}}! Chúc bạn tuổi mới tràn đầy ơn phước từ Chúa Giê-xu!', 'Mẫu tin nhắn chúc mừng sinh nhật', 'active'],
+          ['tpl_2', 'THAM_HOI', 'Thăm Hỏi Vắng Nhóm', 'absence_care', '❤️ Thân gửi {{hoTen}} ({{tenTo}})! Chúa Nhật vừa qua Ban rất nhớ bạn. Mong gặp lại bạn chiều CN tuần này!', 'Mẫu thăm hỏi khích lệ', 'active'],
+          ['tpl_3', 'LICH_TRUC', 'Nhắc Lịch Phân Công', 'schedule_duty', '📅 Thông báo lịch phân công Chúa Nhật: {{ngayNhom}} lúc 16h00. Kính mời {{hoTen}} sắp xếp tham dự!', 'Mẫu nhắc phân công trực', 'active']
+        ];
+        defaultTpls.forEach(r => sheet.appendRow(r));
       }
     }
   });

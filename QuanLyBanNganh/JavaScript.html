@@ -175,7 +175,10 @@
     // 1. TẢI TỪ LOCAL CACHE (NẾU CÓ DỮ LIỆU CỦA ĐÚNG SHEET ID NÀY)
     loadFromLocalCache();
 
-    // 2. TẢI DỮ LIỆU TỪ GOOGLE SHEET VỚI LOADING CHỈ BÁO
+    // Render ngay giao diện mặc định/cache để tránh màn hình --
+    renderCurrentView();
+
+    // 2. TẢI DỮ LIỆU MỚI NHẤT TỪ GOOGLE SHEET VỚI LOADING CHỈ BÁO
     await refreshData(true);
   }
 
