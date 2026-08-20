@@ -1893,10 +1893,16 @@
     </div>
   </div>
 
-  <!-- CONTAINER DÀNH RIÊNG CHO MÁY IN (PRINT-ONLY CONTAINER) -->
-  <div id="print-schedule-container" class="print-only-container">
-    <!-- Populated by JavaScript right before window.print() -->
+  <!-- GLOBAL LOADING INDICATOR -->
+  <div id="global-loading-indicator" class="hidden fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center">
+    <div class="glass-card-solid px-6 py-4 rounded-3xl border border-emerald-500/30 flex items-center gap-3 shadow-2xl animate-fade-in">
+      <div class="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-xs font-bold text-white tracking-wide">Đang đồng bộ dữ liệu...</span>
+    </div>
   </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-[110] flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
   <?!= include('JavaScript'); ?>
 </body>

@@ -112,14 +112,31 @@
     // 1. First priority: Native google.script.run inside Google Apps Script iframe
     if (typeof google !== 'undefined' && google.script && google.script.run) {
       return new Promise(function(resolve) {
+        var settled = false;
+        var timeoutTimer = setTimeout(function() {
+          if (!settled) {
+            settled = true;
+            console.warn('GAS Timeout (10s) [' + functionName + '], attempting REST fallback...');
+            fetchRestFallback(functionName, args).then(resolve);
+          }
+        }, 10000);
+
         var runner = google.script.run
           .withSuccessHandler(function(res) {
-            console.log('GAS Success [' + functionName + ']:', res);
-            resolve(res);
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeoutTimer);
+              console.log('GAS Success [' + functionName + ']:', res);
+              resolve(res);
+            }
           })
           .withFailureHandler(function(err) {
-            console.warn('GAS Failure Handler [' + functionName + '], attempting REST fallback:', err);
-            fetchRestFallback(functionName, args).then(resolve);
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeoutTimer);
+              console.warn('GAS Failure Handler [' + functionName + '], attempting REST fallback:', err);
+              fetchRestFallback(functionName, args).then(resolve);
+            }
           });
 
         try {
@@ -129,8 +146,12 @@
             runner[functionName].apply(runner, args);
           }
         } catch (callErr) {
-          console.warn('GAS Invoke catch [' + functionName + '], attempting REST fallback:', callErr);
-          fetchRestFallback(functionName, args).then(resolve);
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutTimer);
+            console.warn('GAS Invoke catch [' + functionName + '], attempting REST fallback:', callErr);
+            fetchRestFallback(functionName, args).then(resolve);
+          }
         }
       });
     }
