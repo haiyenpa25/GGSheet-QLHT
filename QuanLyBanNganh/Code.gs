@@ -23,7 +23,7 @@ const SCHEMAS = {
   [SHEET_NAMES.USERS]: ['id', 'username', 'passwordHash', 'fullName', 'role', 'email', 'avatar', 'isActive', 'createdAt'],
   [SHEET_NAMES.THANH_VIEN]: ['id', 'maTV', 'hoTen', 'sdt', 'ngaySinh', 'gioiTinh', 'toId', 'chucVu', 'diaChi', 'trangThai', 'ghiChu', 'ngayTao'],
   [SHEET_NAMES.TO_NHOM]: ['id', 'maTo', 'tenTo', 'toTruong', 'toPho', 'soLuongThanhVien', 'lichSinhHoat', 'diaDiem', 'ghiChu'],
-  [SHEET_NAMES.DIEM_DANH]: ['id', 'ngayDiemDanh', 'thanhVienId', 'coMat', 'thuocCauGoc', 'ghiChu', 'nguoiDiemDanh', 'createdAt'],
+  [SHEET_NAMES.DIEM_DANH]: ['id', 'ngayDiemDanh', 'thanhVienId', 'coMat', 'thuocCauGoc', 'soCauKT', 'ghiChu', 'nguoiDiemDanh', 'createdAt'],
   [SHEET_NAMES.THAM_VIENG]: ['id', 'ngayTham', 'thanhVienId', 'nguoiTham', 'hinhThuc', 'noiDungCauNguyen', 'ketQua', 'ngayTao'],
   [SHEET_NAMES.LICH_QUY]: ['id', 'nam', 'quy', 'tuanThu', 'ngayNhom', 'deTai', 'cauGoc', 'noiDungCauGoc', 'doKT', 'nguoiDoKT', 'huongDan', 'toPhuTrach', 'phuTrach', 'baiHatTonVinh', 'trangPhuc', 'gioNhom', 'ghiChu', 'trangThai'],
   [SHEET_NAMES.CHU_DE]: ['id', 'nam', 'quy', 'stt', 'chuDe', 'cauGoc', 'noiDungCauGoc', 'baiHatChuDe', 'mucTieu', 'khauHieu', 'trangThai'],
@@ -38,10 +38,6 @@ const SCHEMAS = {
 // =========================================================================
 
 function doGet(e) {
-  if (e && e.parameter && e.parameter.action) {
-    return handleApiRequest(e.parameter.action, e.parameter);
-  }
-
   const sheetId = e && e.parameter && e.parameter.sheetId ? e.parameter.sheetId : '';
   const banNganhId = e && e.parameter && e.parameter.banNganhId ? e.parameter.banNganhId : '';
   const title = e && e.parameter && e.parameter.title ? e.parameter.title : '';
@@ -311,6 +307,11 @@ function normalizeHeaderKey(header) {
     'thanhvienid': 'thanhVienId',
     'comat': 'coMat',
     'thuoccaugoc': 'thuocCauGoc',
+    'socaukt': 'soCauKT',
+    'cauktdap': 'soCauKT',
+    'kinhthanhdap': 'soCauKT',
+    'socaukinhthanh': 'soCauKT',
+    'caukt': 'soCauKT',
 
     // Thăm viếng
     'ngaytham': 'ngayTham',
@@ -816,11 +817,21 @@ function apiSaveAttendance(payload, customSheetId) {
       }
 
       const allData = sheet.getDataRange().getValues();
-      const headers = (allData.length > 0 && allData[0][0]) ? allData[0].map(h => String(h).trim()) : SCHEMAS[SHEET_NAMES.DIEM_DANH];
+      let headers = (allData.length > 0 && allData[0][0]) ? allData[0].map(h => String(h).trim()) : SCHEMAS[SHEET_NAMES.DIEM_DANH];
       const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss');
       
       const targetDate = String(payload.ngayDiemDanh).trim();
       const dateColIdx = headers.indexOf('ngayDiemDanh') !== -1 ? headers.indexOf('ngayDiemDanh') : 1;
+
+      // Đảm bảo headers có soCauKT nếu chưa có
+      if (headers.indexOf('soCauKT') === -1) {
+        const ghiChuIdx = headers.indexOf('ghiChu');
+        if (ghiChuIdx !== -1) {
+          headers.splice(ghiChuIdx, 0, 'soCauKT');
+        } else {
+          headers.push('soCauKT');
+        }
+      }
 
       // Lọc bỏ dữ liệu cũ của ngày này để tránh bị trùng lặp
       const retainedRows = [headers];
@@ -842,6 +853,7 @@ function apiSaveAttendance(payload, customSheetId) {
           thanhVienId: rec.thanhVienId,
           coMat: (rec.coMat === true || rec.coMat === 'CO_MAT') ? 'CO_MAT' : 'VANG',
           thuocCauGoc: (rec.thuocCauGoc === true || rec.thuocCauGoc === 'THUOC') ? 'THUOC' : 'CHUA_THUOC',
+          soCauKT: parseInt(rec.soCauKT, 10) || 0,
           ghiChu: rec.ghiChu || '',
           nguoiDiemDanh: payload.nguoiDiemDanh || 'Thư Ký',
           createdAt: nowStr

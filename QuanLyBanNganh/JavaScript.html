@@ -1539,6 +1539,7 @@
         state.liveAttendance[a.thanhVienId] = {
           coMat: (a.coMat === 'CO_MAT' || a.coMat === true || a.coMat === '1' || a.coMat === 'TRUE'),
           thuocCauGoc: (a.thuocCauGoc === 'THUOC' || a.thuocCauGoc === true || a.thuocCauGoc === '1' || a.thuocCauGoc === 'TRUE'),
+          soCauKT: parseInt(a.soCauKT, 10) || 0,
           ghiChu: a.ghiChu || ''
         };
       });
@@ -1547,6 +1548,7 @@
         state.liveAttendance[m.id] = {
           coMat: true,
           thuocCauGoc: false,
+          soCauKT: 0,
           ghiChu: ''
         };
       });
@@ -1703,7 +1705,7 @@
     let list = getFilteredAttendanceMembers();
     list.forEach(m => {
       if (!state.liveAttendance[m.id]) {
-        state.liveAttendance[m.id] = { coMat: false, thuocCauGoc: false, ghiChu: '' };
+        state.liveAttendance[m.id] = { coMat: false, thuocCauGoc: false, soCauKT: 0, ghiChu: '' };
       }
       if (coMatVal !== null && coMatVal !== undefined) {
         state.liveAttendance[m.id].coMat = coMatVal;
@@ -1752,7 +1754,7 @@
     let verseCount = 0;
 
     container.innerHTML = list.map((m, idx) => {
-      const att = state.liveAttendance[m.id] || { coMat: false, thuocCauGoc: false, ghiChu: '' };
+      const att = state.liveAttendance[m.id] || { coMat: false, thuocCauGoc: false, soCauKT: 0, ghiChu: '' };
       if (att.coMat) presentCount++;
       if (att.thuocCauGoc) verseCount++;
 
@@ -1770,8 +1772,8 @@
             </div>
           </div>
 
-          <!-- Dual Switch Toggles & Note -->
-          <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
+          <!-- Controls: Có mặt, Thuộc câu gốc, Số câu KT đáp, Ghi chú -->
+          <div class="flex items-center gap-3.5 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
             <!-- Có Mặt Toggle -->
             <label class="flex items-center gap-2 cursor-pointer select-none">
               <span class="text-xs font-semibold ${att.coMat ? 'text-emerald-400 font-bold' : 'text-text-secondary'}">Có mặt</span>
@@ -1790,7 +1792,23 @@
               </div>
             </label>
 
-            <!-- Note Input -->
+            <!-- Số Câu KT Đáp (Điền số) -->
+            <div class="flex items-center gap-1.5 bg-surface-elevated/90 px-2 py-1 rounded-xl border border-white/10" title="Số câu Kinh Thánh đáp trong giờ đố KT">
+              <span class="text-[11px] font-bold text-amber-400 flex items-center gap-0.5">
+                <span class="material-symbols-outlined text-[13px]">help</span>
+                <span>Đáp KT:</span>
+              </span>
+              <input
+                type="number"
+                min="0"
+                max="99"
+                value="${att.soCauKT || 0}"
+                onchange="handleLiveAttendanceSoCauKT('${m.id}', this.value)"
+                class="glass-input text-center w-11 rounded-lg py-0.5 px-1 text-xs font-bold text-amber-300 font-mono"
+              />
+            </div>
+
+            <!-- Ghi Chú Input -->
             <input
               type="text"
               placeholder="Ghi chú..."
@@ -1808,7 +1826,7 @@
 
   function handleToggleLiveAttendance(memberId, field, val) {
     if (!state.liveAttendance[memberId]) {
-      state.liveAttendance[memberId] = { coMat: false, thuocCauGoc: false, ghiChu: '' };
+      state.liveAttendance[memberId] = { coMat: false, thuocCauGoc: false, soCauKT: 0, ghiChu: '' };
     }
     state.liveAttendance[memberId][field] = val;
 
@@ -1823,9 +1841,16 @@
     updateAttendanceStats(presentCount, verseCount, list.length);
   }
 
+  function handleLiveAttendanceSoCauKT(memberId, val) {
+    if (!state.liveAttendance[memberId]) {
+      state.liveAttendance[memberId] = { coMat: false, thuocCauGoc: false, soCauKT: 0, ghiChu: '' };
+    }
+    state.liveAttendance[memberId].soCauKT = Math.max(0, parseInt(val, 10) || 0);
+  }
+
   function handleLiveAttendanceNote(memberId, val) {
     if (!state.liveAttendance[memberId]) {
-      state.liveAttendance[memberId] = { coMat: false, thuocCauGoc: false, ghiChu: '' };
+      state.liveAttendance[memberId] = { coMat: false, thuocCauGoc: false, soCauKT: 0, ghiChu: '' };
     }
     state.liveAttendance[memberId].ghiChu = val;
   }
@@ -1857,11 +1882,12 @@
 
     const allActiveMembers = (state.members || []).filter(m => (m.trangThai || 'active') === 'active');
     const records = allActiveMembers.map(m => {
-      const att = state.liveAttendance[m.id] || { coMat: false, thuocCauGoc: false, ghiChu: '' };
+      const att = state.liveAttendance[m.id] || { coMat: false, thuocCauGoc: false, soCauKT: 0, ghiChu: '' };
       return {
         thanhVienId: m.id,
         coMat: att.coMat,
         thuocCauGoc: att.thuocCauGoc,
+        soCauKT: att.soCauKT || 0,
         ghiChu: att.ghiChu || ''
       };
     });
@@ -1895,6 +1921,7 @@
               thanhVienId: r.thanhVienId,
               coMat: r.coMat ? 'CO_MAT' : 'VANG',
               thuocCauGoc: r.thuocCauGoc ? 'THUOC' : 'CHUA_THUOC',
+              soCauKT: r.soCauKT || 0,
               ghiChu: r.ghiChu || ''
             });
           });

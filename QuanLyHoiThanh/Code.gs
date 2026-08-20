@@ -532,7 +532,7 @@ function apiCreateMinistrySheet(banNganhId, customTitle) {
     const defaultTabs = {
       'ThanhVien': ['id', 'maTV', 'hoTen', 'sdt', 'ngaySinh', 'gioiTinh', 'toId', 'chucVu', 'diaChi', 'trangThai', 'ghiChu', 'ngayTao'],
       'ToNhom': ['id', 'maTo', 'tenTo', 'toTruong', 'toPho', 'soLuongThanhVien', 'lichSinhHoat', 'diaDiem', 'ghiChu'],
-      'DiemDanh': ['id', 'ngayDiemDanh', 'thanhVienId', 'coMat', 'thuocCauGoc', 'ghiChu', 'nguoiDiemDanh', 'createdAt'],
+      'DiemDanh': ['id', 'ngayDiemDanh', 'thanhVienId', 'coMat', 'thuocCauGoc', 'soCauKT', 'ghiChu', 'nguoiDiemDanh', 'createdAt'],
       'ThamVieng': ['id', 'ngayTham', 'thanhVienId', 'nguoiTham', 'hinhThuc', 'noiDungCauNguyen', 'ketQua', 'ngayTao'],
       'LichQuy': ['id', 'nam', 'quy', 'tuanThu', 'ngayNhom', 'deTai', 'cauGoc', 'doKT', 'toPhuTrach', 'phuTrach', 'huongDan', 'cauNguyen', 'banHat', 'ghiChu', 'trangThai'],
       'ChuDe': ['id', 'nam', 'quy', 'stt', 'chuDe', 'cauGoc', 'noiDungCauGoc', 'baiHatChuDe', 'mucTieu', 'khauHieu', 'trangThai'],
