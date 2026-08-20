@@ -96,7 +96,12 @@
           resolve({ success: false, message: err.message || String(err) });
         });
 
-      runner[functionName].apply(runner, args);
+      if (runner && typeof runner[functionName] === 'function') {
+        runner[functionName].apply(runner, args);
+      } else {
+        console.error('GAS Runner: Hàm ' + functionName + ' không tồn tại trên server.');
+        resolve({ success: false, message: 'Hàm ' + functionName + ' chưa được định nghĩa trên server' });
+      }
     });
   }
 

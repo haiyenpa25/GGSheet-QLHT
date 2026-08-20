@@ -877,3 +877,7 @@ function apiDeleteVisitation(id, customSheetId) {
     return { success: false, message: err.message || String(err) };
   }
 }
+
+function apiSyncDatabaseSchema(customSheetId) {
+  return setupDatabase(customSheetId);
+}
