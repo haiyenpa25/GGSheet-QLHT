@@ -163,6 +163,8 @@
       }
     } catch (e) {}
 
+    initRoleAndScope();
+
     // 1. TẢI TỪ LOCAL CACHE (NẾU CÓ DỮ LIỆU CỦA ĐÚNG SHEET ID NÀY)
     loadFromLocalCache();
 
@@ -222,6 +224,8 @@
 
     // Reset Live Attendance State
     initLiveAttendanceState();
+    initRoleAndScope();
+    updateNotificationBadge();
   }
 
   async function refreshData(showLoader) {
@@ -609,6 +613,11 @@
 
   function getFilteredMembers() {
     let list = state.members || [];
+
+    // 0. Scope Filter for Tổ Trưởng
+    if (state.currentRole === 'to_truong' && state.roleScopeGroupId && state.roleScopeGroupId !== 'all') {
+      list = list.filter(m => String(m.toId) === String(state.roleScopeGroupId));
+    }
 
     // 1. Filter by Group
     if (state.filterMemberGroup === 'unassigned') {
@@ -1910,6 +1919,12 @@
 
   function getFilteredAttendanceMembers() {
     let list = (state.members || []).filter(m => (m.trangThai || 'active') === 'active');
+
+    // 0. Scope Filter for Tổ Trưởng
+    if (state.currentRole === 'to_truong' && state.roleScopeGroupId && state.roleScopeGroupId !== 'all') {
+      list = list.filter(m => String(m.toId) === String(state.roleScopeGroupId));
+    }
+
     const fGroup = document.getElementById('attendance-filter-group');
     const groupVal = fGroup ? fGroup.value : 'all';
     if (groupVal !== 'all') {
@@ -2745,7 +2760,7 @@
                              (s.deTai || '').toUpperCase().includes('DÃ NGOẠI') || 
                              (s.deTai || '').toUpperCase().includes('LIÊN BAN');
 
-      if (isSpecialEvent && !s.huongDan && !s.phuTrach) {
+      if (isSpecialEvent && !s.huongDan && !s.phuTrach && !s.dienGia) {
         // Special full-row banner (Nghỉ Tết, Nghỉ Phục Sinh...)
         return `
           <tr class="bg-amber-950/25 border-b border-white/5 font-semibold text-warning-amber">
@@ -2762,16 +2777,24 @@
       }
 
       const doKtFormatted = [s.doKT, s.nguoiDoKT].filter(Boolean).join(' - ');
+      const dienGiaFormatted = s.dienGia || s.phuTrach || '--';
 
       return `
         <tr class="hover:bg-white/5 transition-colors border-b border-white/5 group">
           <td class="py-3 px-3 font-mono text-center font-bold text-emerald-400 text-xs">${s.ngayNhom || '--'}</td>
-          <td class="py-3 px-3 font-bold text-white">${s.deTai || '--'}</td>
-          <td class="py-3 px-3 font-medium text-emerald-300">${s.cauGoc || '--'}</td>
-          <td class="py-3 px-3 text-text-secondary">${doKtFormatted || '--'}</td>
-          <td class="py-3 px-3 font-medium text-white">${s.huongDan || '--'}</td>
-          <td class="py-3 px-3 text-emerald-400 font-semibold">${s.toPhuTrach || '--'}</td>
-          <td class="py-3 px-3 font-medium text-sky-300">${s.phuTrach || '--'}</td>
+          <td class="py-3 px-3 font-bold text-white">
+            <div>${s.deTai || '--'}</div>
+            <div class="text-[10px] text-text-secondary font-normal mt-0.5 space-x-2">
+              ${s.amNhac ? `<span>🎹 ${s.amNhac}</span>` : ''}
+              ${s.mayChieu ? `<span>🎛️ ${s.mayChieu}</span>` : ''}
+              ${s.tiepTan ? `<span>🚪 ${s.tiepTan}</span>` : ''}
+            </div>
+          </td>
+          <td class="py-3 px-3 font-medium text-emerald-300 text-xs">${s.cauGoc || '--'}</td>
+          <td class="py-3 px-3 text-text-secondary text-xs">${doKtFormatted || '--'}</td>
+          <td class="py-3 px-3 font-medium text-white text-xs">${s.huongDan || '--'}</td>
+          <td class="py-3 px-3 text-emerald-400 font-semibold text-xs">${s.toPhuTrach || '--'}</td>
+          <td class="py-3 px-3 font-medium text-sky-300 text-xs">${dienGiaFormatted}</td>
           <td class="no-print py-2 px-2 text-center">
             <div class="flex items-center justify-center gap-1">
               <button onclick="copyZaloTemplate('${s.id}')" class="px-2 py-1 rounded-lg bg-sky-600/30 hover:bg-sky-600/60 text-sky-300 font-bold text-[10px] flex items-center gap-1 transition-all active:scale-95 shadow" title="Sao chép tin nhắn thông báo Zalo">
@@ -2809,28 +2832,26 @@
     const doKtText = s.doKT ? s.doKT : 'Tự do';
     const nguoiDoKtText = s.nguoiDoKT ? `   ${s.nguoiDoKT}` : '';
 
-    const text = `@All   📣THÔNG BÁO 📣
+    const text = `@All   📣 THÔNG BÁO SINH HOẠT 📣
 Kính gửi các Anh Chị Em trong ban ${banTitle} chương trình nhóm lại
 Chúa Nhật ${ngayNhom}
 
 💒 7h30 : HỌC TRƯỜNG CHÚA NHẬT
 
-💒 8h30 : THỜ PHƯỢNG CHÚA
--Ban ${banTitle} Tôn Vinh Chúa
--Bài hát "${baiHat}"
--Trang phục: 
-${trangPhuc}
+💒 8h30 : THỜ PHƯỢNG CHÚA CHUNG HỘI THÁNH
+- Ban ${banTitle} Tôn Vinh Chúa: "${baiHat}"
+- Trang phục: ${trangPhuc}
 
-💒 ${gioNhom}: CHƯƠNG TRÌNH THỜ PHƯỢNG-SINH HOẠT BAN ${banTitle.toUpperCase()}
--Chủ Đề: ${s.deTai || 'SINH HOẠT THỜ PHƯỢNG'}
--Phụ trách: ${s.phuTrach || 'BĐH'}
--Tổ phụ trách: ${s.toPhuTrach || 'BĐH'}
--HCDT: ${s.huongDan || 'Ban Điều Hành'}
--Đố Kinh Thánh:  ${doKtText}${nguoiDoKtText}
--Câu gốc: ${cauGoc}
+💒 ${gioNhom}: CHƯƠNG TRÌNH THỜ PHƯỢNG & SINH HOẠT BAN ${banTitle.toUpperCase()}
+- Chủ Đề: ${s.deTai || 'SINH HOẠT THỜ PHƯỢNG'}
+- Giảng luận/Chia sẻ: ${s.dienGia || s.phuTrach || 'BĐH'}
+- Tổ phụ trách: ${s.toPhuTrach || 'BĐH'}
+- HĐCT: ${s.huongDan || 'Ban Điều Hành'}
+- Đố Kinh Thánh: ${doKtText}${nguoiDoKtText}
+${s.amNhac ? `- Âm nhạc: ${s.amNhac}\n` : ''}${s.mayChieu ? `- Máy chiếu: ${s.mayChieu}\n` : ''}${s.tiepTan ? `- Ban Tiếp tân: ${s.tiepTan}\n` : ''}- Câu gốc: ${cauGoc}
 “${noiDungCauGoc}”
 
-Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
+Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
 
     // Copy to clipboard
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2858,11 +2879,28 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
     document.body.removeChild(ta);
   }
 
+  function populateScheduleMemberDropdowns() {
+    const membersOpts = `<option value="">-- Chọn ban viên hoặc để trống --</option>` +
+      (state.members || []).filter(m => (m.trangThai || 'active') === 'active').map(m => `<option value="${getMemberName(m)}">${getMemberName(m)} (${getMemberRole(m)})</option>`).join('');
+
+    const groupOpts = `<option value="BĐH">BĐH (Ban Điều Hành)</option>` +
+      (state.groups || []).map(g => `<option value="${getGroupName(g)}">${getGroupName(g)}</option>`).join('');
+
+    ['sch-huongdan', 'sch-nguoidokt', 'sch-amnhac', 'sch-maychieu', 'sch-tieptan'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = membersOpts;
+    });
+
+    const topGroupEl = document.getElementById('sch-tophutrach');
+    if (topGroupEl) topGroupEl.innerHTML = groupOpts;
+  }
+
   // =========================================================================
   // 7. SCHEDULE MODALS & ACTIONS
   // =========================================================================
 
   function openAddScheduleModal() {
+    populateScheduleMemberDropdowns();
     document.getElementById('form-schedule').reset();
     document.getElementById('schedule-id').value = '';
     document.getElementById('modal-schedule-title').innerHTML = `<span class="material-symbols-outlined text-emerald-400">add</span> Thêm Buổi Sinh Hoạt Mới`;
@@ -2877,6 +2915,7 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
   }
 
   function openEditScheduleModal(id) {
+    populateScheduleMemberDropdowns();
     const s = (state.schedules || []).find(item => String(item.id) === String(id));
     if (!s) return;
 
@@ -2890,8 +2929,11 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
     document.getElementById('sch-dokt').value = s.doKT || '';
     document.getElementById('sch-nguoidokt').value = s.nguoiDoKT || '';
     document.getElementById('sch-huongdan').value = s.huongDan || '';
+    document.getElementById('sch-diengia').value = s.dienGia || s.phuTrach || '';
+    document.getElementById('sch-amnhac').value = s.amNhac || '';
+    document.getElementById('sch-maychieu').value = s.mayChieu || '';
+    document.getElementById('sch-tieptan').value = s.tiepTan || '';
     document.getElementById('sch-tophutrach').value = s.toPhuTrach || 'BĐH';
-    document.getElementById('sch-phutrach').value = s.phuTrach || '';
     document.getElementById('sch-baihat').value = s.baiHatTonVinh || 'DÂNG CHÚA LỜI NGỢI CA';
     document.getElementById('sch-trangphuc').value = s.trangPhuc || 'Nam: sơ mi + cavat, Nữ: áo dài tự do';
 
@@ -2912,8 +2954,12 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
       doKT: document.getElementById('sch-dokt').value.trim(),
       nguoiDoKT: document.getElementById('sch-nguoidokt').value.trim(),
       huongDan: document.getElementById('sch-huongdan').value.trim(),
+      dienGia: document.getElementById('sch-diengia').value.trim(),
+      phuTrach: document.getElementById('sch-diengia').value.trim(),
+      amNhac: document.getElementById('sch-amnhac').value.trim(),
+      mayChieu: document.getElementById('sch-maychieu').value.trim(),
+      tiepTan: document.getElementById('sch-tieptan').value.trim(),
       toPhuTrach: document.getElementById('sch-tophutrach').value.trim(),
-      phuTrach: document.getElementById('sch-phutrach').value.trim(),
       baiHatTonVinh: document.getElementById('sch-baihat').value.trim(),
       trangPhuc: document.getElementById('sch-trangphuc').value.trim()
     };
@@ -3098,78 +3144,73 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
   function openPrintScheduleModal() {
     const branchInput = document.getElementById('print-cfg-branch-name');
     if (branchInput && state.banNganhTitle) {
-      branchInput.value = `CHI HỘI THỦ THIÊM - ${state.banNganhTitle.toUpperCase()}`;
+      branchInput.value = `BAN ${state.banNganhTitle.toUpperCase()} - CHI HỘI THỦ THIÊM`;
     }
-
-    const rangeSelect = document.getElementById('print-cfg-range');
-    if (rangeSelect) {
-      rangeSelect.value = state.selectedScheduleQuarter !== 'all' ? state.selectedScheduleQuarter : 'current';
+    const select = document.getElementById('print-cfg-range');
+    if (select) {
+      select.value = state.selectedScheduleQuarter !== 'all' ? state.selectedScheduleQuarter : 'current';
     }
-
-    openModal('modal-print-schedule');
     updatePrintPreview();
+    openModal('modal-print-schedule');
   }
 
   function getPrintOptions() {
-    return {
-      range: (document.getElementById('print-cfg-range') || {}).value || 'current',
-      orientation: (document.getElementById('print-cfg-orientation') || {}).value || 'landscape',
-      churchName: ((document.getElementById('print-cfg-church-name') || {}).value || 'HỘI THÁNH TIN LÀNH VIỆT NAM').trim(),
-      branchName: ((document.getElementById('print-cfg-branch-name') || {}).value || 'CHI HỘI THỦ THIÊM - BAN THANH TRÁNG').trim(),
-      timeStr: ((document.getElementById('print-cfg-time') || {}).value || '16h00 Chiều Chúa Nhật Hàng Tuần').trim(),
-      showSignatures: !!(document.getElementById('print-cfg-show-signatures') || {}).checked,
-      showTheme: !!(document.getElementById('print-cfg-show-theme') || {}).checked
-    };
+    const rangeSelect = document.getElementById('print-cfg-range');
+    let range = rangeSelect ? rangeSelect.value : 'current';
+    if (range === 'current') {
+      range = state.selectedScheduleQuarter !== 'all' ? state.selectedScheduleQuarter : 'I';
+    }
+
+    const orientSelect = document.getElementById('print-cfg-orientation');
+    const orientation = orientSelect ? orientSelect.value : 'landscape';
+
+    const churchName = (document.getElementById('print-cfg-church-name')?.value || 'HỘI THÁNH TIN LÀNH VIỆT NAM').trim();
+    const branchName = (document.getElementById('print-cfg-branch-name')?.value || `BAN ${(state.banNganhTitle || 'THANH TRÁNG').toUpperCase()} - CHI HỘI THỦ THIÊM`).trim();
+    const timeStr = (document.getElementById('print-cfg-time')?.value || '16h00 Chiều Chúa Nhật').trim();
+    const showTheme = document.getElementById('print-cfg-show-theme') ? document.getElementById('print-cfg-show-theme').checked : true;
+    const showSignatures = document.getElementById('print-cfg-show-signatures') ? document.getElementById('print-cfg-show-signatures').checked : true;
+
+    return { range, orientation, churchName, branchName, timeStr, showTheme, showSignatures };
   }
 
   function buildPrintScheduleHTML(opts) {
-    let activeQ = opts.range;
-    if (activeQ === 'current') {
-      activeQ = state.selectedScheduleQuarter !== 'all' ? state.selectedScheduleQuarter : 'all';
-    }
-
-    let sessions = [...(state.schedules || [])];
-    if (activeQ !== 'all') {
-      sessions = sessions.filter(s => String(s.quy || 'I').toUpperCase() === String(activeQ).toUpperCase());
-    }
-
-    // Sort by date ascending
-    sessions.sort((a, b) => {
-      const pa = parseSessionDate(a.ngayNhom);
-      const pb = parseSessionDate(b.ngayNhom);
-      if (!pa || !pb) return 0;
-      return new Date(pa.year, pa.month - 1, pa.day).getTime() - new Date(pb.year, pb.month - 1, pb.day).getTime();
-    });
-
-    const theme = getThemeForQuarter(activeQ !== 'all' ? activeQ : 'NAM');
     const year = state.selectedScheduleYear || new Date().getFullYear();
+    let sessions = [...(state.schedules || [])];
 
-    const titleText = activeQ !== 'all' 
-      ? `CHƯƠNG TRÌNH THỜ PHƯỢNG & SINH HOẠT QUÝ ${activeQ} / NĂM ${year}`
-      : `LỊCH SINH HOẠT & THỜ PHƯỢNG CẢ NĂM ${year}`;
+    if (opts.range !== 'all') {
+      sessions = sessions.filter(s => String(s.quy || '').toUpperCase() === String(opts.range).toUpperCase());
+    }
+
+    const activeQ = opts.range;
+    const theme = getThemeForQuarter(activeQ !== 'all' ? activeQ : 'NAM');
+
+    const titleText = opts.range === 'all' 
+      ? `LỊCH SINH HOẠT CẢ NĂM ${year}` 
+      : `LỊCH SINH HOẠT QUÝ ${opts.range} - NĂM ${year}`;
 
     const banName = state.banNganhTitle || 'Thanh Tráng';
 
     let tableRowsHTML = '';
     if (sessions.length === 0) {
-      tableRowsHTML = `<tr><td colspan="8" style="text-align:center; padding: 20px; color: #64748b; font-style: italic;">Chưa có dữ liệu buổi sinh hoạt nào cho quý này.</td></tr>`;
+      tableRowsHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px; color: #64748b; font-style: italic;">Chưa có dữ liệu buổi sinh hoạt nào cho quý này.</td></tr>`;
     } else {
       tableRowsHTML = sessions.map((s, idx) => {
         const isSpecialEvent = (s.deTai || '').toUpperCase().includes('NGHỈ') || 
                                (s.deTai || '').toUpperCase().includes('DÃ NGOẠI') || 
                                (s.deTai || '').toUpperCase().includes('LIÊN BAN');
 
-        if (isSpecialEvent && !s.huongDan && !s.phuTrach) {
+        if (isSpecialEvent && !s.huongDan && !s.phuTrach && !s.dienGia) {
           return `
             <tr class="event-row" style="background-color: #fef3c7; font-weight: bold;">
               <td style="text-align: center; font-weight: bold; border: 1px solid #475569; padding: 5px;">${idx + 1}</td>
               <td style="text-align: center; font-weight: bold; border: 1px solid #475569; padding: 5px;">${s.ngayNhom || '--'}</td>
-              <td colspan="6" style="text-align: center; text-transform: uppercase; letter-spacing: 1px; color: #92400e; border: 1px solid #475569; padding: 5px;">${s.deTai}</td>
+              <td colspan="7" style="text-align: center; text-transform: uppercase; letter-spacing: 1px; color: #92400e; border: 1px solid #475569; padding: 5px;">${s.deTai}</td>
             </tr>
           `;
         }
 
         const doKtFormatted = [s.doKT, s.nguoiDoKT].filter(Boolean).join(' - ') || '--';
+        const dienGiaFormatted = s.dienGia || s.phuTrach || '--';
 
         return `
           <tr style="border-bottom: 1px solid #cbd5e1;">
@@ -3180,7 +3221,12 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
             <td style="color: #334155; border: 1px solid #475569; padding: 5px 4px;">${doKtFormatted}</td>
             <td style="border: 1px solid #475569; padding: 5px 4px;">${s.huongDan || '--'}</td>
             <td style="text-align: center; font-weight: 600; color: #059669; border: 1px solid #475569; padding: 5px 4px;">${s.toPhuTrach || '--'}</td>
-            <td style="font-weight: bold; border: 1px solid #475569; padding: 5px 4px;">${s.phuTrach || '--'}</td>
+            <td style="font-weight: bold; border: 1px solid #475569; padding: 5px 4px;">${dienGiaFormatted}</td>
+            <td style="font-size: 8pt; border: 1px solid #475569; padding: 5px 3px; color: #334155;">
+              ${s.amNhac ? `🎹 ${s.amNhac}<br/>` : ''}
+              ${s.mayChieu ? `🎛️ ${s.mayChieu}<br/>` : ''}
+              ${s.tiepTan ? `🚪 ${s.tiepTan}` : ''}
+            </td>
           </tr>
         `;
       }).join('');
@@ -3213,17 +3259,18 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
         ` : ''}
 
         <!-- Bảng Phân Công Lịch Sinh Hoạt -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 9pt;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 8.5pt;">
           <thead>
             <tr style="background-color: #e2e8f0; color: #0f172a;">
-              <th style="border: 1px solid #334155; padding: 6px 3px; text-align: center; width: 4%;">STT</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: center; width: 10%;">NGÀY</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 22%;">ĐỀ TÀI</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 16%;">CÂU GỐC</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 14%;">ĐỐ KINH THÁNH</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 12%;">HƯỚNG DẪN</th>
-              <th style="border: 1px solid #334155; padding: 6px 3px; text-align: center; width: 10%;">TỔ P.TRÁCH</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 12%;">GIẢNG LUẬN</th>
+              <th style="border: 1px solid #334155; padding: 6px 2px; text-align: center; width: 3%;">STT</th>
+              <th style="border: 1px solid #334155; padding: 6px 3px; text-align: center; width: 9%;">NGÀY</th>
+              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 18%;">ĐỀ TÀI</th>
+              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 14%;">CÂU GỐC</th>
+              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 13%;">ĐỐ KINH THÁNH</th>
+              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 11%;">HƯỚNG DẪN</th>
+              <th style="border: 1px solid #334155; padding: 6px 3px; text-align: center; width: 9%;">TỔ P.TRÁCH</th>
+              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 11%;">GIẢNG LUẬN</th>
+              <th style="border: 1px solid #334155; padding: 6px 3px; text-align: left; width: 12%;">NHÂN SỰ PHỤC VỤ</th>
             </tr>
           </thead>
           <tbody>
@@ -3298,11 +3345,24 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
   }
 
   // =========================================================================
-  // 8. VISITATIONS & SETTINGS
+  // 8. VISITATIONS & COMPLETE CARE WORKFLOW
   // =========================================================================
+
+  function filterVisitationsByStatus(status) {
+    state.filterVisStatus = status;
+    document.querySelectorAll('.vis-tab-btn').forEach(btn => {
+      if (btn.getAttribute('data-status') === status) {
+        btn.className = 'vis-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 transition-all shrink-0';
+      } else {
+        btn.className = 'vis-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 border border-transparent transition-all shrink-0';
+      }
+    });
+    renderVisitations();
+  }
 
   function renderVisitations() {
     const container = document.getElementById('visitations-list-container');
+    const badge = document.getElementById('vis-active-count-badge');
     const memberSelect = document.getElementById('vis-thanhvien-id');
     if (memberSelect) {
       memberSelect.innerHTML = `<option value="">-- Chọn ban viên --</option>` + 
@@ -3311,75 +3371,235 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
 
     if (!container) return;
 
-    const list = state.visits || [];
+    let list = state.visits || [];
+
+    // Filter by Scope (Role Tổ Trưởng)
+    if (state.currentRole === 'to_truong' && state.roleScopeGroupId && state.roleScopeGroupId !== 'all') {
+      const groupMemberIds = new Set((state.members || []).filter(m => String(m.toId) === String(state.roleScopeGroupId)).map(m => String(m.id)));
+      list = list.filter(v => groupMemberIds.has(String(v.thanhVienId)));
+    }
+
+    // Filter by Status
+    if (state.filterVisStatus && state.filterVisStatus !== 'all') {
+      list = list.filter(v => (v.trangThai || 'CHUA_XU_LY').toUpperCase() === state.filterVisStatus.toUpperCase());
+    }
+
+    // Filter by Priority
+    if (state.filterVisPriority && state.filterVisPriority !== 'all') {
+      list = list.filter(v => (v.mucDoUuTien || 'BINH_THUONG').toUpperCase() === state.filterVisPriority.toUpperCase());
+    }
+
+    // Filter by Search Query
+    if (state.searchVis) {
+      const q = state.searchVis.toLowerCase();
+      const memberMap = {};
+      state.members.forEach(m => { memberMap[m.id] = getMemberName(m); });
+      list = list.filter(v => {
+        const mName = (memberMap[v.thanhVienId] || '').toLowerCase();
+        return mName.includes(q) ||
+          (v.nguoiTham || '').toLowerCase().includes(q) ||
+          (v.noiDungCauNguyen || '').toLowerCase().includes(q) ||
+          (v.ketQua || '').toLowerCase().includes(q);
+      });
+    }
+
+    if (badge) badge.textContent = `${list.length} case chăm sóc`;
+
     if (list.length === 0) {
-      container.innerHTML = `<div class="col-span-3 text-center py-12 text-xs text-text-secondary">Chưa có phiếu thăm viếng nào.</div>`;
+      container.innerHTML = `
+        <div class="col-span-3 glass-card rounded-3xl p-12 text-center text-xs text-text-secondary space-y-3">
+          <span class="material-symbols-outlined text-4xl text-pink-400/60">volunteer_activism</span>
+          <p class="font-medium text-sm text-white">Không có case chăm sóc nào</p>
+          <p>Bấm nút <strong>"+ Tạo Case Chăm Sóc"</strong> để ghi nhận trường hợp cần quan tâm.</p>
+        </div>
+      `;
       return;
     }
 
     const memberMap = {};
-    state.members.forEach(m => { memberMap[m.id] = getMemberName(m); });
+    const memberPhoneMap = {};
+    state.members.forEach(m => {
+      memberMap[m.id] = getMemberName(m);
+      memberPhoneMap[m.id] = cleanPhoneNumber(getMemberPhone(m));
+    });
 
     container.innerHTML = list.map(v => {
       const mName = memberMap[v.thanhVienId] || 'Ban viên';
+      const cleanPhone = memberPhoneMap[v.thanhVienId] || '';
+      const priority = (v.mucDoUuTien || 'BINH_THUONG').toUpperCase();
+      const status = (v.trangThai || 'CHUA_XU_LY').toUpperCase();
+
+      const priorityBadge = priority === 'KHAN_CAP'
+        ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40">🔴 Khẩn Cấp</span>`
+        : priority === 'QUAN_TAM'
+        ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40">🟡 Quan Tâm</span>`
+        : `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-text-secondary border border-white/10">⚪ Bình Thường</span>`;
+
+      const statusColors = {
+        'CHUA_XU_LY': 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+        'DANG_THEO_DOI': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        'DA_CHAM_SOC': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        'CAN_TAI_THAM': 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+      };
+
+      const statusLabels = {
+        'CHUA_XU_LY': '🔴 Chưa Xử Lý',
+        'DANG_THEO_DOI': '🟡 Đang Theo Dõi',
+        'DA_CHAM_SOC': '🟢 Đã Chăm Sóc',
+        'CAN_TAI_THAM': '🟠 Cần Tái Thăm'
+      };
+
       return `
-        <div class="glass-card rounded-3xl p-5 border border-white/10 space-y-3 shadow-lg">
-          <div class="flex justify-between items-start gap-2">
-            <div>
-              <span class="text-[10px] font-bold text-pink-400 block">${v.ngayTham || ''}</span>
-              <h3 class="text-sm font-bold text-white">${mName}</h3>
+        <div class="glass-card rounded-3xl p-5 border border-white/10 hover:border-pink-500/30 flex flex-col justify-between space-y-3 shadow-lg transition-all">
+          <div>
+            <div class="flex justify-between items-start gap-2">
+              <div class="space-y-1 min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  ${priorityBadge}
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColors[status] || 'bg-white/10 text-white'} border">${statusLabels[status] || status}</span>
+                </div>
+                <h3 onclick="openMemberProfileModal('${v.thanhVienId}')" class="text-sm font-bold text-white hover:text-emerald-400 cursor-pointer truncate">${mName}</h3>
+                <p class="text-[11px] text-text-secondary">${v.ngayTham || '--'} &bull; <span class="text-emerald-400 font-medium">${v.hinhThuc || 'Trực tiếp'}</span></p>
+              </div>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <button onclick="openEditVisitationModal('${v.id}')" class="p-1.5 text-text-secondary hover:text-white rounded-full hover:bg-white/5" title="Sửa"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                <button onclick="deleteVisitation('${v.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+              </div>
             </div>
-            <button onclick="deleteVisitation('${v.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+
+            <!-- Content & Result -->
+            <div class="p-3 bg-surface-elevated/70 rounded-2xl border border-white/5 text-xs text-text-secondary space-y-2 mt-3">
+              <div>
+                <span class="text-text-secondary/70 font-semibold block text-[10px] uppercase">Nhu Cầu Cầu Nguyện:</span>
+                <p class="text-white mt-0.5 line-clamp-3">${v.noiDungCauNguyen || 'Thăm hỏi, khích lệ và cầu nguyện.'}</p>
+              </div>
+              ${v.ketQua ? `
+                <div class="pt-1.5 border-t border-white/5">
+                  <span class="text-emerald-400 font-semibold block text-[10px] uppercase">Kết Quả Chăm Sóc:</span>
+                  <p class="text-white mt-0.5 line-clamp-2">${v.ketQua}</p>
+                </div>
+              ` : ''}
+              <div class="pt-1 border-t border-white/5 flex justify-between items-center text-[10px] text-text-secondary">
+                <span>Người thăm: <strong class="text-emerald-400">${v.nguoiTham || 'Ban Chăm Sóc'}</strong></span>
+                ${v.hanChot ? `<span>Hạn chót: <strong class="text-amber-300 font-mono">${v.hanChot}</strong></span>` : ''}
+              </div>
+            </div>
           </div>
-          <div class="p-3 bg-surface-elevated/70 rounded-2xl border border-white/5 text-xs text-text-secondary">
-            <p class="text-white">${v.noiDungCauNguyen || 'Thăm hỏi, khích lệ và cầu nguyện.'}</p>
-            ${v.nguoiTham ? `<p class="mt-2 text-[10px] text-text-secondary/70">Người đi thăm: <span class="text-emerald-400 font-medium">${v.nguoiTham}</span></p>` : ''}
+
+          <!-- Bottom Actions: Quick Status Switch & Contacts -->
+          <div class="pt-2 border-t border-white/10 flex items-center justify-between gap-1.5">
+            <select onchange="handleQuickUpdateVisStatus('${v.id}', this.value)" class="glass-input rounded-xl px-2 py-1 text-[11px] font-bold text-emerald-300 flex-1">
+              <option value="CHUA_XU_LY" ${status === 'CHUA_XU_LY' ? 'selected' : ''}>🔴 Chưa Xử Lý</option>
+              <option value="DANG_THEO_DOI" ${status === 'DANG_THEO_DOI' ? 'selected' : ''}>🟡 Đang Theo Dõi</option>
+              <option value="DA_CHAM_SOC" ${status === 'DA_CHAM_SOC' ? 'selected' : ''}>🟢 Đã Chăm Sóc</option>
+              <option value="CAN_TAI_THAM" ${status === 'CAN_TAI_THAM' ? 'selected' : ''}>🟠 Cần Tái Thăm</option>
+            </select>
+
+            ${cleanPhone ? `
+              <a href="tel:${cleanPhone}" class="p-1.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-emerald-400" title="Gọi điện">
+                <span class="material-symbols-outlined text-base">call</span>
+              </a>
+              <button onclick="openSendTemplateMessageModal('${v.thanhVienId}', 'absence_care')" class="p-1.5 rounded-xl bg-sky-600/20 hover:bg-sky-600/40 text-sky-300" title="Gửi tin nhắn mẫu Zalo">
+                <span class="material-symbols-outlined text-base">chat</span>
+              </button>
+            ` : ''}
           </div>
         </div>
       `;
     }).join('');
   }
 
-  function openAddVisitationModal() {
+  async function handleQuickUpdateVisStatus(id, newStatus) {
+    const v = (state.visits || []).find(item => String(item.id) === String(id));
+    if (!v) return;
+
+    v.trangThai = newStatus;
+    showLoading(true);
+    try {
+      await runGAS('apiSaveVisitation', v, state.activeSheetId);
+      showToast('Đã cập nhật trạng thái case chăm sóc!', 'success');
+      renderVisitations();
+      renderDashboard();
+      updateNotificationBadge();
+    } catch (e) {
+      showToast(e.message, 'error');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function openAddVisitationModal(memberId, defaultPriority, defaultReason) {
     document.getElementById('form-visitation').reset();
+    document.getElementById('vis-id').value = '';
     document.getElementById('vis-ngaytham').value = new Date().toISOString().split('T')[0];
+    document.getElementById('vis-nguoitham').value = 'Ban Chăm Sóc';
+    document.getElementById('vis-trangthai').value = 'CHUA_XU_LY';
+    document.getElementById('vis-mucdouutien').value = defaultPriority || 'BINH_THUONG';
+    
+    if (memberId) {
+      document.getElementById('vis-thanhvien-id').value = memberId;
+    }
+    if (defaultReason) {
+      document.getElementById('vis-noidung').value = defaultReason;
+    }
+
+    document.getElementById('modal-visitation-title').innerHTML = `<span class="material-symbols-outlined text-pink-400">add</span> Tạo Case Chăm Sóc &amp; Thăm Viếng`;
+    openModal('modal-visitation');
+  }
+
+  function openEditVisitationModal(id) {
+    const v = (state.visits || []).find(item => String(item.id) === String(id));
+    if (!v) return;
+
+    document.getElementById('vis-id').value = v.id;
+    document.getElementById('vis-thanhvien-id').value = v.thanhVienId || '';
+    document.getElementById('vis-ngaytham').value = v.ngayTham || '';
+    document.getElementById('vis-nguoitham').value = v.nguoiTham || '';
+    document.getElementById('vis-hinhthuc').value = v.hinhThuc || 'Trực tiếp tại nhà';
+    document.getElementById('vis-mucdouutien').value = v.mucDoUuTien || 'BINH_THUONG';
+    document.getElementById('vis-trangthai').value = v.trangThai || 'CHUA_XU_LY';
+    document.getElementById('vis-hanchot').value = v.hanChot || '';
+    document.getElementById('vis-noidung').value = v.noiDungCauNguyen || '';
+    document.getElementById('vis-ketqua').value = v.ketQua || '';
+
+    document.getElementById('modal-visitation-title').innerHTML = `<span class="material-symbols-outlined text-pink-400">edit</span> Cập Nhật Case Chăm Sóc`;
     openModal('modal-visitation');
   }
 
   function openQuickVisitModal(memberId, absences) {
-    openAddVisitationModal();
-    if (memberId) {
-      const sel = document.getElementById('vis-thanhvien-id');
-      if (sel) sel.value = memberId;
-    }
-    const noteArea = document.getElementById('vis-noidung');
-    if (noteArea && absences) {
-      noteArea.value = `Ban viên vắng sinh hoạt ${absences} tuần liên tiếp, cần thăm viếng khích lệ và cầu nguyện.`;
-    }
+    openAddVisitationModal(memberId, absences >= 3 ? 'KHAN_CAP' : 'QUAN_TAM', absences ? `Ban viên vắng sinh hoạt ${absences} tuần liên tiếp, cần thăm viếng khích lệ và cầu nguyện.` : '');
   }
 
   async function handleSaveVisitation(e) {
     e.preventDefault();
     const payload = {
+      id: document.getElementById('vis-id').value || null,
       thanhVienId: document.getElementById('vis-thanhvien-id').value,
       ngayTham: document.getElementById('vis-ngaytham').value,
       nguoiTham: document.getElementById('vis-nguoitham').value.trim(),
-      noiDungCauNguyen: document.getElementById('vis-noidung').value.trim()
+      hinhThuc: document.getElementById('vis-hinhthuc').value,
+      mucDoUuTien: document.getElementById('vis-mucdouutien').value,
+      trangThai: document.getElementById('vis-trangthai').value,
+      hanChot: document.getElementById('vis-hanchot').value,
+      noiDungCauNguyen: document.getElementById('vis-noidung').value.trim(),
+      ketQua: document.getElementById('vis-ketqua').value.trim()
     };
 
     showLoading(true);
     try {
       const res = await runGAS('apiSaveVisitation', payload, state.activeSheetId);
       if (res && res.success) {
-        showToast('Đã lưu phiếu thăm viếng!', 'success');
+        showToast('Đã lưu phiếu chăm sóc thành công!', 'success');
         closeModal('modal-visitation');
         const saved = (res.data && res.data.id) ? res.data : { ...payload, id: (res.data && res.data.id) || payload.id || ('vis_' + Date.now()) };
         upsertById(state.visits, saved);
         state.kpis.total_visits = state.visits.length;
         renderVisitations();
         renderDashboard();
+        updateNotificationBadge();
       } else {
-        showToast(res.message || 'Lỗi lưu phiếu thăm', 'error');
+        showToast(res.message || 'Lỗi lưu phiếu chăm sóc', 'error');
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -3389,16 +3609,17 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
   }
 
   async function deleteVisitation(id) {
-    if (!confirm('Bạn có chắc muốn xóa phiếu thăm viếng này?')) return;
+    if (!confirm('Bạn có chắc muốn xóa phiếu chăm sóc này?')) return;
     showLoading(true);
     try {
       const res = await runGAS('apiDeleteVisitation', id, state.activeSheetId);
       if (res && res.success) {
-        showToast('Đã xóa phiếu thăm viếng!', 'info');
+        showToast('Đã xóa phiếu chăm sóc!', 'info');
         removeById(state.visits, id);
         state.kpis.total_visits = state.visits.length;
         renderVisitations();
         renderDashboard();
+        updateNotificationBadge();
       } else {
         showToast(res.message || 'Không thể xóa', 'error');
       }
@@ -3406,6 +3627,346 @@ Chúc các Anh/chị/em ngày cuối tuần vui vẻ /-heart`;
       showToast(err.message, 'error');
     } finally {
       showLoading(false);
+    }
+  }
+
+  // =========================================================================
+  // 9. ROLE-BASED ACCESS CONTROL (RBAC) & SCOPE ENGINE
+  // =========================================================================
+
+  function initRoleAndScope() {
+    const savedRole = localStorage.getItem('qlht_user_role') || 'admin';
+    state.currentRole = savedRole;
+    const roleSelect = document.getElementById('user-role-select');
+    if (roleSelect) roleSelect.value = savedRole;
+
+    const groupSelect = document.getElementById('role-group-filter-select');
+    if (groupSelect) {
+      groupSelect.innerHTML = `<option value="all">👥 Mọi Tổ</option>` +
+        (state.groups || []).map(g => `<option value="${g.id}">Tổ: ${getGroupName(g)}</option>`).join('');
+      const savedGrp = localStorage.getItem('qlht_role_group_id') || 'all';
+      state.roleScopeGroupId = savedGrp;
+      groupSelect.value = savedGrp;
+
+      if (savedRole === 'to_truong') {
+        groupSelect.classList.remove('hidden');
+      } else {
+        groupSelect.classList.add('hidden');
+      }
+    }
+
+    applyRoleConstraints();
+  }
+
+  function handleRoleChange(role) {
+    state.currentRole = role;
+    localStorage.setItem('qlht_user_role', role);
+
+    const groupSelect = document.getElementById('role-group-filter-select');
+    if (role === 'to_truong') {
+      if (groupSelect) {
+        groupSelect.classList.remove('hidden');
+        if (state.groups && state.groups.length > 0 && groupSelect.value === 'all') {
+          groupSelect.value = state.groups[0].id;
+          state.roleScopeGroupId = state.groups[0].id;
+        }
+      }
+    } else {
+      if (groupSelect) groupSelect.classList.add('hidden');
+      state.roleScopeGroupId = 'all';
+    }
+
+    applyRoleConstraints();
+    renderMembers();
+    renderAttendanceList();
+    renderVisitations();
+    showToast(`Đã chuyển vai trò: ${role === 'admin' ? '👑 Trưởng Ban' : role === 'thu_ky' ? '✍️ Thư Ký' : role === 'thu_quy' ? '💰 Thủ Quỹ' : '👥 Tổ Trưởng'}`, 'info');
+  }
+
+  function handleRoleGroupFilterChange(groupId) {
+    state.roleScopeGroupId = groupId;
+    localStorage.setItem('qlht_role_group_id', groupId);
+    renderMembers();
+    renderAttendanceList();
+    renderVisitations();
+  }
+
+  function applyRoleConstraints() {
+    const role = state.currentRole || 'admin';
+    const finNavs = document.querySelectorAll('[data-page="finance"]');
+    
+    if (role === 'thu_ky') {
+      finNavs.forEach(el => el.classList.add('opacity-40', 'pointer-events-none'));
+    } else {
+      finNavs.forEach(el => el.classList.remove('opacity-40', 'pointer-events-none'));
+    }
+  }
+
+  // =========================================================================
+  // 10. NOTIFICATION CENTER (CHUÔNG THÔNG BÁO TẬP TRUNG)
+  // =========================================================================
+
+  function updateNotificationBadge() {
+    const badge = document.getElementById('notif-badge-count');
+    if (!badge) return;
+
+    let count = 0;
+
+    // 1. Absences >= 2
+    const allAtt = state.attendances || [];
+    const recentDates = [...new Set(allAtt.map(a => a.ngayDiemDanh))].sort().reverse().slice(0, 4);
+    let absentCount = 0;
+    if (recentDates.length >= 2) {
+      (state.members || []).forEach(m => {
+        if ((m.trangThai || 'active') !== 'active') return;
+        let c = 0;
+        for (let d of recentDates) {
+          const rec = allAtt.find(a => a.ngayDiemDanh === d && String(a.thanhVienId) === String(m.id));
+          if (!rec || rec.coMat === 'VANG' || rec.coMat === false) c++;
+          else break;
+        }
+        if (c >= 2) absentCount++;
+      });
+    }
+    count += absentCount;
+
+    // 2. Birthdays in month
+    const today = new Date();
+    const curMonth = today.getMonth() + 1;
+    let bdayCount = 0;
+    (state.members || []).forEach(m => {
+      const dob = m.ngaySinh || m.NgaySinh || '';
+      if (!dob) return;
+      const parts = dob.split('/');
+      if (parts.length >= 2 && parseInt(parts[1], 10) === curMonth) {
+        bdayCount++;
+      }
+    });
+    count += bdayCount;
+
+    // 3. Unresolved Care Cases
+    const urgentVisits = (state.visits || []).filter(v => (v.trangThai || 'CHUA_XU_LY') === 'CHUA_XU_LY' || (v.mucDoUuTien || '') === 'KHAN_CAP');
+    count += urgentVisits.length;
+
+    badge.textContent = count;
+    badge.className = count > 0 
+      ? 'absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-slate-900 shadow-md animate-pulse'
+      : 'absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-surface-elevated text-text-secondary text-[10px] font-bold flex items-center justify-center border border-white/10';
+  }
+
+  function openNotificationsModal() {
+    const container = document.getElementById('notifications-modal-content');
+    if (!container) return;
+
+    // 1. Absences
+    const allAtt = state.attendances || [];
+    const recentDates = [...new Set(allAtt.map(a => a.ngayDiemDanh))].sort().reverse().slice(0, 4);
+    const absentList = [];
+    if (recentDates.length >= 2) {
+      (state.members || []).forEach(m => {
+        if ((m.trangThai || 'active') !== 'active') return;
+        let c = 0;
+        for (let d of recentDates) {
+          const rec = allAtt.find(a => a.ngayDiemDanh === d && String(a.thanhVienId) === String(m.id));
+          if (!rec || rec.coMat === 'VANG' || rec.coMat === false) c++;
+          else break;
+        }
+        if (c >= 2) absentList.push({ member: m, absences: c });
+      });
+    }
+
+    // 2. Birthdays
+    const today = new Date();
+    const curMonth = today.getMonth() + 1;
+    const bdayList = [];
+    (state.members || []).forEach(m => {
+      const dob = m.ngaySinh || m.NgaySinh || '';
+      if (!dob) return;
+      const parts = dob.split('/');
+      if (parts.length >= 2 && parseInt(parts[1], 10) === curMonth) {
+        bdayList.push(m);
+      }
+    });
+
+    // 3. Next Schedule Session
+    const schedules = state.schedules || [];
+    const nextSession = schedules.length > 0 ? schedules[0] : null;
+
+    // 4. Urgent Care Cases
+    const urgentVisits = (state.visits || []).filter(v => (v.trangThai || 'CHUA_XU_LY') === 'CHUA_XU_LY' || (v.mucDoUuTien || '') === 'KHAN_CAP');
+    const memberMap = {};
+    state.members.forEach(m => { memberMap[m.id] = getMemberName(m); });
+
+    container.innerHTML = `
+      <!-- Section 1: Cảnh Báo Vắng -->
+      <div class="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 space-y-3">
+        <div class="flex justify-between items-center">
+          <h4 class="text-xs font-bold text-amber-300 uppercase flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base">person_alert</span>
+            <span>Ban Viên Vắng Sinh Hoạt 2+ Tuần (${absentList.length})</span>
+          </h4>
+          <button onclick="closeModal('modal-notifications'); navigateTo('visitations');" class="text-[11px] text-amber-400 font-semibold hover:underline">Quản lý chăm sóc &rarr;</button>
+        </div>
+        ${absentList.length === 0 ? `<p class="text-xs text-text-secondary italic">Tất cả ban viên đều nhóm lại đều đặn.</p>` : `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            ${absentList.map(item => `
+              <div class="p-2.5 rounded-xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-2 text-xs">
+                <div class="min-w-0">
+                  <div class="font-bold text-white truncate">${getMemberName(item.member)}</div>
+                  <div class="text-[10px] text-amber-400 font-semibold">Vắng ${item.absences} tuần liên tiếp</div>
+                </div>
+                <button onclick="closeModal('modal-notifications'); openQuickVisitModal('${item.member.id}', ${item.absences})" class="px-2 py-1 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 text-[10px] font-bold shrink-0">
+                  + Thăm
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+
+      <!-- Section 2: Sinh Nhật Trong Tháng -->
+      <div class="p-4 rounded-2xl bg-pink-950/20 border border-pink-500/30 space-y-3">
+        <div class="flex justify-between items-center">
+          <h4 class="text-xs font-bold text-pink-300 uppercase flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base">cake</span>
+            <span>Sinh Nhật Ban Viên Tháng Này (${bdayList.length})</span>
+          </h4>
+        </div>
+        ${bdayList.length === 0 ? `<p class="text-xs text-text-secondary italic">Không có sinh nhật nào trong tháng này.</p>` : `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            ${bdayList.map(m => `
+              <div class="p-2.5 rounded-xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-2 text-xs">
+                <div class="min-w-0">
+                  <div class="font-bold text-white truncate">${getMemberName(m)}</div>
+                  <div class="text-[10px] text-pink-400 font-semibold">${m.ngaySinh || '--'}</div>
+                </div>
+                <button onclick="closeModal('modal-notifications'); openSendTemplateMessageModal('${m.id}', 'birthday')" class="px-2 py-1 rounded-lg bg-pink-600/30 hover:bg-pink-600/50 text-pink-300 text-[10px] font-bold shrink-0">
+                  🎂 Chúc Zalo
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+
+      <!-- Section 3: Phân Công Chúa Nhật Gần Nhất -->
+      ${nextSession ? `
+        <div class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-2">
+          <h4 class="text-xs font-bold text-emerald-400 uppercase flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base">event</span>
+            <span>Phân Công Chúa Nhật: ${nextSession.ngayNhom || '--'} (${nextSession.deTai || '--'})</span>
+          </h4>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-text-secondary pt-1">
+            <div>🎤 HĐCT: <strong class="text-white">${nextSession.huongDan || '--'}</strong></div>
+            <div>📖 Giảng luận: <strong class="text-white">${nextSession.dienGia || nextSession.phuTrach || '--'}</strong></div>
+            <div>❓ Đố KT: <strong class="text-white">${nextSession.nguoiDoKT || '--'}</strong></div>
+            <div>🎹 Âm nhạc: <strong class="text-emerald-300">${nextSession.amNhac || '--'}</strong></div>
+            <div>🎛️ Máy chiếu: <strong class="text-emerald-300">${nextSession.mayChieu || '--'}</strong></div>
+            <div>🚪 Tiếp tân: <strong class="text-emerald-300">${nextSession.tiepTan || '--'}</strong></div>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Section 4: Urgent Care Cases -->
+      ${urgentVisits.length > 0 ? `
+        <div class="p-4 rounded-2xl bg-rose-950/20 border border-rose-500/30 space-y-2">
+          <h4 class="text-xs font-bold text-rose-400 uppercase flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base">warning</span>
+            <span>${urgentVisits.length} Case Chăm Sóc Chưa Hoàn Tất</span>
+          </h4>
+          <div class="space-y-1.5 text-xs">
+            ${urgentVisits.slice(0, 4).map(v => `
+              <div class="flex justify-between items-center p-2 rounded-xl bg-surface-elevated/70">
+                <span class="font-bold text-white">${memberMap[v.thanhVienId] || 'Ban viên'}</span>
+                <span class="text-[10px] text-rose-300 font-semibold">${v.ngayTham || '--'} &bull; ${v.nguoiTham || 'Ban Chăm Sóc'}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+    `;
+
+    openModal('modal-notifications');
+  }
+
+  // =========================================================================
+  // 11. DYNAMIC TEMPLATE MESSAGING (MẪU TIN NHẮN ZALO ĐỘNG)
+  // =========================================================================
+
+  function openSendTemplateMessageModal(memberId, templateType = 'birthday') {
+    const memberSelect = document.getElementById('msg-tpl-member-select');
+    if (memberSelect) {
+      memberSelect.innerHTML = `<option value="">-- Chọn ban viên nhận tin --</option>` +
+        (state.members || []).map(m => `<option value="${m.id}">${getMemberName(m)} (${getMemberPhone(m)})</option>`).join('');
+      if (memberId) memberSelect.value = memberId;
+      else if (state.members && state.members.length > 0) memberSelect.value = state.members[0].id;
+    }
+
+    const typeSelect = document.getElementById('msg-tpl-type-select');
+    if (typeSelect && templateType) {
+      typeSelect.value = templateType;
+    }
+
+    updateDynamicMessagePreview();
+    openModal('modal-send-template-message');
+  }
+
+  function updateDynamicMessagePreview() {
+    const memberId = document.getElementById('msg-tpl-member-select')?.value;
+    const type = document.getElementById('msg-tpl-type-select')?.value || 'birthday';
+    const previewArea = document.getElementById('msg-tpl-preview-textarea');
+    if (!previewArea) return;
+
+    const m = (state.members || []).find(item => String(item.id) === String(memberId)) || {};
+    const hoTen = getMemberName(m) || 'Quý Ban Viên';
+    const banTitle = (state.banNganhTitle || 'Thanh Tráng').toUpperCase();
+
+    const groupMap = {};
+    state.groups.forEach(g => { groupMap[g.id] = getGroupName(g); });
+    const tenTo = groupMap[m.toId] || 'Tổ Sinh Hoạt';
+
+    const schedules = state.schedules || [];
+    const nextSession = schedules.length > 0 ? schedules[0] : {};
+    const ngayNhom = nextSession.ngayNhom || 'Chúa Nhật tuần này';
+    const deTai = nextSession.deTai || 'HỌC LỜI CHÚA';
+
+    let text = '';
+
+    if (type === 'birthday') {
+      text = `🎂 KÍNH CHÚC MỪNG SINH NHẬT ${hoTen}! 🎉\n\nThay mặt Ban Điều Hành và toàn thể anh chị em BAN ${banTitle}, kính chúc bạn một tuổi mới tràn đầy phước hạnh, sức khỏe, sự bình an và niềm vui trong tình yêu thương của Chúa Cứu Thế Giê-xu!\n\n📖 "Cầu chúc linh hồn ngươi được thịnh vượng mọi bề, và ngươi được khỏe mạnh cũng như linh hồn ngươi được thạnh vượng vậy." (III Giăng 1:2)\n\nThân mến in Christ, ❤️`;
+    } else if (type === 'absence_care') {
+      text = `❤️ THÂN GỬI ${hoTen} (${tenTo})!\n\nChúa Nhật vừa qua trong giờ sinh hoạt của Ban ${banTitle}, các anh chị em rất nhớ và thiếu vắng sự hiện diện của bạn. Không biết sức khỏe và công việc của bạn tuần qua thế nào?\n\nBan Điều Hành và Tổ luôn sẵn sàng đồng hành và cầu thay cho bạn. Chiều Chúa Nhật tuần này lúc 16h00, rất mong được gặp lại bạn trong buổi thờ phượng và sinh hoạt nhé! 🙏`;
+    } else if (type === 'schedule_duty') {
+      text = `📅 THÔNG BÁO LỊCH PHÂN CÔNG CHÚA NHẬT (${ngayNhom})\n\nKính gửi ${hoTen} (${tenTo})!\n\nBan Điều Hành xin gửi thông báo phân công phục vụ cho buổi nhóm chiều Chúa Nhật tới:\n- Đề tài: ${deTai}\n- Giờ sinh hoạt: 16h00\n- Xin bạn vui lòng sắp xếp thời gian đến sớm 15 phút để cùng cầu nguyện chuẩn bị.\n\nKính chúc bạn một tuần mới tràn đầy ơn phước! ✨`;
+    } else if (type === 'attendance_cheer') {
+      text = `🏆 KHÍCH LỆ TINH THẦN HỌC LỜI CHÚA\n\nThân chào ${hoTen}!\n\nBan ${banTitle} trân trọng chúc mừng và khen ngợi sự trung tín của bạn trong việc đi nhóm thờ phượng và học Lời Chúa trong thời gian qua!\n\n📖 "Hãy tập tành sự tin kính; vì sự tập tành thân thể ích lợi ít bề, còn sự tin kính ích cho mọi sự..." (I Ti-mô-thê 4:7-8)\n\nCầu xin Chúa thêm sức cho bạn luôn giữ vững ngọn lửa đức tin! 🔥`;
+    }
+
+    previewArea.value = text;
+  }
+
+  function copyDynamicMessageText() {
+    const previewArea = document.getElementById('msg-tpl-preview-textarea');
+    if (!previewArea) return;
+    navigator.clipboard.writeText(previewArea.value).then(() => {
+      showToast('Đã sao chép nội dung tin nhắn vào bộ nhớ tạm!', 'success');
+    });
+  }
+
+  function sendDynamicMessageZalo() {
+    const memberId = document.getElementById('msg-tpl-member-select')?.value;
+    const m = (state.members || []).find(item => String(item.id) === String(memberId));
+    const phone = m ? cleanPhoneNumber(getMemberPhone(m)) : '';
+    const text = document.getElementById('msg-tpl-preview-textarea')?.value || '';
+
+    // Copy text first
+    navigator.clipboard.writeText(text);
+
+    if (phone) {
+      window.open(`https://zalo.me/${phone}`, '_blank');
+      showToast(`Đã sao chép nội dung và đang mở Zalo của ${getMemberName(m)}...`, 'success');
+    } else {
+      showToast('Ban viên này chưa có SĐT. Đã sao chép nội dung tin nhắn vào clipboard!', 'info');
     }
   }
 
