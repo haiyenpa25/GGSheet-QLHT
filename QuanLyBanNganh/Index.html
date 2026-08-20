@@ -286,17 +286,13 @@
           <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý danh sách thành viên, ban điều hành, tổ nhóm, ngày sinh và phím tắt liên hệ.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-          <button onclick="handleSeed55Members()" class="py-2.5 px-4 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
-            <span class="material-symbols-outlined text-[18px]">bolt</span>
-            <span>⚡ Nạp Sẵn 55 Ban Viên &amp; 2 Tổ</span>
-          </button>
           <button onclick="openBulkImportModal()" class="py-2.5 px-4 rounded-full bg-surface-elevated hover:bg-white/10 text-emerald-400 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
             <span class="material-symbols-outlined text-[18px]">file_upload</span>
-            <span>Nhập Từ Excel</span>
+            <span>📥 Nhập Từ Excel / Bảng</span>
           </button>
           <button onclick="openAddMemberModal()" class="py-2.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
             <span class="material-symbols-outlined text-[18px]">person_add</span>
-            <span>Thêm Mới</span>
+            <span>Thêm Ban Viên</span>
           </button>
         </div>
       </div>
@@ -803,24 +799,16 @@
 
       <div class="p-6 space-y-4 overflow-y-auto">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <label class="block text-xs font-semibold text-text-secondary">Dán dữ liệu từ bảng (Cột: STT | Họ Tên | Ngày Sinh | Địa Chỉ | SĐT)</label>
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="pasteSample55Members()" class="text-xs text-emerald-400 hover:underline font-semibold flex items-center gap-1">
-              <span class="material-symbols-outlined text-sm">content_paste</span>
-              <span>Dán danh sách mẫu (55 người)</span>
-            </button>
-          </div>
+          <label class="block text-xs font-semibold text-text-secondary">Dán dữ liệu từ bảng (Các cột: STT | Họ Tên | Ngày Sinh | Địa Chỉ | SĐT | Tổ Nhóm)</label>
         </div>
 
-        <textarea id="bulk-members-input" rows="7" class="glass-input w-full rounded-2xl p-4 text-xs font-mono" placeholder="Dán danh sách từ Excel vào đây...&#10;Ví dụ:&#10;1	Ksor H' Miram	12/04/2000		&#10;2	Rmah Toàn	15/10/1999		&#10;3	Trần Thị Thanh Thảo	01/06/1995		971520748"></textarea>
+        <textarea id="bulk-members-input" rows="8" class="glass-input w-full rounded-2xl p-4 text-xs font-mono" placeholder="Dán danh sách từ Excel hoặc Google Sheet vào đây...&#10;Cột phân cách bằng Tab hoặc Dấu phẩy (,)&#10;Ví dụ:&#10;1	Trần Văn Bình	12/04/1995	Thủ Đức	0901234567	Tổ 1&#10;2	Lê Thị Hoa	15/10/1998	Quận 2	0912345678	Tổ 2"></textarea>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Tổ nhóm mặc định (nếu trong bảng không ghi)</label>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Tổ nhóm chỉ định (nếu trong bảng không có cột Tổ)</label>
             <select id="bulk-default-group" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold">
-              <option value="auto">Tự động phân theo mẫu (Phao-lô &amp; Đa-ni-ên)</option>
-              <option value="to_danien">Tổ Đa-ni-ên</option>
-              <option value="to_phaolo">Tổ Phao-lô</option>
+              <option value="">Tự động nhận diện từ bảng dữ liệu</option>
             </select>
           </div>
           <div class="flex items-end">

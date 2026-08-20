@@ -706,95 +706,49 @@
     }
   }
 
-  const SAMPLE_55_DATA = `STT\tHỌ VÀ TÊN\tNGÀY SINH\tĐỊA CHỈ\tSDT
-1\tKsor H' Miram\t12/04/2000\t\t
-2\tRmah Toàn\t15/10/1999\t\t
-3\tTrần Thị ThanhThảo\t01/06/1995\t\t971520748
-4\tNguyễn Thế Hải\t05/03/1993\t407/5 , Nguyễn Thị Định, Cát Lái, Tp. Thủ Đức\t934987202
-5\tLê Thị Hoàng Yến\t28/05/1993\t407/5, Nguyễn Thị Định, Cát Lái, Tp. Thủ Đức\t877115836
-6\tNguyễn Quốc Khánh\t26/01/1993\t\t773777910
-7\tLa Minh Hoàng\t29/11/1992\t20, Đường 38, Bình Trưng Tây, Tp. Thủ Đức\t934078190
-8\tNguyễn Đặng Thảo Nguyên\t17/4/1992\t\t0935 092 920
-9\tPhạm Kiều Trâm\t18/05/1992\t\t906860489
-10\tCao Thiên Ngọc\t04/04/1992\t\t932166032
-11\tY Đuen Êban\t13/10/1991\t154, Đường 67, Cát Lái, Tp. Thủ Đức\t903093041
-12\tNguyễn Ngọc Hà Thi\t19/05/1991\t154, Đường 67, Cát Lái, Tp. Thủ Đức\t902659747
-13\tThiên Nhân\t14/12/1991\t\t963577778
-14\tNhật Thuy\t21/07/1991\t\t939926929
-15\tNguyễn Thị Trà My\t05/03/1990\t42, Thạnh Mỹ Lợi, Thạnh Mỹ Lợi, Tp. Thủ Đức\t978550426
-16\tPhạm Anh Tuấn\t12/09/1990\t42, Thạnh Mỹ Lợi, Thạnh Mỹ Lợi, Tp. Thủ Đức\t399182821
-17\tNguyễn NgọcTuệ\t07/11/1990\t\t905251525
-18\tHuỳnh Giang Duy Vũ\t18/02/1990\t\t
-19\tLê KimHuệ\t07/05/1989\t20, Đường 38, Bình Trưng Tây, Tp. Thủ Đức\t978436182
-20\tNguyễn Thị Nhung\t29/02/1988\t42, Đường 28, Cát Lái, Tp. Thủ Đức\t928220493
-21\tTrịnh Thế Hân\t18/12/1988\t13, Vành đai tây, An Khánh, Tp. Thủ Đức\t919499857
-22\tNguyễn Kim Long\t05/09/1988\t\t905673400
-23\tNguyễn Văn Hưng\t3/1/1987\t194, Hồ Văn Huê, Phường 9, Quận Phú Nhuận\t972400688
-24\tNguyễn Thanh Tuấn\t25/04/1987\t42, Đường 28, Cát Lái, Tp. Thủ Đức\t376258520
-25\tHoàng Thị Giang\t06/10/1987\tHommyland 3, , ,\t917555085
-26\tNguyễn Thị Nhật Thiên\t09/11/1987\t\t902680274
-27\tTrương Thị Thanh Thảo\t26/04/1986\t649/2, Nguyễn Thị Định, Cát Lái, Tp. Thủ Đức\t901094521
-28\tNguyễn Thị Thu Hiền\t10/08/1986\t603, Nguyễn Thị Định, Cát Lái, Tp. Thủ Đức\t933833967
-29\tVũ Kiều Oanh\t17/07/1986\t194, Hồ Văn Huê, Phường 9, Quận Phú Nhuận\t904067880
-30\tHuỳnh NhuậnTâm\t07/11/1986\t301 Lô A1, Chung cư Thạnh Mỹ Lợi F, Thạnh Mỹ Lợi, Tp. Thủ Đức\t906488319
-31\tNguyễn Ngọc Tuân\t13/06/1986\t\t0905 058 053
-32\tLê Quang Trung Tín\t21/02/1985\tHommyland 3, , ,\t919762274
-33\tChâu Thị Mai\t04/12/1985\t\t
-34\tNguyễn Thị Mỹ Ngọc\t13/11/1984\t45/9 , Đường 32, Thạnh Mỹ Lợi, Tp. Thủ Đức\t938603284
-35\tLê Khắc Đại Lộc\t23/05/1984\t30/5, Thạnh Mỹ Lợi, Thạnh Mỹ Lợi, Tp. Thủ Đức\t947998847
-36\tTô Bích Trâm\t24/07/1984\t\t
-37\tThái Nhựt Bình\t06/03/1983\t31, Đường 18, Bình Trưng Tây, Tp. Thủ Đức\t976181237
-38\tBùi Thị Thu Hiền\t07/02/1983\t31, Đường 18, Bình Trưng Tây, Tp. Thủ Đức\t362688466
-39\tHuỳnh Nhật Kha My\t17/03/1982\tẤp Cát, Xã Phú Hữu, , , Nhơn Trạch\t908988913
-40\tHồ Thị Minh Nhựt\t01/10/1982\t\t705705474
-41\tHồ Thị DiễmNgọc\t19/12/1981\t\t972682035
-42\tNguyễn Nguyên Bá\t27/10/1980\tCC HomyLand 2, Bình Trưng Tây, Tp. Thủ Đức\t903101754
-43\tPhan Văn Hoàng\t01/01/1978\t\t
-44\tNguyễn Hoa Thiên Lý\t17/03/1978\t54A, Trần Văn Giáp, Hiệp Tân, Quận Tân Phú\t902888001
-45\tLưu Văn Minh\t18/05/1978\t40/2, Đường 836, Phú Hữu, Tp. Thủ Đức\t398687567
-46\tNguyễn YếnThanh\t27/08/1978\t\t827708278
-47\tHuỳnh Tấn Trực\t16/11/1978\t\t
-48\tĐặng Xuân Hương\t30/11/1977\tCăn 202 - Lô B2, CC Thạnh Mỹ Lợi, , Tp. Thủ Đức\t908475364
-49\tQuách Thanh Dũng\t24/12/1977\t126, Lê Văn Thịnh, Bình Trưng Tây, Tp. Thủ Đức\t935913441
-50\tTrần Thị Sen\t10/09/1977\t126, Lê Văn Thịnh, Bình Trưng Tây, Tp. Thủ Đức\t965430060
-51\tNguyễn Thị Hồng Việt\t17/01/1976\tCC HomyLand 2, Bình Trưng Tây, Tp. Thủ Đức\t908868909
-52\tHuỳnh Thị NgọcLâm\t02/10/1975\t84/5 , Bình Trưng, Bình Trưng Đông, Tp. Thủ Đức\t898275113
-53\tNguyễn Sơn Đông\t23/10/1971\t54A, Trần Văn Giáp, Hiệp Tân, Quận Tân Phú\t903305029
-54\tNguyễn Thị Ngọc Mỹ\t20/02/1971\t898/7, Nguyễn Thị Định, Thạnh Mỹ Lợi, Tp. Thủ Đức\t905297004
-55\tNguyễn Thị Hạ Thương\t\t\t`;
-
   function openBulkImportModal() {
-    document.getElementById('bulk-members-input').value = '';
-    document.getElementById('bulk-preview-container').classList.add('hidden');
-    openModal('modal-bulk-import-members');
-  }
+    const input = document.getElementById('bulk-members-input');
+    if (input) input.value = '';
+    const container = document.getElementById('bulk-preview-container');
+    if (container) container.classList.add('hidden');
 
-  function pasteSample55Members() {
-    document.getElementById('bulk-members-input').value = SAMPLE_55_DATA;
-    previewBulkMembers();
+    const groupSelect = document.getElementById('bulk-default-group');
+    if (groupSelect) {
+      let opts = '<option value="">Tự động nhận diện / Không chỉ định</option>';
+      (state.groups || []).forEach(g => {
+        opts += `<option value="${g.id}">${g.tenTo || g.name}</option>`;
+      });
+      groupSelect.innerHTML = opts;
+    }
+
+    openModal('modal-bulk-import-members');
   }
 
   function parseBulkMembersText(rawText) {
     if (!rawText) return [];
     const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
     const parsed = [];
-    const phaoloNames = [
-      "ksor h' miram", "thien nhan", "tang khac thien nhan", "le thi hoang yen", "huynh thi ngoc lam",
-      "nguyen ngoc ha thi", "bui thi thu hien", "nguyen thi ngoc my", "nguyen thi thu hien",
-      "pham anh tuan", "le quang trung tin", "huynh giang duy vu", "nguyen thanh tuan",
-      "lu duy nguyen", "tran thi sen", "nguyen thi sen", "nguyen trong huan"
-    ];
+    const defaultGroupId = (document.getElementById('bulk-default-group') || {}).value || '';
 
     lines.forEach((line, idx) => {
-      if (line.toLowerCase().includes('họ và tên') || line.toLowerCase().includes('ho va ten')) return;
+      // Bỏ qua dòng tiêu đề nếu người dùng copy cả header từ Excel
+      const low = line.toLowerCase();
+      if (low.includes('họ và tên') || low.includes('ho va ten') || low.includes('full name') || low.includes('fullname')) return;
 
       let parts = line.split('\t');
       if (parts.length === 1) parts = line.split(',');
       if (parts.length === 1) parts = line.split(';');
 
-      let stt = '', hoTen = '', ngaySinh = '', diaChi = '', sdt = '', to = '';
+      let stt = '', hoTen = '', ngaySinh = '', diaChi = '', sdt = '', toName = '', toId = defaultGroupId;
 
-      if (parts.length >= 5) {
+      if (parts.length >= 6) {
+        stt = parts[0].trim();
+        hoTen = parts[1].trim();
+        ngaySinh = parts[2].trim();
+        diaChi = parts[3].trim();
+        sdt = cleanPhoneNumber(parts[4].trim());
+        toName = parts[5].trim();
+      } else if (parts.length === 5) {
         stt = parts[0].trim();
         hoTen = parts[1].trim();
         ngaySinh = parts[2].trim();
@@ -809,18 +763,16 @@
         hoTen = parts[0].trim();
         sdt = cleanPhoneNumber(parts[1].trim());
       } else {
-        hoTen = line;
+        hoTen = line.trim();
       }
 
       if (!hoTen) return;
 
-      const normName = hoTen.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '');
-      const isPhaolo = phaoloNames.some(pn => {
-        const normPn = pn.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '');
-        return normName.includes(normPn) || normPn.includes(normName);
-      });
-
-      to = isPhaolo ? 'Tổ Phao-lô' : 'Tổ Đa-ni-ên';
+      // Tìm tên tổ nếu có toId
+      if (!toName && toId) {
+        const found = (state.groups || []).find(g => g.id === toId);
+        if (found) toName = found.tenTo || found.name;
+      }
 
       parsed.push({
         stt: stt || String(idx + 1),
@@ -828,7 +780,8 @@
         ngaySinh: ngaySinh,
         diaChi: diaChi,
         sdt: sdt,
-        to: to
+        to: toName || '',
+        toId: toId
       });
     });
 
@@ -860,9 +813,7 @@
         <td class="p-2 text-text-secondary">${m.ngaySinh || '--'}</td>
         <td class="p-2 font-mono text-emerald-400">${m.sdt || '--'}</td>
         <td class="p-2">
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${m.to.includes('Phao-lô') ? 'bg-sky-500/20 text-sky-300' : 'bg-emerald-500/20 text-emerald-300'}">
-            ${m.to}
-          </span>
+          ${m.to ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300">${m.to}</span>` : '<span class="text-text-secondary text-[11px]">Chưa gán</span>'}
         </td>
       </tr>
     `).join('');
@@ -882,29 +833,11 @@
     try {
       const res = await runGAS('apiBulkImportMembers', { members: list }, state.activeSheetId);
       if (res && res.success) {
-        showToast(res.message || `Đã nạp ${list.length} ban viên thành công!`, 'success');
+        showToast(res.message || `Đã nhập ${list.length} ban viên thành công!`, 'success');
         closeModal('modal-bulk-import-members');
         await refreshData(true);
       } else {
         showToast(res.message || 'Lỗi khi nhập ban viên', 'error');
-      }
-    } catch (e) {
-      showToast(e.message, 'error');
-    } finally {
-      showLoading(false);
-    }
-  }
-
-  async function handleSeed55Members() {
-    if (!confirm('Bạn có muốn nạp sẵn 55 ban viên và 2 tổ (Đa-ni-ên & Phao-lô) vào cơ sở dữ liệu?')) return;
-    showLoading(true);
-    try {
-      const res = await runGAS('apiSeedThanhTrangMembers', state.activeSheetId);
-      if (res && res.success) {
-        showToast(res.message || 'Đã nạp thành công 55 ban viên và 2 tổ nhóm!', 'success');
-        await refreshData(true);
-      } else {
-        showToast(res.message || 'Lỗi nạp dữ liệu mẫu', 'error');
       }
     } catch (e) {
       showToast(e.message, 'error');

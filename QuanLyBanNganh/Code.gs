@@ -125,9 +125,6 @@ function handleApiRequest(action, params) {
       case 'apiBulkImportMembers':
         result = apiBulkImportMembers(params.data || params, sheetId);
         break;
-      case 'apiSeedThanhTrangMembers':
-        result = apiSeedThanhTrangMembers(sheetId);
-        break;
       default:
         result = { success: false, message: `Hành động "${action}" không tồn tại` };
     }
@@ -511,21 +508,8 @@ function apiGetInitialData(customSheetId) {
       }
     });
 
-    let members = parseRowsFromValues(sheetMap[SHEET_NAMES.THANH_VIEN] || []);
-    let groups = parseRowsFromValues(sheetMap[SHEET_NAMES.TO_NHOM] || []);
-
-    if (members.length === 0 && groups.length === 0) {
-      apiSeedThanhTrangMembers(customSheetId);
-      const tvSheet = ss.getSheetByName(SHEET_NAMES.THANH_VIEN);
-      const toSheet = ss.getSheetByName(SHEET_NAMES.TO_NHOM);
-      if (tvSheet && tvSheet.getLastRow() > 1) {
-        members = parseRowsFromValues(tvSheet.getRange(1, 1, tvSheet.getLastRow(), tvSheet.getLastColumn()).getValues());
-      }
-      if (toSheet && toSheet.getLastRow() > 1) {
-        groups = parseRowsFromValues(toSheet.getRange(1, 1, toSheet.getLastRow(), toSheet.getLastColumn()).getValues());
-      }
-    }
-
+    const members = parseRowsFromValues(sheetMap[SHEET_NAMES.THANH_VIEN] || []);
+    const groups = parseRowsFromValues(sheetMap[SHEET_NAMES.TO_NHOM] || []);
     const funds = parseRowsFromValues(sheetMap[SHEET_NAMES.DANH_MUC_QUY] || []);
     const transactions = parseRowsFromValues(sheetMap[SHEET_NAMES.SO_QUY] || []);
     const attendances = parseRowsFromValues(sheetMap[SHEET_NAMES.DIEM_DANH] || []);
@@ -623,50 +607,36 @@ function apiBulkImportMembers(payload, customSheetId) {
   try {
     setupDatabase(customSheetId);
 
-    // 1. Đảm bảo tồn tại 2 tổ: Tổ Đa-ni-ên & Tổ Phao-lô
-    let groups = sheetFindAll(SHEET_NAMES.TO_NHOM, customSheetId);
-    let toDanien = groups.find(g => normalizeHeaderKey(g.tenTo).includes('danien') || normalizeHeaderKey(g.maTo).includes('danien'));
-    let toPhaolo = groups.find(g => normalizeHeaderKey(g.tenTo).includes('phaolo') || normalizeHeaderKey(g.maTo).includes('phaolo'));
-
-    if (!toDanien) {
-      toDanien = sheetInsert(SHEET_NAMES.TO_NHOM, {
-        maTo: 'TO_DANIEN',
-        tenTo: 'Tổ Đa-ni-ên',
-        toTruong: '',
-        toPho: '',
-        ghiChu: 'Tổ sinh hoạt Đa-ni-ên'
-      }, customSheetId);
-    }
-    if (!toPhaolo) {
-      toPhaolo = sheetInsert(SHEET_NAMES.TO_NHOM, {
-        maTo: 'TO_PHAOLO',
-        tenTo: 'Tổ Phao-lô',
-        toTruong: '',
-        toPho: '',
-        ghiChu: 'Tổ sinh hoạt Phao-lô'
-      }, customSheetId);
-    }
-
     const membersList = payload.members || payload.list || [];
     if (!Array.isArray(membersList) || membersList.length === 0) {
       throw new Error('Danh sách ban viên nhập vào trống');
     }
 
+    let existingGroups = sheetFindAll(SHEET_NAMES.TO_NHOM, customSheetId);
+    let existingMembers = sheetFindAll(SHEET_NAMES.THANH_VIEN, customSheetId);
     let count = 0;
-    const existingMembers = sheetFindAll(SHEET_NAMES.THANH_VIEN, customSheetId);
 
     membersList.forEach((m, idx) => {
       const hoTen = (m.hoTen || m.HoTen || m['HỌ VÀ TÊN'] || m.name || '').trim();
       if (!hoTen) return;
 
       let toId = m.toId || '';
-      const toName = (m.to || m.toName || m.tenTo || '').trim().toLowerCase();
-      if (toName.includes('phao') || toName.includes('phaolo')) {
-        toId = toPhaolo.id;
-      } else if (toName.includes('da') || toName.includes('danien')) {
-        toId = toDanien.id;
-      } else if (!toId) {
-        toId = toDanien.id;
+      const toName = (m.to || m.toName || m.tenTo || '').trim();
+
+      // Nếu có tên tổ mà chưa có ID -> tìm hoặc tạo tổ mới tự động
+      if (!toId && toName) {
+        let foundGroup = existingGroups.find(g => normalizeHeaderKey(g.tenTo) === normalizeHeaderKey(toName));
+        if (!foundGroup) {
+          foundGroup = sheetInsert(SHEET_NAMES.TO_NHOM, {
+            maTo: 'TO_' + Math.floor(10 + Math.random() * 90),
+            tenTo: toName,
+            toTruong: '',
+            toPho: '',
+            ghiChu: 'Tổ sinh hoạt ' + toName
+          }, customSheetId);
+          existingGroups.push(foundGroup);
+        }
+        toId = foundGroup.id;
       }
 
       const exist = existingMembers.find(em => em.hoTen && em.hoTen.toLowerCase().trim() === hoTen.toLowerCase());
@@ -693,74 +663,12 @@ function apiBulkImportMembers(payload, customSheetId) {
 
     return {
       success: true,
-      message: `Đã nạp thành công ${count} ban viên vào cơ sở dữ liệu!`,
+      message: `Đã nhập thành công ${count} ban viên vào Google Sheet!`,
       count: count
     };
   } catch (err) {
     return { success: false, message: err.message || String(err) };
   }
-}
-
-function apiSeedThanhTrangMembers(customSheetId) {
-  const list55 = [
-    { stt: 1, hoTen: "Ksor H' Miram", ngaySinh: "12/04/2000", diaChi: "", sdt: "", to: "Phao-lô" },
-    { stt: 2, hoTen: "Rmah Toàn", ngaySinh: "15/10/1999", diaChi: "", sdt: "", to: "Đa-ni-ên" },
-    { stt: 3, hoTen: "Trần Thị Thanh Thảo", ngaySinh: "01/06/1995", diaChi: "", sdt: "0971520748", to: "Đa-ni-ên" },
-    { stt: 4, hoTen: "Nguyễn Thế Hải", ngaySinh: "05/03/1993", diaChi: "407/5, Nguyễn Thị Định, Cát Lái, Tp. Thủ Đức", sdt: "0934987202", to: "Đa-ni-ên" },
-    { stt: 5, hoTen: "Lê Thị Hoàng Yến", ngaySinh: "28/05/1993", diaChi: "407/5, Nguyễn Thị Định, Cát Lái, Tp. Thủ Đức", sdt: "0877115836", to: "Phao-lô" },
-    { stt: 6, hoTen: "Nguyễn Quốc Khánh", ngaySinh: "26/01/1993", diaChi: "", sdt: "0773777910", to: "Đa-ni-ên" },
-    { stt: 7, hoTen: "La Minh Hoàng", ngaySinh: "29/11/1992", diaChi: "20, Đường 38, Bình Trưng Tây, Tp. Thủ Đức", sdt: "0934078190", to: "Đa-ni-ên" },
-    { stt: 8, hoTen: "Nguyễn Đặng Thảo Nguyên", ngaySinh: "17/04/1992", diaChi: "", sdt: "0935092920", to: "Đa-ni-ên" },
-    { stt: 9, hoTen: "Phạm Kiều Trâm", ngaySinh: "18/05/1992", diaChi: "", sdt: "0906860489", to: "Đa-ni-ên" },
-    { stt: 10, hoTen: "Cao Thiên Ngọc", ngaySinh: "04/04/1992", diaChi: "", sdt: "0932166032", to: "Đa-ni-ên" },
-    { stt: 11, hoTen: "Y Đuen Êban", ngaySinh: "13/10/1991", diaChi: "154, Đường 67, Cát Lái, Tp. Thủ Đức", sdt: "0903093041", to: "Đa-ni-ên" },
-    { stt: 12, hoTen: "Nguyễn Ngọc Hà Thi", ngaySinh: "19/05/1991", diaChi: "154, Đường 67, Cát Lái, Tp. Thủ Đức", sdt: "0902659747", to: "Phao-lô" },
-    { stt: 13, hoTen: "Tăng Khắc Thiên Nhân", ngaySinh: "14/12/1991", diaChi: "", sdt: "0963577778", to: "Phao-lô" },
-    { stt: 14, hoTen: "Nhật Thuy", ngaySinh: "21/07/1991", diaChi: "", sdt: "0939926929", to: "Đa-ni-ên" },
-    { stt: 15, hoTen: "Nguyễn Thị Trà My", ngaySinh: "05/03/1990", diaChi: "42, Thạnh Mỹ Lợi, Thạnh Mỹ Lợi, Tp. Thủ Đức", sdt: "0978550426", to: "Đa-ni-ên" },
-    { stt: 16, hoTen: "Phạm Anh Tuấn", ngaySinh: "12/09/1990", diaChi: "42, Thạnh Mỹ Lợi, Thạnh Mỹ Lợi, Tp. Thủ Đức", sdt: "0399182821", to: "Phao-lô" },
-    { stt: 17, hoTen: "Nguyễn Ngọc Tuệ", ngaySinh: "07/11/1990", diaChi: "", sdt: "0905251525", to: "Đa-ni-ên" },
-    { stt: 18, hoTen: "Huỳnh Giang Duy Vũ", ngaySinh: "18/02/1990", diaChi: "", sdt: "", to: "Phao-lô" },
-    { stt: 19, hoTen: "Lê Kim Huệ", ngaySinh: "07/05/1989", diaChi: "20, Đường 38, Bình Trưng Tây, Tp. Thủ Đức", sdt: "0978436182", to: "Đa-ni-ên" },
-    { stt: 20, hoTen: "Nguyễn Thị Nhung", ngaySinh: "29/02/1988", diaChi: "42, Đường 28, Cát Lái, Tp. Thủ Đức", sdt: "0928220493", to: "Đa-ni-ên" },
-    { stt: 21, hoTen: "Trịnh Thế Hân", ngaySinh: "18/12/1988", diaChi: "13, Vành đai tây, An Khánh, Tp. Thủ Đức", sdt: "0919499857", to: "Đa-ni-ên" },
-    { stt: 22, hoTen: "Nguyễn Kim Long", ngaySinh: "05/09/1988", diaChi: "", sdt: "0905673400", to: "Đa-ni-ên" },
-    { stt: 23, hoTen: "Nguyễn Văn Hưng", ngaySinh: "03/01/1987", diaChi: "194, Hồ Văn Huê, Phường 9, Quận Phú Nhuận", sdt: "0972400688", to: "Đa-ni-ên" },
-    { stt: 24, hoTen: "Nguyễn Thanh Tuấn", ngaySinh: "25/04/1987", diaChi: "42, Đường 28, Cát Lái, Tp. Thủ Đức", sdt: "0376258520", to: "Phao-lô" },
-    { stt: 25, hoTen: "Hoàng Thị Giang", ngaySinh: "06/10/1987", diaChi: "Hommyland 3, Tp. Thủ Đức", sdt: "0917555085", to: "Đa-ni-ên" },
-    { stt: 26, hoTen: "Nguyễn Thị Nhật Thiên", ngaySinh: "09/11/1987", diaChi: "", sdt: "0902680274", to: "Đa-ni-ên" },
-    { stt: 27, hoTen: "Trương Thị Thanh Thảo", ngaySinh: "26/04/1986", diaChi: "649/2, Nguyễn Thị Định, Cát Lái, Tp. Thủ Đức", sdt: "0901094521", to: "Đa-ni-ên" },
-    { stt: 28, hoTen: "Nguyễn Thị Thu Hiền", ngaySinh: "10/08/1986", diaChi: "603, Nguyễn Thị Định, Cát Lái, Tp. Thủ Đức", sdt: "0933833967", to: "Phao-lô" },
-    { stt: 29, hoTen: "Vũ Kiều Oanh", ngaySinh: "17/07/1986", diaChi: "194, Hồ Văn Huê, Phường 9, Quận Phú Nhuận", sdt: "0904067880", to: "Đa-ni-ên" },
-    { stt: 30, hoTen: "Huỳnh Nhuận Tâm", ngaySinh: "07/11/1986", diaChi: "301 Lô A1, CC Thạnh Mỹ Lợi F, Thạnh Mỹ Lợi, Tp. Thủ Đức", sdt: "0906488319", to: "Đa-ni-ên" },
-    { stt: 31, hoTen: "Nguyễn Ngọc Tuân", ngaySinh: "13/06/1986", diaChi: "", sdt: "0905058053", to: "Đa-ni-ên" },
-    { stt: 32, hoTen: "Lê Quang Trung Tín", ngaySinh: "21/02/1985", diaChi: "Hommyland 3, Tp. Thủ Đức", sdt: "0919762274", to: "Phao-lô" },
-    { stt: 33, hoTen: "Châu Thị Mai", ngaySinh: "04/12/1985", diaChi: "", sdt: "", to: "Đa-ni-ên" },
-    { stt: 34, hoTen: "Nguyễn Thị Mỹ Ngọc", ngaySinh: "13/11/1984", diaChi: "45/9, Đường 32, Thạnh Mỹ Lợi, Tp. Thủ Đức", sdt: "0938603284", to: "Đa-ni-ên" },
-    { stt: 35, hoTen: "Lê Khắc Đại Lộc", ngaySinh: "23/05/1984", diaChi: "30/5, Thạnh Mỹ Lợi, Thạnh Mỹ Lợi, Tp. Thủ Đức", sdt: "0947998847", to: "Đa-ni-ên" },
-    { stt: 36, hoTen: "Tô Bích Trâm", ngaySinh: "24/07/1984", diaChi: "", sdt: "", to: "Đa-ni-ên" },
-    { stt: 37, hoTen: "Thái Nhựt Bình", ngaySinh: "06/03/1983", diaChi: "31, Đường 18, Bình Trưng Tây, Tp. Thủ Đức", sdt: "0976181237", to: "Đa-ni-ên" },
-    { stt: 38, hoTen: "Bùi Thị Thu Hiền", ngaySinh: "07/02/1983", diaChi: "31, Đường 18, Bình Trưng Tây, Tp. Thủ Đức", sdt: "0362688466", to: "Phao-lô" },
-    { stt: 39, hoTen: "Huỳnh Nhật Kha My", ngaySinh: "17/03/1982", diaChi: "Ấp Cát, Xã Phú Hữu, Nhơn Trạch", sdt: "0908988913", to: "Đa-ni-ên" },
-    { stt: 40, hoTen: "Hồ Thị Minh Nhựt", ngaySinh: "01/10/1982", diaChi: "", sdt: "0705705474", to: "Đa-ni-ên" },
-    { stt: 41, hoTen: "Hồ Thị Diễm Ngọc", ngaySinh: "19/12/1981", diaChi: "", sdt: "0972682035", to: "Đa-ni-ên" },
-    { stt: 42, hoTen: "Nguyễn Nguyên Bá", ngaySinh: "27/10/1980", diaChi: "CC HomyLand 2, Bình Trưng Tây, Tp. Thủ Đức", sdt: "0903101754", to: "Đa-ni-ên" },
-    { stt: 43, hoTen: "Phan Văn Hoàng", ngaySinh: "01/01/1978", diaChi: "", sdt: "", to: "Đa-ni-ên" },
-    { stt: 44, hoTen: "Nguyễn Hoa Thiên Lý", ngaySinh: "17/03/1978", diaChi: "54A, Trần Văn Giáp, Hiệp Tân, Tân Phú", sdt: "0902888001", to: "Đa-ni-ên" },
-    { stt: 45, hoTen: "Lưu Văn Minh", ngaySinh: "18/05/1978", diaChi: "40/2, Đường 836, Phú Hữu, Tp. Thủ Đức", sdt: "0398687567", to: "Đa-ni-ên" },
-    { stt: 46, hoTen: "Nguyễn Yến Thanh", ngaySinh: "27/08/1978", diaChi: "", sdt: "0827708278", to: "Đa-ni-ên" },
-    { stt: 47, hoTen: "Huỳnh Tấn Trực", ngaySinh: "16/11/1978", diaChi: "", sdt: "", to: "Đa-ni-ên" },
-    { stt: 48, hoTen: "Đặng Xuân Hương", ngaySinh: "30/11/1977", diaChi: "Căn 202 - Lô B2, CC Thạnh Mỹ Lợi, Tp. Thủ Đức", sdt: "0908475364", to: "Đa-ni-ên" },
-    { stt: 49, hoTen: "Quách Thanh Dũng", ngaySinh: "24/12/1977", diaChi: "126, Lê Văn Thịnh, Bình Trưng Tây, Tp. Thủ Đức", sdt: "0935913441", to: "Đa-ni-ên" },
-    { stt: 50, hoTen: "Trần Thị Sen", ngaySinh: "10/09/1977", diaChi: "126, Lê Văn Thịnh, Bình Trưng Tây, Tp. Thủ Đức", sdt: "0965430060", to: "Phao-lô" },
-    { stt: 51, hoTen: "Nguyễn Thị Hồng Việt", ngaySinh: "17/01/1976", diaChi: "CC HomyLand 2, Bình Trưng Tây, Tp. Thủ Đức", sdt: "0908868909", to: "Đa-ni-ên" },
-    { stt: 52, hoTen: "Huỳnh Thị Ngọc Lâm", ngaySinh: "02/10/1975", diaChi: "84/5, Bình Trưng, Bình Trưng Đông, Tp. Thủ Đức", sdt: "0898275113", to: "Phao-lô" },
-    { stt: 53, hoTen: "Nguyễn Sơn Đông", ngaySinh: "23/10/1971", diaChi: "54A, Trần Văn Giáp, Hiệp Tân, Tân Phú", sdt: "0903305029", to: "Đa-ni-ên" },
-    { stt: 54, hoTen: "Nguyễn Thị Ngọc Mỹ", ngaySinh: "20/02/1971", diaChi: "898/7, Nguyễn Thị Định, Thạnh Mỹ Lợi, Tp. Thủ Đức", sdt: "0905297004", to: "Phao-lô" },
-    { stt: 55, hoTen: "Nguyễn Thị Hạ Thương", ngaySinh: "", diaChi: "", sdt: "", to: "Đa-ni-ên" }
-  ];
-
-  return apiBulkImportMembers({ members: list55 }, customSheetId);
 }
 
 function apiSaveGroup(payload, customSheetId) {
