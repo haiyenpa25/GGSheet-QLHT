@@ -115,6 +115,7 @@
 
       var runner = google.script.run
         .withSuccessHandler(function(res) {
+          console.log('GAS Success [' + functionName + ']:', res);
           resolve(res);
         })
         .withFailureHandler(function(err) {
@@ -123,11 +124,17 @@
           resolve({ success: false, message: err.message || String(err) });
         });
 
-      if (runner && typeof runner[functionName] === 'function') {
-        runner[functionName].apply(runner, args);
-      } else {
-        console.error('GAS Runner: Hàm ' + functionName + ' không tồn tại trên server.');
-        resolve({ success: false, message: 'Hàm ' + functionName + ' chưa được định nghĩa trên server' });
+      try {
+        if (typeof runner[functionName] === 'function') {
+          runner[functionName].apply(runner, args);
+        } else if (runner[functionName]) {
+          runner[functionName](...args);
+        } else {
+          runner[functionName].apply(runner, args);
+        }
+      } catch (callErr) {
+        console.error('GAS Invoke Error:', callErr);
+        resolve({ success: false, message: callErr.message || String(callErr) });
       }
     });
   }
@@ -144,9 +151,9 @@
         urlParams = new URLSearchParams(window.location.search);
       } catch (e) {}
 
-      state.activeSheetId = serverCfg.sheetId || (urlParams ? urlParams.get('sheetId') : '') || '';
-      state.banNganhTitle = serverCfg.banNganhTitle || (urlParams ? urlParams.get('title') : '') || '';
-      state.banNganhId = serverCfg.banNganhId || (urlParams ? urlParams.get('banNganhId') : '') || '';
+      state.activeSheetId = (urlParams ? urlParams.get('sheetId') : '') || serverCfg.sheetId || '1GkrK5hZdRArVkB125GEpKdbFgxglZP0IMRae27M9dBQ';
+      state.banNganhTitle = (urlParams ? urlParams.get('title') : '') || serverCfg.banNganhTitle || 'Ban Thanh Tráng';
+      state.banNganhId = (urlParams ? urlParams.get('banNganhId') : '') || serverCfg.banNganhId || 'id_41451e0a';
 
       if (state.banNganhTitle) {
         document.title = 'Quản Lý ' + state.banNganhTitle;
@@ -168,8 +175,8 @@
     // 1. TẢI TỪ LOCAL CACHE (NẾU CÓ DỮ LIỆU CỦA ĐÚNG SHEET ID NÀY)
     loadFromLocalCache();
 
-    // 2. TẢI NGẦM DỮ LIỆU MỚI NHẤT TỪ GOOGLE SHEET
-    await refreshData(false);
+    // 2. TẢI DỮ LIỆU TỪ GOOGLE SHEET VỚI LOADING CHỈ BÁO
+    await refreshData(true);
   }
 
   function getCacheKey() {

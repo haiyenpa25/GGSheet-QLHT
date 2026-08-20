@@ -38,9 +38,9 @@ const SCHEMAS = {
 // =========================================================================
 
 function doGet(e) {
-  const sheetId = e && e.parameter && e.parameter.sheetId ? e.parameter.sheetId : '';
-  const banNganhId = e && e.parameter && e.parameter.banNganhId ? e.parameter.banNganhId : '';
-  const title = e && e.parameter && e.parameter.title ? e.parameter.title : '';
+  const sheetId = (e && e.parameter && e.parameter.sheetId) || DEFAULT_SPREADSHEET_ID;
+  const banNganhId = (e && e.parameter && e.parameter.banNganhId) || 'id_41451e0a';
+  const title = (e && e.parameter && e.parameter.title) || 'Ban Thanh Tráng';
 
   const template = HtmlService.createTemplateFromFile('Index');
   template.sheetId = sheetId;
@@ -554,20 +554,45 @@ function apiGetInitialData(customSheetId) {
       }
     });
 
-    // Chỉ tự động chạy setupDatabase nếu chưa có sheet thành viên
-    if (!sheetMap[SHEET_NAMES.THANH_VIEN]) {
+    function getSheetValuesByName(targetName, aliases = []) {
+      if (sheetMap[targetName] && sheetMap[targetName].length > 0) return sheetMap[targetName];
+      const keys = Object.keys(sheetMap);
+      const targetNorm = targetName.toLowerCase().replace(/[\s_-]/g, '');
+      const match = keys.find(k => k.toLowerCase().replace(/[\s_-]/g, '') === targetNorm);
+      if (match && sheetMap[match].length > 0) return sheetMap[match];
+      for (let alias of aliases) {
+        if (sheetMap[alias] && sheetMap[alias].length > 0) return sheetMap[alias];
+        const aliasNorm = alias.toLowerCase().replace(/[\s_-]/g, '');
+        const aliasMatch = keys.find(k => k.toLowerCase().replace(/[\s_-]/g, '') === aliasNorm);
+        if (aliasMatch && sheetMap[aliasMatch].length > 0) return sheetMap[aliasMatch];
+      }
+      return [];
+    }
+
+    const memberValues = getSheetValuesByName(SHEET_NAMES.THANH_VIEN, ['Thành Viên', 'Ban Viên', 'BanVien', 'Thanh Vien']);
+    const groupValues = getSheetValuesByName(SHEET_NAMES.TO_NHOM, ['Tổ Nhóm', 'To Nhom', 'Tổ', 'To']);
+    const fundValues = getSheetValuesByName(SHEET_NAMES.DANH_MUC_QUY, ['Danh Mục Quỹ', 'DanhMuc', 'Quy']);
+    const transValues = getSheetValuesByName(SHEET_NAMES.SO_QUY, ['Sổ Quỹ', 'So Quy', 'ThuChi', 'Thu Chi']);
+    const attValues = getSheetValuesByName(SHEET_NAMES.DIEM_DANH, ['Điểm Danh', 'Diem Danh', 'DiemDanh']);
+    const visitValues = getSheetValuesByName(SHEET_NAMES.THAM_VIENG, ['Thăm Viếng', 'Tham Vieng', 'ChamSoc', 'Chăm Sóc']);
+    const schedValues = getSheetValuesByName(SHEET_NAMES.LICH_QUY, ['Lịch Quý', 'Lich Quy', 'LichSinhHoat', 'Lịch Sinh Hoạt']);
+    const themeValues = getSheetValuesByName(SHEET_NAMES.CHU_DE, ['Chủ Đề', 'Chu De']);
+    const tplValues = getSheetValuesByName(SHEET_NAMES.MAU_TIN_NHAN, ['Mẫu Tin Nhắn', 'Mau Tin Nhan']);
+
+    // Chỉ tự động chạy setupDatabase nếu hoàn toàn không có dữ liệu thành viên
+    if (memberValues.length === 0 && Object.keys(sheetMap).length === 0) {
       setupDatabase(customSheetId);
     }
 
-    const members = parseRowsFromValues(sheetMap[SHEET_NAMES.THANH_VIEN] || []);
-    const groups = parseRowsFromValues(sheetMap[SHEET_NAMES.TO_NHOM] || []);
-    const funds = parseRowsFromValues(sheetMap[SHEET_NAMES.DANH_MUC_QUY] || []);
-    const transactions = parseRowsFromValues(sheetMap[SHEET_NAMES.SO_QUY] || []);
-    const attendances = parseRowsFromValues(sheetMap[SHEET_NAMES.DIEM_DANH] || []);
-    const visits = parseRowsFromValues(sheetMap[SHEET_NAMES.THAM_VIENG] || []);
-    const schedules = parseRowsFromValues(sheetMap[SHEET_NAMES.LICH_QUY] || []);
-    const themes = parseRowsFromValues(sheetMap[SHEET_NAMES.CHU_DE] || []);
-    const templates = parseRowsFromValues(sheetMap[SHEET_NAMES.MAU_TIN_NHAN] || []);
+    const members = parseRowsFromValues(memberValues);
+    const groups = parseRowsFromValues(groupValues);
+    const funds = parseRowsFromValues(fundValues);
+    const transactions = parseRowsFromValues(transValues);
+    const attendances = parseRowsFromValues(attValues);
+    const visits = parseRowsFromValues(visitValues);
+    const schedules = parseRowsFromValues(schedValues);
+    const themes = parseRowsFromValues(themeValues);
+    const templates = parseRowsFromValues(tplValues);
 
     let totalBalance = 0;
     transactions.forEach(t => {
