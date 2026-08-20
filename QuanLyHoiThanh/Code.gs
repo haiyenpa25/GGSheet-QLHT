@@ -9,7 +9,7 @@
 
 const DEFAULT_SPREADSHEET_ID = '124O4hYFaxmZn1hg8FyRP4fci6hw84ziTg8o3eAUwMV0';
 const DEFAULT_DRIVE_FOLDER_ID = '1dy78gH_lwfvPUKaZMRCsiOwN2ZPWcBGj';
-const DEFAULT_BAN_NGANH_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx_E5_FohsWayvpAwAJtnZjs7o7N3d43xYqzC00-iB4QlmwTFxq-uBtVAAllRmEyBk9/exec';
+const DEFAULT_BAN_NGANH_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx9jjjOgGQUh79YP514sDqJWgEc2Nc7GjmHvfq4lDF-C-DiaxdV64N966LLSX85AzMS/exec';
 
 const SHEET_NAMES = {
   HOI_THANH: 'HoiThanh',
