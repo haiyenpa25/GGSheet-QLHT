@@ -125,13 +125,7 @@
         });
 
       try {
-        if (typeof runner[functionName] === 'function') {
-          runner[functionName].apply(runner, args);
-        } else if (runner[functionName]) {
-          runner[functionName](...args);
-        } else {
-          runner[functionName].apply(runner, args);
-        }
+        runner[functionName].apply(runner, args);
       } catch (callErr) {
         console.error('GAS Invoke Error:', callErr);
         resolve({ success: false, message: callErr.message || String(callErr) });

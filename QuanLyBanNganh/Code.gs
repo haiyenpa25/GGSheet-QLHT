@@ -143,18 +143,6 @@ function createJsonResponse(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function include(filename) {
-  try {
-    return HtmlService.createHtmlOutputFromFile(filename).getContent();
-  } catch (e) {
-    try {
-      return HtmlService.createHtmlOutputFromFile(filename + '.html').getContent();
-    } catch (e2) {
-      return `<!-- Error including ${filename}: ${e.message} -->`;
-    }
-  }
-}
-
 function getSpreadsheet(customSheetId) {
   const savedId = customSheetId || PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || DEFAULT_SPREADSHEET_ID;
   if (savedId) {
