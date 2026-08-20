@@ -223,7 +223,7 @@
     state.spreadsheet = data.spreadsheet || state.spreadsheet;
 
     // Reset Live Attendance State
-    initLiveAttendanceState();
+    initAttendanceState();
     initRoleAndScope();
     updateNotificationBadge();
   }
@@ -728,7 +728,7 @@
 
     const groupOpts = (state.groups || []).map(g => `<option value="${getGroupName(g)}">${getGroupName(g)}</option>`).join('');
 
-    if (fGroup && fGroup.options.length <= 3) {
+    if (fGroup && (!fGroup.options || fGroup.options.length <= 3)) {
       let currentVal = state.filterMemberGroup || 'all';
       fGroup.innerHTML = `
         <option value="all">👥 Tất cả Tổ Nhóm</option>
@@ -1519,6 +1519,10 @@
         groupFilter: 'all'
       };
     }
+  }
+
+  function initLiveAttendanceState() {
+    initAttendanceState();
   }
 
   function renderAttendance() {
@@ -3357,6 +3361,13 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
         btn.className = 'vis-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 border border-transparent transition-all shrink-0';
       }
     });
+    renderVisitations();
+  }
+
+  function filterVisitationsByPriority(priority) {
+    state.filterVisPriority = priority;
+    const priSelect = document.getElementById('vis-filter-priority');
+    if (priSelect) priSelect.value = priority;
     renderVisitations();
   }
 
