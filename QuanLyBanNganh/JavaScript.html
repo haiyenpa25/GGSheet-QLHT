@@ -1250,18 +1250,453 @@
   }
 
   // =========================================================================
-  // 3. SMART ATTENDANCE ENGINE (ĐIỂM DANH SIÊU TỐC)
+  // 3. SMART HIERARCHICAL ATTENDANCE ENGINE (ĐIỂM DANH THEO NĂM -> QUÝ -> THÁNG -> BUỔI NHÓM)
   // =========================================================================
 
-  function initLiveAttendanceState() {
-    state.liveAttendance = {};
-    (state.members || []).forEach(m => {
-      state.liveAttendance[m.id] = {
-        coMat: true,
-        thuocCauGoc: false,
-        ghiChu: ''
+  function getQuarterFromMonth(m) {
+    const num = parseInt(m, 10);
+    if (num >= 1 && num <= 3) return 'I';
+    if (num >= 4 && num <= 6) return 'II';
+    if (num >= 7 && num <= 9) return 'III';
+    return 'IV';
+  }
+
+  function getMonthsForQuarter(q) {
+    if (q === 'I') return [1, 2, 3];
+    if (q === 'II') return [4, 5, 6];
+    if (q === 'III') return [7, 8, 9];
+    return [10, 11, 12];
+  }
+
+  function parseSessionDate(dateStr) {
+    if (!dateStr) return null;
+    const str = String(dateStr).trim();
+    const parts = str.split(/[\/\-\.]/);
+    if (parts.length === 3) {
+      let d, m, y;
+      if (parts[0].length === 4) {
+        // YYYY-MM-DD
+        y = parseInt(parts[0], 10);
+        m = parseInt(parts[1], 10);
+        d = parseInt(parts[2], 10);
+      } else {
+        // DD/MM/YYYY
+        d = parseInt(parts[0], 10);
+        m = parseInt(parts[1], 10);
+        y = parseInt(parts[2], 10);
+      }
+      if (!isNaN(d) && !isNaN(m) && !isNaN(y)) {
+        const dStr = String(d).padStart(2, '0');
+        const mStr = String(m).padStart(2, '0');
+        return {
+          day: d,
+          month: m,
+          year: y,
+          formatted: `${dStr}/${mStr}/${y}`,
+          iso: `${y}-${mStr}-${dStr}`
+        };
+      }
+    }
+    return null;
+  }
+
+  function normalizeDateStr(dateStr) {
+    const p = parseSessionDate(dateStr);
+    return p ? p.formatted : String(dateStr || '').trim();
+  }
+
+  function initAttendanceState() {
+    if (!state.attendanceFilter) {
+      const now = new Date();
+      const curMonth = now.getMonth() + 1;
+      const curYear = now.getFullYear();
+      state.attendanceFilter = {
+        year: curYear,
+        quarter: getQuarterFromMonth(curMonth),
+        month: curMonth,
+        selectedScheduleId: null,
+        selectedDate: null,
+        searchMember: '',
+        groupFilter: 'all'
       };
+    }
+  }
+
+  function renderAttendance() {
+    initAttendanceState();
+    renderAttendanceTimeControls();
+    renderMonthlySessions();
+    renderActiveSessionBanner();
+    renderAttendanceFilterGroup();
+    renderAttendanceList();
+  }
+
+  function renderAttendanceTimeControls() {
+    const yearSelect = document.getElementById('att-select-year');
+    const quarterTabs = document.getElementById('att-quarter-tabs');
+    const monthPills = document.getElementById('att-month-pills');
+
+    // 1. Populate Year Select
+    if (yearSelect) {
+      const yearsSet = new Set();
+      const curYear = new Date().getFullYear();
+      yearsSet.add(curYear);
+      yearsSet.add(curYear - 1);
+      yearsSet.add(curYear + 1);
+      (state.schedules || []).forEach(s => {
+        const p = parseSessionDate(s.ngayNhom);
+        if (p) yearsSet.add(p.year);
+      });
+      const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
+      yearSelect.innerHTML = sortedYears.map(y => `<option value="${y}" ${y === state.attendanceFilter.year ? 'selected' : ''}>Năm ${y}</option>`).join('');
+    }
+
+    // 2. Render Quarters Tabs (Quý I, II, III, IV)
+    if (quarterTabs) {
+      const quarters = ['I', 'II', 'III', 'IV'];
+      quarterTabs.innerHTML = quarters.map(q => {
+        const isActive = q === state.attendanceFilter.quarter;
+        return `
+          <button onclick="handleAttQuarterChange('${q}')" class="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
+            isActive 
+              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-400' 
+              : 'glass-card text-text-secondary hover:text-white hover:bg-white/10'
+          }">
+            Quý ${q}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // 3. Render Month Pills for Active Quarter
+    if (monthPills) {
+      const months = getMonthsForQuarter(state.attendanceFilter.quarter);
+      if (!months.includes(state.attendanceFilter.month)) {
+        state.attendanceFilter.month = months[0];
+      }
+
+      monthPills.innerHTML = months.map(m => {
+        const isActive = m === state.attendanceFilter.month;
+        const count = (state.schedules || []).filter(s => {
+          const p = parseSessionDate(s.ngayNhom);
+          return p && p.year === state.attendanceFilter.year && p.month === m;
+        }).length;
+
+        return `
+          <button onclick="handleAttMonthChange(${m})" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+            isActive 
+              ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-md ring-2 ring-sky-400' 
+              : 'bg-surface-elevated/80 border border-white/5 text-text-secondary hover:text-white hover:bg-white/10'
+          }">
+            <span class="material-symbols-outlined text-[14px]">calendar_month</span>
+            <span>Tháng ${m}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-text-secondary'}">${count}</span>
+          </button>
+        `;
+      }).join('');
+    }
+  }
+
+  function getSessionsForCurrentFilter() {
+    const targetYear = parseInt(state.attendanceFilter.year, 10);
+    const targetMonth = parseInt(state.attendanceFilter.month, 10);
+
+    return (state.schedules || []).filter(s => {
+      const p = parseSessionDate(s.ngayNhom);
+      if (!p) return false;
+      return p.year === targetYear && p.month === targetMonth;
+    }).sort((a, b) => {
+      const pa = parseSessionDate(a.ngayNhom);
+      const pb = parseSessionDate(b.ngayNhom);
+      if (!pa || !pb) return 0;
+      return pa.day - pb.day;
     });
+  }
+
+  function renderMonthlySessions() {
+    const container = document.getElementById('att-monthly-sessions-container');
+    const countEl = document.getElementById('att-month-session-count');
+    if (!container) return;
+
+    const sessions = getSessionsForCurrentFilter();
+    if (countEl) countEl.textContent = `${sessions.length} buổi nhóm trong Tháng ${state.attendanceFilter.month}/${state.attendanceFilter.year}`;
+
+    if (sessions.length === 0) {
+      container.innerHTML = `
+        <div class="col-span-full glass-card rounded-2xl p-6 text-center space-y-3 border border-white/10">
+          <span class="material-symbols-outlined text-3xl text-emerald-400/60 block">calendar_today</span>
+          <p class="text-xs font-semibold text-white">Chưa có lịch sinh hoạt cho Tháng ${state.attendanceFilter.month}/${state.attendanceFilter.year}</p>
+          <p class="text-[11px] text-text-secondary">Bạn có thể tạo tự động 52 buổi nhóm cho cả năm, thêm buổi nhóm mới hoặc điểm danh theo ngày tự do.</p>
+          <div class="flex items-center justify-center gap-2 flex-wrap pt-2">
+            <button onclick="openGenerateYearlyModal()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-md active:scale-95 transition-all">
+              <span class="material-symbols-outlined text-sm">bolt</span>
+              <span>⚡ Tạo Lịch 52 Buổi Cả Năm</span>
+            </button>
+            <button onclick="openAddScheduleModal()" class="px-3.5 py-2 rounded-xl glass-card hover:bg-white/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 transition-all">
+              <span class="material-symbols-outlined text-sm">add</span>
+              <span>+ Thêm Buổi Nhóm</span>
+            </button>
+            <button onclick="openCustomDateAttendanceModal()" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-text-secondary hover:text-white text-xs font-semibold flex items-center gap-1 transition-all">
+              <span class="material-symbols-outlined text-sm">calendar_month</span>
+              <span>Điểm Danh Ngày Tự Do</span>
+            </button>
+          </div>
+        </div>
+      `;
+      if (!state.attendanceFilter.selectedDate) {
+        state.attendanceFilter.selectedScheduleId = null;
+        state.liveAttendance = {};
+      }
+      return;
+    }
+
+    const currentSelectedId = state.attendanceFilter.selectedScheduleId;
+    const exists = sessions.some(s => String(s.id) === String(currentSelectedId));
+    if (!exists) {
+      const now = new Date();
+      let bestSession = sessions[0];
+      let minDiff = Infinity;
+      sessions.forEach(s => {
+        const p = parseSessionDate(s.ngayNhom);
+        if (p) {
+          const sDate = new Date(p.year, p.month - 1, p.day);
+          const diff = Math.abs(sDate.getTime() - now.getTime());
+          if (diff < minDiff) {
+            minDiff = diff;
+            bestSession = s;
+          }
+        }
+      });
+      state.attendanceFilter.selectedScheduleId = bestSession.id;
+      state.attendanceFilter.selectedDate = bestSession.ngayNhom;
+      loadAttendanceForSessionDate(bestSession.ngayNhom);
+    }
+
+    const activeMembersCount = (state.members || []).filter(m => (m.trangThai || 'active') === 'active').length;
+
+    container.innerHTML = sessions.map(s => {
+      const isSelected = String(s.id) === String(state.attendanceFilter.selectedScheduleId);
+      const sDateObj = parseSessionDate(s.ngayNhom);
+      const formattedDate = sDateObj ? sDateObj.formatted : s.ngayNhom;
+
+      const dateAtts = (state.attendances || []).filter(a => normalizeDateStr(a.ngayDiemDanh) === formattedDate);
+      const hasAttended = dateAtts.length > 0;
+      const presentCount = dateAtts.filter(a => (a.coMat === 'CO_MAT' || a.coMat === true || a.coMat === '1' || a.coMat === 'TRUE')).length;
+      const pct = activeMembersCount > 0 ? Math.round((presentCount / activeMembersCount) * 100) : 0;
+
+      return `
+        <div onclick="selectAttendanceSession('${s.id}')" class="glass-card rounded-2xl p-3.5 border cursor-pointer transition-all duration-200 active:scale-95 group relative ${
+          isSelected 
+            ? 'border-emerald-500/80 bg-emerald-950/30 ring-2 ring-emerald-400 shadow-xl shadow-emerald-500/10' 
+            : 'border-white/10 hover:border-emerald-500/40 bg-surface-elevated/70'
+        }">
+          <div class="flex justify-between items-start gap-1 mb-1.5">
+            <span class="text-xs font-mono font-bold ${isSelected ? 'text-emerald-400 font-extrabold' : 'text-white'} flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm text-emerald-400">event</span>
+              <span>${formattedDate}</span>
+            </span>
+            ${hasAttended ? `
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+                🟢 ${presentCount}/${activeMembersCount} (${pct}%)
+              </span>
+            ` : `
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/5 text-text-secondary/70 border border-white/5 shrink-0">
+                Chưa ĐD
+              </span>
+            `}
+          </div>
+
+          <h4 class="text-xs font-bold text-white line-clamp-1 group-hover:text-emerald-300 transition-colors">${s.deTai || 'Sinh Hoạt Thờ Phượng'}</h4>
+          <p class="text-[11px] text-text-secondary line-clamp-1 mt-1">
+            ${s.huongDan ? `HCDT: <span class="text-white">${s.huongDan}</span>` : ''}
+            ${s.toPhuTrach ? ` &bull; <span class="text-emerald-400">${s.toPhuTrach}</span>` : ''}
+          </p>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function selectAttendanceSession(scheduleId) {
+    const s = (state.schedules || []).find(item => String(item.id) === String(scheduleId));
+    if (!s) return;
+
+    state.attendanceFilter.selectedScheduleId = s.id;
+    state.attendanceFilter.selectedDate = s.ngayNhom;
+    loadAttendanceForSessionDate(s.ngayNhom);
+
+    renderMonthlySessions();
+    renderActiveSessionBanner();
+    renderAttendanceList();
+  }
+
+  function loadAttendanceForSessionDate(dateStr) {
+    state.liveAttendance = {};
+    const formattedTarget = normalizeDateStr(dateStr);
+    const existing = (state.attendances || []).filter(a => normalizeDateStr(a.ngayDiemDanh) === formattedTarget);
+
+    if (existing.length > 0) {
+      existing.forEach(a => {
+        state.liveAttendance[a.thanhVienId] = {
+          coMat: (a.coMat === 'CO_MAT' || a.coMat === true || a.coMat === '1' || a.coMat === 'TRUE'),
+          thuocCauGoc: (a.thuocCauGoc === 'THUOC' || a.thuocCauGoc === true || a.thuocCauGoc === '1' || a.thuocCauGoc === 'TRUE'),
+          ghiChu: a.ghiChu || ''
+        };
+      });
+    } else {
+      (state.members || []).forEach(m => {
+        state.liveAttendance[m.id] = {
+          coMat: true,
+          thuocCauGoc: false,
+          ghiChu: ''
+        };
+      });
+    }
+  }
+
+  function renderActiveSessionBanner() {
+    const dateBadge = document.getElementById('att-active-date-badge');
+    const bDate = document.getElementById('att-banner-date');
+    const bStatus = document.getElementById('att-banner-status-badge');
+    const bDetai = document.getElementById('att-banner-detai');
+    const bHuongDan = document.getElementById('att-banner-huongdan');
+    const bTo = document.getElementById('att-banner-tophutrach');
+    const bDoKT = document.getElementById('att-banner-dokt');
+    const bPhuTrach = document.getElementById('att-banner-phutrach');
+    const bottomSaveText = document.getElementById('att-bottom-save-text');
+
+    const curDate = state.attendanceFilter && state.attendanceFilter.selectedDate;
+    if (!curDate) {
+      if (dateBadge) dateBadge.textContent = 'Chưa chọn buổi nhóm';
+      if (bDate) bDate.textContent = '--/--/----';
+      if (bStatus) {
+        bStatus.textContent = 'Chưa chọn';
+        bStatus.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white';
+      }
+      if (bDetai) bDetai.textContent = 'Vui lòng chọn 1 buổi nhóm ở danh sách phía trên';
+      return;
+    }
+
+    const sDateObj = parseSessionDate(curDate);
+    const formattedDate = sDateObj ? sDateObj.formatted : curDate;
+    const s = (state.schedules || []).find(item => String(item.id) === String(state.attendanceFilter.selectedScheduleId)) || {
+      deTai: 'Điểm danh ngày ' + formattedDate,
+      ngayNhom: formattedDate,
+      huongDan: 'Tự do',
+      toPhuTrach: 'Tất cả',
+      doKT: 'Tự do',
+      phuTrach: 'BĐH'
+    };
+
+    if (dateBadge) dateBadge.textContent = `Buổi Nhóm ${formattedDate}`;
+    if (bDate) bDate.textContent = `Chúa Nhật, ${formattedDate}`;
+    if (bDetai) bDetai.textContent = s.deTai || 'Sinh Hoạt Thờ Phượng';
+    if (bHuongDan) bHuongDan.textContent = s.huongDan || '--';
+    if (bTo) bTo.textContent = s.toPhuTrach || '--';
+    if (bDoKT) bDoKT.textContent = [s.doKT, s.nguoiDoKT].filter(Boolean).join(' - ') || '--';
+    if (bPhuTrach) bPhuTrach.textContent = s.phuTrach || '--';
+    if (bottomSaveText) bottomSaveText.textContent = `💾 Lưu Điểm Danh Buổi Nhóm Ngày ${formattedDate}`;
+
+    // Status
+    const dateAtts = (state.attendances || []).filter(a => normalizeDateStr(a.ngayDiemDanh) === formattedDate);
+    if (bStatus) {
+      if (dateAtts.length > 0) {
+        const presentCount = dateAtts.filter(a => (a.coMat === 'CO_MAT' || a.coMat === true || a.coMat === '1' || a.coMat === 'TRUE')).length;
+        bStatus.textContent = `🟢 Đã Lưu: ${presentCount} có mặt`;
+        bStatus.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+      } else {
+        bStatus.textContent = `⚪ Chưa Điểm Danh`;
+        bStatus.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white border border-white/10';
+      }
+    }
+  }
+
+  function renderAttendanceFilterGroup() {
+    const fGroup = document.getElementById('attendance-filter-group');
+    if (!fGroup) return;
+    fGroup.innerHTML = `<option value="all">Tất cả tổ nhóm</option>` + 
+      (state.groups || []).map(g => `<option value="${g.id}">${getGroupName(g)}</option>`).join('');
+  }
+
+  function handleAttYearChange(y) {
+    state.attendanceFilter.year = parseInt(y, 10);
+    renderAttendance();
+  }
+
+  function handleAttQuarterChange(q) {
+    state.attendanceFilter.quarter = q;
+    state.attendanceFilter.month = getMonthsForQuarter(q)[0];
+    renderAttendance();
+  }
+
+  function handleAttMonthChange(m) {
+    state.attendanceFilter.month = parseInt(m, 10);
+    renderAttendance();
+  }
+
+  function handleAttendanceSearch(q) {
+    state.attendanceFilter.searchMember = (q || '').trim();
+    renderAttendanceList();
+  }
+
+  function selectNearestSession() {
+    if (!state.schedules || state.schedules.length === 0) {
+      showToast('Chưa có danh sách buổi nhóm nào trong năm', 'warning');
+      return;
+    }
+
+    const now = new Date();
+    let bestSession = state.schedules[0];
+    let minDiff = Infinity;
+
+    state.schedules.forEach(s => {
+      const p = parseSessionDate(s.ngayNhom);
+      if (p) {
+        const sDate = new Date(p.year, p.month - 1, p.day);
+        const diff = Math.abs(sDate.getTime() - now.getTime());
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestSession = s;
+        }
+      }
+    });
+
+    const pBest = parseSessionDate(bestSession.ngayNhom);
+    if (pBest) {
+      state.attendanceFilter.year = pBest.year;
+      state.attendanceFilter.quarter = getQuarterFromMonth(pBest.month);
+      state.attendanceFilter.month = pBest.month;
+      state.attendanceFilter.selectedScheduleId = bestSession.id;
+      state.attendanceFilter.selectedDate = bestSession.ngayNhom;
+      loadAttendanceForSessionDate(bestSession.ngayNhom);
+      renderAttendance();
+      showToast(`Đã chuyển đến buổi nhóm ngày ${pBest.formatted}!`, 'success');
+    }
+  }
+
+  function copyCurrentSessionZalo() {
+    if (state.attendanceFilter && state.attendanceFilter.selectedScheduleId) {
+      copyZaloTemplate(state.attendanceFilter.selectedScheduleId);
+    } else {
+      showToast('Vui lòng chọn 1 buổi nhóm trước khi sao chép mẫu Zalo', 'warning');
+    }
+  }
+
+  function openCustomDateAttendanceModal() {
+    const raw = prompt('Nhập ngày điểm danh (Định dạng DD/MM/YYYY hoặc YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+    if (!raw) return;
+    const p = parseSessionDate(raw);
+    if (!p) {
+      showToast('Định dạng ngày không hợp lệ. Vui lòng nhập DD/MM/YYYY!', 'error');
+      return;
+    }
+
+    state.attendanceFilter.year = p.year;
+    state.attendanceFilter.quarter = getQuarterFromMonth(p.month);
+    state.attendanceFilter.month = p.month;
+    state.attendanceFilter.selectedScheduleId = null;
+    state.attendanceFilter.selectedDate = p.formatted;
+    loadAttendanceForSessionDate(p.formatted);
+    renderAttendance();
   }
 
   function setAllAttendance(coMatVal, thuocCauGocVal) {
@@ -1288,11 +1723,15 @@
     if (groupVal !== 'all') {
       list = list.filter(m => String(m.toId) === String(groupVal));
     }
+    const q = (state.attendanceFilter && state.attendanceFilter.searchMember) ? state.attendanceFilter.searchMember.toLowerCase() : '';
+    if (q) {
+      list = list.filter(m => 
+        getMemberName(m).toLowerCase().includes(q) ||
+        getMemberPhone(m).includes(q) ||
+        getMemberCode(m).toLowerCase().includes(q)
+      );
+    }
     return list;
-  }
-
-  function renderAttendance() {
-    renderAttendanceList();
   }
 
   function renderAttendanceList() {
@@ -1304,7 +1743,7 @@
     state.groups.forEach(g => { groupMap[g.id] = getGroupName(g); });
 
     if (list.length === 0) {
-      container.innerHTML = `<div class="text-center py-12 text-xs text-text-secondary">Chưa có ban viên nào để điểm danh.</div>`;
+      container.innerHTML = `<div class="text-center py-12 text-xs text-text-secondary">Không tìm thấy ban viên nào theo bộ lọc.</div>`;
       updateAttendanceStats(0, 0, 0);
       return;
     }
@@ -1373,7 +1812,6 @@
     }
     state.liveAttendance[memberId][field] = val;
 
-    // Tính toán lại thanh thống kê KPI ngay lập tức mà không vẽ lại toàn bộ DOM
     const list = getFilteredAttendanceMembers();
     let presentCount = 0;
     let verseCount = 0;
@@ -1408,17 +1846,17 @@
   }
 
   async function handleSaveAttendance() {
-    const rawDate = document.getElementById('attendance-date').value;
+    const rawDate = state.attendanceFilter && state.attendanceFilter.selectedDate;
     if (!rawDate) {
-      showToast('Vui lòng chọn ngày điểm danh!', 'warning');
+      showToast('Vui lòng chọn 1 buổi nhóm để điểm danh!', 'warning');
       return;
     }
 
-    const dParts = rawDate.split('-');
-    const formattedDate = `${dParts[2]}/${dParts[1]}/${dParts[0]}`;
+    const dateObj = parseSessionDate(rawDate);
+    const formattedDate = dateObj ? dateObj.formatted : normalizeDateStr(rawDate);
 
-    const list = getFilteredAttendanceMembers();
-    const records = list.map(m => {
+    const allActiveMembers = (state.members || []).filter(m => (m.trangThai || 'active') === 'active');
+    const records = allActiveMembers.map(m => {
       const att = state.liveAttendance[m.id] || { coMat: false, thuocCauGoc: false, ghiChu: '' };
       return {
         thanhVienId: m.id,
@@ -1443,8 +1881,28 @@
 
       const res = await runGAS('apiSaveAttendance', payload, state.activeSheetId);
       if (res && res.success) {
-        showToast(res.message || 'Đã lưu điểm danh thành công!', 'success');
-        state.kpis.total_attendance_records = (state.kpis.total_attendance_records || 0) + records.length;
+        showToast(res.message || `Đã lưu điểm danh ngày ${formattedDate} thành công!`, 'success');
+        
+        // In-memory state sync: Remove old records for this date and push saved records
+        state.attendances = (state.attendances || []).filter(a => normalizeDateStr(a.ngayDiemDanh) !== formattedDate);
+        if (res.records && Array.isArray(res.records)) {
+          state.attendances.push(...res.records);
+        } else {
+          records.forEach(r => {
+            state.attendances.push({
+              id: 'att_' + Date.now() + '_' + r.thanhVienId,
+              ngayDiemDanh: formattedDate,
+              thanhVienId: r.thanhVienId,
+              coMat: r.coMat ? 'CO_MAT' : 'VANG',
+              thuocCauGoc: r.thuocCauGoc ? 'THUOC' : 'CHUA_THUOC',
+              ghiChu: r.ghiChu || ''
+            });
+          });
+        }
+
+        state.kpis.total_attendance_records = state.attendances.length;
+        renderMonthlySessions();
+        renderActiveSessionBanner();
         renderDashboard();
       } else {
         showToast(res.message || 'Lỗi lưu điểm danh', 'error');

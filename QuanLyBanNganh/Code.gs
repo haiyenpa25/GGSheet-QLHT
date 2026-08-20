@@ -815,34 +815,56 @@ function apiSaveAttendance(payload, customSheetId) {
         sheet = ss.getSheetByName(SHEET_NAMES.DIEM_DANH);
       }
 
-      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+      const allData = sheet.getDataRange().getValues();
+      const headers = (allData.length > 0 && allData[0][0]) ? allData[0].map(h => String(h).trim()) : SCHEMAS[SHEET_NAMES.DIEM_DANH];
       const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss');
       
-      const newRows = payload.records.map(rec => {
+      const targetDate = String(payload.ngayDiemDanh).trim();
+      const dateColIdx = headers.indexOf('ngayDiemDanh') !== -1 ? headers.indexOf('ngayDiemDanh') : 1;
+
+      // Lọc bỏ dữ liệu cũ của ngày này để tránh bị trùng lặp
+      const retainedRows = [headers];
+      if (allData.length > 1) {
+        for (let i = 1; i < allData.length; i++) {
+          const row = allData[i];
+          if (!row[0] && row.every(c => c === '')) continue;
+          if (String(row[dateColIdx]).trim() !== targetDate) {
+            retainedRows.push(row);
+          }
+        }
+      }
+
+      const savedRecords = [];
+      payload.records.forEach(rec => {
         const record = {
-          id: 'id_' + Utilities.getUuid().substring(0, 8),
-          ngayDiemDanh: payload.ngayDiemDanh,
+          id: 'att_' + Utilities.getUuid().substring(0, 8),
+          ngayDiemDanh: targetDate,
           thanhVienId: rec.thanhVienId,
-          coMat: rec.coMat ? 'CO_MAT' : 'VANG',
-          thuocCauGoc: rec.thuocCauGoc ? 'THUOC' : 'CHUA_THUOC',
+          coMat: (rec.coMat === true || rec.coMat === 'CO_MAT') ? 'CO_MAT' : 'VANG',
+          thuocCauGoc: (rec.thuocCauGoc === true || rec.thuocCauGoc === 'THUOC') ? 'THUOC' : 'CHUA_THUOC',
           ghiChu: rec.ghiChu || '',
           nguoiDiemDanh: payload.nguoiDiemDanh || 'Thư Ký',
           createdAt: nowStr
         };
-        return headers.map(h => {
+        savedRecords.push(record);
+        const row = headers.map(h => {
           const norm = normalizeHeaderKey(h);
           if (record[h] !== undefined) return record[h];
           if (record[norm] !== undefined) return record[norm];
           return '';
         });
+        retainedRows.push(row);
       });
 
-      if (newRows.length > 0) {
-        const lastRow = sheet.getLastRow();
-        sheet.getRange(lastRow + 1, 1, newRows.length, headers.length).setValues(newRows);
-      }
+      sheet.clearContents();
+      sheet.getRange(1, 1, retainedRows.length, headers.length).setValues(retainedRows);
 
-      return { success: true, message: `Đã lưu điểm danh cho ${payload.records.length} ban viên thành công!` };
+      return { 
+        success: true, 
+        message: `Đã lưu điểm danh ngày ${targetDate} cho ${payload.records.length} ban viên thành công!`,
+        savedDate: targetDate,
+        records: savedRecords
+      };
     } finally {
       try { lock.releaseLock(); } catch(e) {}
     }
