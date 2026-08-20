@@ -378,76 +378,94 @@
   // =========================================================================
 
   function renderDashboard() {
-    document.getElementById('dash-kpi-members').textContent = state.kpis.total_members;
-    document.getElementById('dash-kpi-groups').textContent = state.kpis.group_count;
-    document.getElementById('dash-kpi-balance').textContent = Number(state.kpis.total_balance || 0).toLocaleString('vi-VN') + ' đ';
-    document.getElementById('dash-kpi-attendance').textContent = state.kpis.total_attendance_records;
+    try {
+      const kpiMembers = document.getElementById('dash-kpi-members');
+      const kpiGroups = document.getElementById('dash-kpi-groups');
+      const kpiBalance = document.getElementById('dash-kpi-balance');
+      const kpiAtt = document.getElementById('dash-kpi-attendance');
 
-    if (state.theme) {
-      document.getElementById('dash-theme-title').textContent = state.theme.chuDe || 'KỶ LUẬT THUỘC LINH';
-      document.getElementById('dash-theme-verse').textContent = state.theme.cauGoc || 'I Ti-mô-thê 4:7-8';
-      document.getElementById('dash-theme-content').textContent = state.theme.noiDungCauGoc || 'Hãy tập tành sự tin kính...';
-    }
+      if (kpiMembers) kpiMembers.textContent = state.kpis ? state.kpis.total_members : 0;
+      if (kpiGroups) kpiGroups.textContent = state.kpis ? state.kpis.group_count : 0;
+      if (kpiBalance) kpiBalance.textContent = Number(state.kpis ? state.kpis.total_balance : 0).toLocaleString('vi-VN') + ' đ';
+      if (kpiAtt) kpiAtt.textContent = state.kpis ? state.kpis.total_attendance_records : 0;
 
-    if (state.spreadsheet && state.spreadsheet.name) {
-      document.getElementById('dash-sheet-name').textContent = state.spreadsheet.name;
-      document.getElementById('dash-sheet-link').href = state.spreadsheet.url || ('https://docs.google.com/spreadsheets/d/' + state.activeSheetId + '/edit');
-    }
+      if (state.theme) {
+        const themeTitle = document.getElementById('dash-theme-title');
+        const themeVerse = document.getElementById('dash-theme-verse');
+        const themeContent = document.getElementById('dash-theme-content');
+        if (themeTitle) themeTitle.textContent = state.theme.chuDe || 'KỶ LUẬT THUỘC LINH';
+        if (themeVerse) themeVerse.textContent = state.theme.cauGoc || 'I Ti-mô-thê 4:7-8';
+        if (themeContent) themeContent.textContent = state.theme.noiDungCauGoc || 'Hãy tập tành sự tin kính...';
+      }
 
-    // Recent Members
-    const rMembersEl = document.getElementById('dash-recent-members');
-    if (state.members.length > 0) {
-      rMembersEl.innerHTML = state.members.slice(0, 5).map(m => {
-        const name = getMemberName(m);
-        const phone = getMemberPhone(m);
-        const role = getMemberRole(m);
-        const code = getMemberCode(m);
+      if (state.spreadsheet && state.spreadsheet.name) {
+        const sheetNameEl = document.getElementById('dash-sheet-name');
+        const sheetLinkEl = document.getElementById('dash-sheet-link');
+        if (sheetNameEl) sheetNameEl.textContent = state.spreadsheet.name;
+        if (sheetLinkEl) sheetLinkEl.href = state.spreadsheet.url || ('https://docs.google.com/spreadsheets/d/' + state.activeSheetId + '/edit');
+      }
 
-        return `
-          <div class="p-3 rounded-2xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                <span class="material-symbols-outlined text-base">person</span>
+      // Recent Members
+      const rMembersEl = document.getElementById('dash-recent-members');
+      if (rMembersEl) {
+        if (state.members && state.members.length > 0) {
+          rMembersEl.innerHTML = state.members.slice(0, 5).map(m => {
+            const name = getMemberName(m);
+            const phone = getMemberPhone(m);
+            const role = getMemberRole(m);
+            const code = getMemberCode(m);
+
+            return `
+              <div class="p-3 rounded-2xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                    <span class="material-symbols-outlined text-base">person</span>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-white">${name}</h4>
+                    <p class="text-[11px] text-text-secondary">${role} &bull; ${phone || 'Chưa có SĐT'}</p>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-400">
+                  ${code}
+                </span>
               </div>
-              <div>
-                <h4 class="text-xs font-bold text-white">${name}</h4>
-                <p class="text-[11px] text-text-secondary">${role} &bull; ${phone || 'Chưa có SĐT'}</p>
+            `;
+          }).join('');
+        } else {
+          rMembersEl.innerHTML = `<div class="text-center py-6 text-xs text-text-secondary">Chưa có ban viên nào</div>`;
+        }
+      }
+
+      // Recent Transactions
+      const rFinanceEl = document.getElementById('dash-recent-finance');
+      if (rFinanceEl) {
+        if (state.transactions && state.transactions.length > 0) {
+          rFinanceEl.innerHTML = state.transactions.slice(0, 5).map(t => {
+            const hm = t.hangMuc || t.HangMuc || t.noidung || 'Giao dịch';
+            const st = Number(t.soTien || t.SoTien || 0);
+            const loai = t.loaiGD || t.LoaiGD || 'THU';
+            const ngay = t.ngayGD || t.NgayGD || '';
+            const nguoi = t.nguoiNopNhan || t.NguoiNopNhan || '';
+
+            return `
+              <div class="p-3 rounded-2xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between">
+                <div>
+                  <h4 class="text-xs font-bold text-white">${hm}</h4>
+                  <p class="text-[11px] text-text-secondary">${ngay} &bull; ${nguoi}</p>
+                </div>
+                <span class="text-xs font-bold ${loai === 'THU' ? 'text-emerald-400' : 'text-rose-400'}">
+                  ${loai === 'THU' ? '+' : '-'}${st.toLocaleString('vi-VN')} đ
+                </span>
               </div>
-            </div>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-400">
-              ${code}
-            </span>
-          </div>
-        `;
-      }).join('');
-    } else {
-      rMembersEl.innerHTML = `<div class="text-center py-6 text-xs text-text-secondary">Chưa có ban viên nào</div>`;
-    }
-
-    // Recent Transactions
-    const rFinanceEl = document.getElementById('dash-recent-finance');
-    if (state.transactions.length > 0) {
-      rFinanceEl.innerHTML = state.transactions.slice(0, 5).map(t => {
-        const hm = t.hangMuc || t.HangMuc || t.noidung || 'Giao dịch';
-        const st = Number(t.soTien || t.SoTien || 0);
-        const loai = t.loaiGD || t.LoaiGD || 'THU';
-        const ngay = t.ngayGD || t.NgayGD || '';
-        const nguoi = t.nguoiNopNhan || t.NguoiNopNhan || '';
-
-        return `
-          <div class="p-3 rounded-2xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between">
-            <div>
-              <h4 class="text-xs font-bold text-white">${hm}</h4>
-              <p class="text-[11px] text-text-secondary">${ngay} &bull; ${nguoi}</p>
-            </div>
-            <span class="text-xs font-bold ${loai === 'THU' ? 'text-emerald-400' : 'text-rose-400'}">
-              ${loai === 'THU' ? '+' : '-'}${st.toLocaleString('vi-VN')} đ
-            </span>
-          </div>
-        `;
-      }).join('');
-    } else {
-      rFinanceEl.innerHTML = `<div class="text-center py-6 text-xs text-text-secondary">Chưa có giao dịch nào</div>`;
+            `;
+          }).join('');
+        } else {
+          rFinanceEl.innerHTML = `<div class="text-center py-6 text-xs text-text-secondary">Chưa có giao dịch nào</div>`;
+        }
+      }
+    } catch (e) {
+      console.error('renderDashboard Error:', e);
     }
   }
 
@@ -503,6 +521,10 @@
       const cleanPhone = cleanPhoneNumber(phone);
       const role = getMemberRole(m);
 
+      const zaloBtnHtml = cleanPhone
+        ? '<a href="https://zalo.me/' + cleanPhone + '" target="_blank" class="px-2.5 py-1.5 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 text-[11px] font-bold flex items-center gap-1 transition-all" title="Gửi lời chúc mừng qua Zalo"><span class="material-symbols-outlined text-sm">cake</span><span>Chúc Zalo</span></a>'
+        : '<span class="text-[10px] text-text-secondary italic">Chưa có SĐT</span>';
+
       return `
         <div class="p-3 rounded-2xl bg-surface-elevated/80 border border-pink-500/20 flex items-center justify-between gap-2 shadow-sm">
           <div class="flex items-center gap-2.5 min-w-0">
@@ -516,14 +538,7 @@
             </div>
           </div>
           <div class="flex items-center gap-1 shrink-0">
-            ${cleanPhone ? `
-              <a href="https://zalo.me/${cleanPhone}" target="_blank" class="px-2.5 py-1.5 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 text-[11px] font-bold flex items-center gap-1 transition-all" title="Gửi lời chúc mừng qua Zalo">
-                <span class="material-symbols-outlined text-sm">cake</span>
-                <span>Chúc Zalo</span>
-              </a>
-            ` : `
-              <span class="text-[10px] text-text-secondary italic">Chưa có SĐT</span>
-            `}
+            ${zaloBtnHtml}
           </div>
         </div>
       `;
@@ -584,6 +599,10 @@
       const phone = getMemberPhone(m);
       const cleanPhone = cleanPhoneNumber(phone);
 
+      const phoneBtnsHtml = cleanPhone
+        ? '<a href="tel:' + cleanPhone + '" class="p-1.5 rounded-lg bg-white/5 hover:bg-emerald-500/20 text-emerald-400 transition-colors" title="Gọi điện"><span class="material-symbols-outlined text-base">call</span></a><a href="https://zalo.me/' + cleanPhone + '" target="_blank" class="p-1.5 rounded-lg bg-white/5 hover:bg-sky-500/20 text-sky-400 transition-colors" title="Zalo"><span class="material-symbols-outlined text-base">chat</span></a>'
+        : '';
+
       return `
         <div class="p-3 rounded-2xl bg-surface-elevated/80 border border-amber-500/25 flex items-center justify-between gap-2 shadow-sm">
           <div class="flex items-center gap-2.5 min-w-0">
@@ -597,14 +616,7 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            ${cleanPhone ? `
-              <a href="tel:${cleanPhone}" class="p-1.5 rounded-lg bg-white/5 hover:bg-emerald-500/20 text-emerald-400 transition-colors" title="Gọi điện">
-                <span class="material-symbols-outlined text-base">call</span>
-              </a>
-              <a href="https://zalo.me/${cleanPhone}" target="_blank" class="p-1.5 rounded-lg bg-white/5 hover:bg-sky-500/20 text-sky-400 transition-colors" title="Zalo">
-                <span class="material-symbols-outlined text-base">chat</span>
-              </a>
-            ` : ''}
+            ${phoneBtnsHtml}
             <button onclick="openQuickVisitModal('${m.id}', ${item.absences})" class="px-2.5 py-1.5 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 text-[11px] font-bold flex items-center gap-1 transition-all" title="Lập phiếu thăm viếng">
               <span class="material-symbols-outlined text-sm">volunteer_activism</span>
               <span>Thăm</span>
@@ -3862,6 +3874,39 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
     const memberMap = {};
     state.members.forEach(m => { memberMap[m.id] = getMemberName(m); });
 
+    let section1Html = '';
+    if (absentList.length === 0) {
+      section1Html = '<p class="text-xs text-text-secondary italic">Tất cả ban viên đều nhóm lại đều đặn.</p>';
+    } else {
+      const itemsHtml = absentList.map(item => {
+        return '<div class="p-2.5 rounded-xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-2 text-xs"><div class="min-w-0"><div class="font-bold text-white truncate">' + getMemberName(item.member) + '</div><div class="text-[10px] text-amber-400 font-semibold">Vắng ' + item.absences + ' tuần liên tiếp</div></div><button onclick="closeModal(\'modal-notifications\'); openQuickVisitModal(\'' + item.member.id + '\', ' + item.absences + ')" class="px-2 py-1 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 text-[10px] font-bold shrink-0">+ Thăm</button></div>';
+      }).join('');
+      section1Html = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' + itemsHtml + '</div>';
+    }
+
+    let section2Html = '';
+    if (bdayList.length === 0) {
+      section2Html = '<p class="text-xs text-text-secondary italic">Không có sinh nhật nào trong tháng này.</p>';
+    } else {
+      const itemsHtml = bdayList.map(m => {
+        return '<div class="p-2.5 rounded-xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-2 text-xs"><div class="min-w-0"><div class="font-bold text-white truncate">' + getMemberName(m) + '</div><div class="text-[10px] text-pink-400 font-semibold">' + (m.ngaySinh || '--') + '</div></div><button onclick="closeModal(\'modal-notifications\'); openSendTemplateMessageModal(\'' + m.id + '\', \'birthday\')" class="px-2 py-1 rounded-lg bg-pink-600/30 hover:bg-pink-600/50 text-pink-300 text-[10px] font-bold shrink-0">🎂 Chúc Zalo</button></div>';
+      }).join('');
+      section2Html = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' + itemsHtml + '</div>';
+    }
+
+    let section3Html = '';
+    if (nextSession) {
+      section3Html = '<div class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-2"><h4 class="text-xs font-bold text-emerald-400 uppercase flex items-center gap-1.5"><span class="material-symbols-outlined text-base">event</span><span>Phân Công Chúa Nhật: ' + (nextSession.ngayNhom || '--') + ' (' + (nextSession.deTai || '--') + ')</span></h4><div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-text-secondary pt-1"><div>🎤 HĐCT: <strong class="text-white">' + (nextSession.huongDan || '--') + '</strong></div><div>📖 Giảng luận: <strong class="text-white">' + (nextSession.dienGia || nextSession.phuTrach || '--') + '</strong></div><div>❓ Đố KT: <strong class="text-white">' + (nextSession.nguoiDoKT || '--') + '</strong></div><div>🎹 Âm nhạc: <strong class="text-emerald-300">' + (nextSession.amNhac || '--') + '</strong></div><div>🎛️ Máy chiếu: <strong class="text-emerald-300">' + (nextSession.mayChieu || '--') + '</strong></div><div>🚪 Tiếp tân: <strong class="text-emerald-300">' + (nextSession.tiepTan || '--') + '</strong></div></div></div>';
+    }
+
+    let section4Html = '';
+    if (urgentVisits.length > 0) {
+      const itemsHtml = urgentVisits.slice(0, 4).map(v => {
+        return '<div class="flex justify-between items-center p-2 rounded-xl bg-surface-elevated/70"><span class="font-bold text-white">' + (memberMap[v.thanhVienId] || 'Ban viên') + '</span><span class="text-[10px] text-rose-300 font-semibold">' + (v.ngayTham || '--') + ' &bull; ' + (v.nguoiTham || 'Ban Chăm Sóc') + '</span></div>';
+      }).join('');
+      section4Html = '<div class="p-4 rounded-2xl bg-rose-950/20 border border-rose-500/30 space-y-2"><h4 class="text-xs font-bold text-rose-400 uppercase flex items-center gap-1.5"><span class="material-symbols-outlined text-base">warning</span><span>' + urgentVisits.length + ' Case Chăm Sóc Chưa Hoàn Tất</span></h4><div class="space-y-1.5 text-xs">' + itemsHtml + '</div></div>';
+    }
+
     container.innerHTML = `
       <!-- Section 1: Cảnh Báo Vắng -->
       <div class="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 space-y-3">
@@ -3872,21 +3917,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
           </h4>
           <button onclick="closeModal('modal-notifications'); navigateTo('visitations');" class="text-[11px] text-amber-400 font-semibold hover:underline">Quản lý chăm sóc &rarr;</button>
         </div>
-        ${absentList.length === 0 ? `<p class="text-xs text-text-secondary italic">Tất cả ban viên đều nhóm lại đều đặn.</p>` : `
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            ${absentList.map(item => `
-              <div class="p-2.5 rounded-xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-2 text-xs">
-                <div class="min-w-0">
-                  <div class="font-bold text-white truncate">${getMemberName(item.member)}</div>
-                  <div class="text-[10px] text-amber-400 font-semibold">Vắng ${item.absences} tuần liên tiếp</div>
-                </div>
-                <button onclick="closeModal('modal-notifications'); openQuickVisitModal('${item.member.id}', ${item.absences})" class="px-2 py-1 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 text-[10px] font-bold shrink-0">
-                  + Thăm
-                </button>
-              </div>
-            `).join('')}
-          </div>
-        `}
+        ${section1Html}
       </div>
 
       <!-- Section 2: Sinh Nhật Trong Tháng -->
@@ -3897,58 +3928,14 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
             <span>Sinh Nhật Ban Viên Tháng Này (${bdayList.length})</span>
           </h4>
         </div>
-        ${bdayList.length === 0 ? `<p class="text-xs text-text-secondary italic">Không có sinh nhật nào trong tháng này.</p>` : `
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            ${bdayList.map(m => `
-              <div class="p-2.5 rounded-xl bg-surface-elevated/70 border border-white/5 flex items-center justify-between gap-2 text-xs">
-                <div class="min-w-0">
-                  <div class="font-bold text-white truncate">${getMemberName(m)}</div>
-                  <div class="text-[10px] text-pink-400 font-semibold">${m.ngaySinh || '--'}</div>
-                </div>
-                <button onclick="closeModal('modal-notifications'); openSendTemplateMessageModal('${m.id}', 'birthday')" class="px-2 py-1 rounded-lg bg-pink-600/30 hover:bg-pink-600/50 text-pink-300 text-[10px] font-bold shrink-0">
-                  🎂 Chúc Zalo
-                </button>
-              </div>
-            `).join('')}
-          </div>
-        `}
+        ${section2Html}
       </div>
 
       <!-- Section 3: Phân Công Chúa Nhật Gần Nhất -->
-      ${nextSession ? `
-        <div class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-2">
-          <h4 class="text-xs font-bold text-emerald-400 uppercase flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-base">event</span>
-            <span>Phân Công Chúa Nhật: ${nextSession.ngayNhom || '--'} (${nextSession.deTai || '--'})</span>
-          </h4>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-text-secondary pt-1">
-            <div>🎤 HĐCT: <strong class="text-white">${nextSession.huongDan || '--'}</strong></div>
-            <div>📖 Giảng luận: <strong class="text-white">${nextSession.dienGia || nextSession.phuTrach || '--'}</strong></div>
-            <div>❓ Đố KT: <strong class="text-white">${nextSession.nguoiDoKT || '--'}</strong></div>
-            <div>🎹 Âm nhạc: <strong class="text-emerald-300">${nextSession.amNhac || '--'}</strong></div>
-            <div>🎛️ Máy chiếu: <strong class="text-emerald-300">${nextSession.mayChieu || '--'}</strong></div>
-            <div>🚪 Tiếp tân: <strong class="text-emerald-300">${nextSession.tiepTan || '--'}</strong></div>
-          </div>
-        </div>
-      ` : ''}
+      ${section3Html}
 
       <!-- Section 4: Urgent Care Cases -->
-      ${urgentVisits.length > 0 ? `
-        <div class="p-4 rounded-2xl bg-rose-950/20 border border-rose-500/30 space-y-2">
-          <h4 class="text-xs font-bold text-rose-400 uppercase flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-base">warning</span>
-            <span>${urgentVisits.length} Case Chăm Sóc Chưa Hoàn Tất</span>
-          </h4>
-          <div class="space-y-1.5 text-xs">
-            ${urgentVisits.slice(0, 4).map(v => `
-              <div class="flex justify-between items-center p-2 rounded-xl bg-surface-elevated/70">
-                <span class="font-bold text-white">${memberMap[v.thanhVienId] || 'Ban viên'}</span>
-                <span class="text-[10px] text-rose-300 font-semibold">${v.ngayTham || '--'} &bull; ${v.nguoiTham || 'Ban Chăm Sóc'}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
+      ${section4Html}
     `;
 
     openModal('modal-notifications');
