@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+  <title>Quản Lý Hội Thánh &amp; Ban Ngành</title>
+
+  <!-- Tailwind CSS & Google Fonts & Material Icons -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "surface": "#0b1326",
+          "surface-container": "#171f33",
+          "surface-container-low": "#131b2e",
+          "surface-elevated": "#182238",
+          "primary": "#ffb598",
+          "primary-container": "#e58c67",
+          "accent-hover": "#d97b54",
+          "secondary": "#ffb0cd",
+          "secondary-container": "#aa0266",
+          "tertiary": "#4edea3",
+          "tertiary-container": "#10b981",
+          "info-blue": "#38bdf8",
+          "warning-amber": "#f59e0b",
+          "error": "#ffb4ab",
+          "text-secondary": "#94a3b8",
+          "on-surface": "#dae2fd",
+          "background": "#0b1326"
+        },
+        borderRadius: {
+          "xl": "0.75rem",
+          "2xl": "1.125rem",
+          "3xl": "1.5rem"
+        },
+        fontFamily: {
+          sans: ['Inter', 'sans-serif']
+        }
+      }
+    }
+  }
+  </script>
+
+  <style>
+    body {
+      background-color: #0b1326;
+      color: #dae2fd;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .glass-card {
+      background: rgba(29, 41, 69, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-solid {
+      background: rgba(23, 31, 51, 0.96);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .glass-input {
+      background: rgba(11, 19, 38, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #dae2fd;
+      transition: all 0.2s ease;
+    }
+    .glass-input:focus {
+      border-color: rgba(229, 140, 103, 0.8);
+      box-shadow: 0 0 14px rgba(229, 140, 103, 0.3);
+      outline: none;
+    }
+    .ambient-glow {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(110px);
+      z-index: -1;
+      pointer-events: none;
+      animation: floatAmbient 16s ease-in-out infinite;
+    }
+    @keyframes floatAmbient {
+      0%, 100% { transform: translateY(0) scale(1); opacity: 0.2; }
+      50% { transform: translateY(-25px) scale(1.08); opacity: 0.35; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+
+<body class="bg-background text-on-surface font-sans min-h-screen selection:bg-primary-container selection:text-white">
+  <div class="ambient-glow w-[400px] h-[400px] bg-primary-container/15 top-[-100px] left-[-100px]"></div>
+  <div class="ambient-glow w-[450px] h-[450px] bg-blue-600/15 bottom-[50px] right-[-120px]" style="animation-delay: -8s;"></div>
+
+  <!-- TopAppBar -->
+  <header id="app-top-header" class="bg-surface-container-low/90 backdrop-blur-2xl fixed top-0 left-0 right-0 w-full h-16 z-50 border-b border-white/10 shadow-lg flex justify-between items-center px-4 sm:px-6">
+    <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('dashboard')">
+      <div class="w-10 h-10 rounded-2xl glass-card flex items-center justify-center border border-primary/40 text-primary">
+        <span class="material-symbols-outlined text-[24px]">church</span>
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white tracking-tight leading-tight">Quản Lý Hội Thánh</h1>
+        <p class="text-[10px] text-text-secondary">GitHub Pages Edition &bull; REST API Serverless</p>
+      </div>
+    </div>
+
+    <!-- Desktop Navigation Links -->
+    <div class="hidden md:flex items-center gap-1.5">
+      <button data-page="dashboard" onclick="navigateTo('dashboard')" class="nav-link-btn px-4 py-2 rounded-full text-xs font-bold bg-primary-container/20 text-primary border border-primary-container/40 transition-all">
+        Tổng Quan
+      </button>
+      <button data-page="churches" onclick="navigateTo('churches')" class="nav-link-btn px-4 py-2 rounded-full text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 transition-all border border-transparent">
+        Hội Thánh
+      </button>
+      <button data-page="ministries" onclick="navigateTo('ministries')" class="nav-link-btn px-4 py-2 rounded-full text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 transition-all border border-transparent">
+        Ban Ngành &amp; Sheets
+      </button>
+      <button data-page="settings" onclick="navigateTo('settings')" class="nav-link-btn px-4 py-2 rounded-full text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 transition-all border border-transparent">
+        Cài Đặt Hệ Thống
+      </button>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-2">
+      <button onclick="navigateTo('settings')" class="p-2.5 text-text-secondary hover:text-primary transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Cài Đặt Hệ Thống">
+        <span class="material-symbols-outlined text-[20px]">settings</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="pt-24 pb-28 sm:pb-16 px-4 sm:px-6 max-w-6xl mx-auto min-h-screen">
+    
+    <!-- VIEW 1: DASHBOARD -->
+    <section id="view-dashboard" class="app-view space-y-6">
+      <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-primary/25 bg-gradient-to-r from-surface-elevated/90 via-surface-container/70 to-surface-elevated/90">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div class="space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container/20 border border-primary-container/40 text-primary text-xs font-semibold">
+              <span class="material-symbols-outlined text-[16px]">account_tree</span>
+              <span>Trung Tâm Điều Phối Hệ Thống</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Hệ Thống Quản Lý Hội Thánh &amp; Ban Ngành</h2>
+            <p class="text-xs sm:text-sm text-text-secondary max-w-2xl leading-relaxed">
+              Tạo Hội Thánh ➔ Tự động tạo Thư mục Google Drive ➔ Tạo Ban Ngành ➔ Tạo Google Sheet và tự động liên kết Web App Quản Lý Ban Ngành.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2.5 flex-wrap shrink-0">
+            <button onclick="openAddChurchModal()" class="px-4 py-2.5 rounded-2xl bg-primary-container hover:bg-accent-hover text-white text-xs font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all">
+              <span class="material-symbols-outlined text-[18px]">add_home</span>
+              <span>Thêm Hội Thánh</span>
+            </button>
+            <button onclick="openAddMinistryModal()" class="px-4 py-2.5 rounded-2xl bg-secondary-container/80 hover:bg-secondary-container text-white text-xs font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all">
+              <span class="material-symbols-outlined text-[18px]">add_circle</span>
+              <span>Thêm Ban Ngành</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Bento KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div onclick="navigateTo('churches')" class="glass-card rounded-2xl p-5 border border-white/10 hover:border-primary/40 cursor-pointer transition-all duration-200 active:scale-95 group">
+          <div class="flex justify-between items-start mb-2">
+            <span class="w-10 h-10 rounded-xl bg-primary-container/20 text-primary flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">church</span>
+            </span>
+            <span class="material-symbols-outlined text-text-secondary text-sm group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">arrow_outward</span>
+          </div>
+          <h3 id="dash-kpi-churches" class="text-3xl font-extrabold text-white mt-1">--</h3>
+          <p class="text-xs text-text-secondary mt-0.5 font-medium">Hội Thánh Trực Thuộc</p>
+        </div>
+
+        <div onclick="navigateTo('ministries')" class="glass-card rounded-2xl p-5 border border-white/10 hover:border-secondary/40 cursor-pointer transition-all duration-200 active:scale-95 group">
+          <div class="flex justify-between items-start mb-2">
+            <span class="w-10 h-10 rounded-xl bg-secondary-container/20 text-secondary flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">diversity_3</span>
+            </span>
+            <span class="material-symbols-outlined text-text-secondary text-sm group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">arrow_outward</span>
+          </div>
+          <h3 id="dash-kpi-ministries" class="text-3xl font-extrabold text-white mt-1">--</h3>
+          <p class="text-xs text-text-secondary mt-0.5 font-medium">Tổng Số Ban Ngành</p>
+        </div>
+
+        <div onclick="navigateTo('ministries')" class="glass-card rounded-2xl p-5 border border-emerald-500/20 bg-emerald-950/10 cursor-pointer transition-all duration-200 active:scale-95 group">
+          <div class="flex justify-between items-start mb-2">
+            <span class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">cloud_done</span>
+            </span>
+            <span class="material-symbols-outlined text-emerald-400/60 text-sm">check</span>
+          </div>
+          <h3 id="dash-kpi-connected" class="text-3xl font-extrabold text-emerald-400 mt-1">--</h3>
+          <p class="text-xs text-text-secondary mt-0.5 font-medium">GSheet Đã Tạo</p>
+        </div>
+
+        <div onclick="navigateTo('ministries')" class="glass-card rounded-2xl p-5 border border-warning-amber/20 bg-amber-950/10 cursor-pointer transition-all duration-200 active:scale-95 group">
+          <div class="flex justify-between items-start mb-2">
+            <span class="w-10 h-10 rounded-xl bg-warning-amber/20 text-warning-amber flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">pending</span>
+            </span>
+            <span class="material-symbols-outlined text-warning-amber/60 text-sm">schedule</span>
+          </div>
+          <h3 id="dash-kpi-pending" class="text-3xl font-extrabold text-warning-amber mt-1">--</h3>
+          <p class="text-xs text-text-secondary mt-0.5 font-medium">Chờ Tạo GSheet</p>
+        </div>
+      </div>
+
+      <!-- Drive & Master Status Bar -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="glass-card rounded-2xl p-4 border border-white/10 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center font-bold shrink-0">
+              <span class="material-symbols-outlined">folder_shared</span>
+            </div>
+            <div>
+              <span class="text-[11px] font-semibold text-text-secondary block">Thư mục Google Drive:</span>
+              <span id="dash-drive-name" class="text-xs font-bold text-white block truncate max-w-[220px]">HOI THANH</span>
+            </div>
+          </div>
+          <a id="dash-drive-link" href="https://drive.google.com/drive/folders/1dy78gH_lwfvPUKaZMRCsiOwN2ZPWcBGj" target="_blank" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-primary text-xs font-semibold flex items-center gap-1 shrink-0 transition-colors">
+            <span>Mở Drive</span>
+            <span class="material-symbols-outlined text-sm">open_in_new</span>
+          </a>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-white/10 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold shrink-0">
+              <span class="material-symbols-outlined">table_chart</span>
+            </div>
+            <div>
+              <span class="text-[11px] font-semibold text-text-secondary block">Cơ sở dữ liệu Master (QLHT):</span>
+              <span id="dash-master-name" class="text-xs font-bold text-emerald-400 block truncate max-w-[220px]">QLHT</span>
+            </div>
+          </div>
+          <a id="dash-master-link" href="https://docs.google.com/spreadsheets/d/124O4hYFaxmZn1hg8FyRP4fci6hw84ziTg8o3eAUwMV0/edit" target="_blank" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-emerald-400 text-xs font-semibold flex items-center gap-1 shrink-0 transition-colors">
+            <span>Mở Sheet</span>
+            <span class="material-symbols-outlined text-sm">open_in_new</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Recent Lists -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-white/10 shadow-xl space-y-4">
+          <div class="flex justify-between items-center border-b border-white/10 pb-3">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary">church</span>
+              Danh Sách Hội Thánh
+            </h3>
+            <button onclick="navigateTo('churches')" class="text-xs text-primary hover:underline font-semibold">Xem tất cả &rarr;</button>
+          </div>
+          <div id="dash-recent-churches" class="space-y-2.5">
+            <div class="text-center py-6 text-xs text-text-secondary">Đang tải danh sách Hội Thánh...</div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-white/10 shadow-xl space-y-4">
+          <div class="flex justify-between items-center border-b border-white/10 pb-3">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary">diversity_3</span>
+              Danh Sách Ban Ngành
+            </h3>
+            <button onclick="navigateTo('ministries')" class="text-xs text-secondary hover:underline font-semibold">Xem tất cả &rarr;</button>
+          </div>
+          <div id="dash-recent-ministries" class="space-y-2.5">
+            <div class="text-center py-6 text-xs text-text-secondary">Đang tải danh sách Ban Ngành...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: CHURCHES -->
+    <section id="view-churches" class="app-view hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-white tracking-tight">Danh Sách Hội Thánh</h2>
+          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý các Chi Hội / Hội Thánh cơ sở trực thuộc hệ thống.</p>
+        </div>
+        <button onclick="openAddChurchModal()" class="py-2.5 px-4 rounded-full bg-primary-container hover:bg-accent-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
+          <span class="material-symbols-outlined text-[18px]">add_home</span>
+          <span>Thêm Hội Thánh Mới</span>
+        </button>
+      </div>
+
+      <div class="glass-card rounded-2xl p-3 sm:p-4 border border-white/10 flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div class="relative w-full sm:w-80">
+          <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-[18px]">search</span>
+          <input
+            id="churches-search-input"
+            oninput="state.searchChurch = this.value; renderChurches();"
+            class="glass-input w-full rounded-full pl-10 pr-4 py-2 text-xs"
+            placeholder="Tìm theo tên, mã, quản nhiệm, tỉnh thành..."
+          />
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <span id="churches-count-badge" class="text-xs text-text-secondary font-semibold">Đang tải...</span>
+        </div>
+      </div>
+
+      <div id="churches-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-3 text-center py-12 text-xs text-text-secondary">Đang tải danh sách Hội Thánh...</div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: MINISTRIES -->
+    <section id="view-ministries" class="app-view hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-white tracking-tight">Danh Sách Ban Ngành</h2>
+          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý ban ngành, tạo Google Sheet CSDL và truy cập Web App Quản Lý Ban Ngành.</p>
+        </div>
+        <button onclick="openAddMinistryModal()" class="py-2.5 px-4 rounded-full bg-secondary-container hover:bg-pink-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
+          <span class="material-symbols-outlined text-[18px]">add_circle</span>
+          <span>Thêm Ban Ngành Mới</span>
+        </button>
+      </div>
+
+      <div class="glass-card rounded-2xl p-4 border border-white/10 flex flex-col md:flex-row gap-3 items-center justify-between">
+        <div class="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto flex-1">
+          <div class="relative w-full sm:w-64">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[18px]">search</span>
+            <input
+              id="min-search-input"
+              oninput="state.searchMin = this.value; renderMinistries();"
+              class="glass-input w-full rounded-full pl-9 pr-3 py-2 text-xs"
+              placeholder="Tìm tên, mã ban, trưởng ban..."
+            />
+          </div>
+
+          <select id="min-filter-church" onchange="state.filterMinChurch = this.value; renderMinistries();" class="glass-input w-full sm:w-56 rounded-full px-3 py-2 text-xs font-semibold">
+            <option value="all">Tất cả Hội Thánh</option>
+          </select>
+
+          <select id="min-filter-type" onchange="state.filterMinType = this.value; renderMinistries();" class="glass-input w-full sm:w-48 rounded-full px-3 py-2 text-xs font-semibold">
+            <option value="all">Tất cả Loại Ban</option>
+            <option value="THANH_TRANG">Ban Thanh Tráng</option>
+            <option value="THANH_NIEN">Ban Thanh Niên</option>
+            <option value="THIEU_NHI">Ban Thiếu Nhi</option>
+            <option value="PHU_NU">Ban Phụ Nữ</option>
+            <option value="NAM_GIOI">Ban Nam Giới</option>
+            <option value="LAO_NIEN">Ban Lão Niên</option>
+          </select>
+        </div>
+
+        <span id="min-count-badge" class="text-xs text-text-secondary font-semibold shrink-0">Đang tải...</span>
+      </div>
+
+      <div id="ministries-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-3 text-center py-12 text-xs text-text-secondary">Đang tải danh sách ban ngành...</div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: SETTINGS -->
+    <section id="view-settings" class="app-view hidden space-y-6 max-w-4xl mx-auto">
+      <div>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Cấu Hình Toàn Hệ Thống</h2>
+        <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Thiết lập thư mục Google Drive, CSDL Master và đường dẫn Web App Quản Lý Ban Ngành.</p>
+      </div>
+
+      <!-- Drive Folder Card -->
+      <div class="glass-card rounded-3xl p-6 shadow-xl border border-blue-500/30 bg-blue-950/10 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-2xl">folder_shared</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">1. Thư Mục Google Drive Gốc</h3>
+            <p class="text-xs text-text-secondary">Tất cả file Google Sheet của Hội Thánh và Ban Ngành sẽ được lưu trong thư mục này.</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Google Drive Folder ID hoặc URL *</label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input id="cfg-drive-folder-id" value="1dy78gH_lwfvPUKaZMRCsiOwN2ZPWcBGj" class="glass-input flex-1 rounded-xl px-4 py-2.5 text-xs font-mono" placeholder="1dy78gH_lwfvPUKaZMRCsiOwN2ZPWcBGj" />
+              <button onclick="handleSaveDriveFolder()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">save</span>
+                <span>Lưu Thư Mục</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-surface-elevated/70 rounded-2xl border border-white/5 text-xs flex items-center justify-between">
+            <div>
+              <span class="text-text-secondary block">Trạng thái thư mục:</span>
+              <span id="cfg-drive-status-name" class="font-bold text-blue-400">HOI THANH</span>
+            </div>
+            <a id="cfg-drive-status-link" href="https://drive.google.com/drive/folders/1dy78gH_lwfvPUKaZMRCsiOwN2ZPWcBGj" target="_blank" class="text-blue-400 hover:underline flex items-center gap-1 font-semibold">
+              Mở Thư Mục <span class="material-symbols-outlined text-sm">open_in_new</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Master Sheet Card -->
+      <div class="glass-card rounded-3xl p-6 shadow-xl border border-emerald-500/30 bg-emerald-950/10 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-2xl">table_chart</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">2. Cơ Sở Dữ Liệu Master (Spreadsheet QLHT)</h3>
+            <p class="text-xs text-text-secondary">Lưu trữ danh bạ Hội Thánh, Ban Ngành và điều phối toàn hệ thống.</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Google Spreadsheet ID hoặc URL *</label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input id="cfg-master-sheet-id" value="124O4hYFaxmZn1hg8FyRP4fci6hw84ziTg8o3eAUwMV0" class="glass-input flex-1 rounded-xl px-4 py-2.5 text-xs font-mono" placeholder="124O4hYFaxmZn1hg8FyRP4fci6hw84ziTg8o3eAUwMV0" />
+              <button onclick="handleSaveMasterSheet()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">link</span>
+                <span>Lưu Kết Nối Sheet</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-surface-elevated/70 rounded-2xl border border-white/5 text-xs flex items-center justify-between">
+            <div>
+              <span class="text-text-secondary block">Trạng thái kết nối Master:</span>
+              <span id="cfg-master-status-name" class="font-bold text-emerald-400">QLHT</span>
+            </div>
+            <a id="cfg-master-status-link" href="https://docs.google.com/spreadsheets/d/124O4hYFaxmZn1hg8FyRP4fci6hw84ziTg8o3eAUwMV0/edit" target="_blank" class="text-emerald-400 hover:underline flex items-center gap-1 font-semibold">
+              Mở Sheet Master <span class="material-symbols-outlined text-sm">open_in_new</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ban Nganh Web App Base URL Card -->
+      <div class="glass-card rounded-3xl p-6 shadow-xl border border-pink-500/30 bg-pink-950/10 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-pink-500/20 text-secondary flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-2xl">rocket_launch</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">3. Đường Dẫn Web App Quản Lý Ban Ngành</h3>
+            <p class="text-xs text-text-secondary">Đường link triển khai (Web App URL) của dự án QuanLyBanNganh để tự động sinh link mở app cho các Ban Ngành.</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Web App Deployment URL *</label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input id="cfg-bannganh-webapp-url" value="https://script.google.com/macros/s/AKfycbx9jjjOgGQUh79YP514sDqJWgEc2Nc7GjmHvfq4lDF-C-DiaxdV64N966LLSX85AzMS/exec" class="glass-input flex-1 rounded-xl px-4 py-2.5 text-xs font-mono" placeholder="https://script.google.com/macros/s/AKfy.../exec" />
+              <button onclick="handleSaveBanNganhWebAppUrl()" class="px-5 py-2.5 rounded-xl bg-secondary-container hover:bg-pink-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">sync</span>
+                <span>Lưu &amp; Đồng Bộ Link</span>
+              </button>
+            </div>
+          </div>
+          <p class="text-[11px] text-text-secondary italic">
+            💡 Hệ thống sẽ tự động ghép tham số <code>?sheetId=...&amp;title=...</code> để khi bấm "Mở Web App" sẽ nạp đúng dữ liệu của từng ban ngành.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation Bar (Mobile) -->
+  <nav id="app-bottom-nav" class="glass-card backdrop-blur-3xl fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-md h-16 rounded-full border border-white/10 shadow-[0_8px_28px_rgba(0,0,0,0.5)] flex justify-around items-center px-3 z-40 md:hidden">
+    <button data-page="dashboard" onclick="navigateTo('dashboard')" class="bottom-nav-btn flex flex-col items-center justify-center text-primary active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+      <span class="nav-label text-[10px] mt-0.5 font-bold">Tổng quan</span>
+    </button>
+    <button data-page="churches" onclick="navigateTo('churches')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-2xl">church</span>
+      <span class="nav-label text-[10px] mt-0.5">Hội Thánh</span>
+    </button>
+    <button data-page="ministries" onclick="navigateTo('ministries')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-2xl">diversity_3</span>
+      <span class="nav-label text-[10px] mt-0.5">Ban Ngành</span>
+    </button>
+    <button data-page="settings" onclick="navigateTo('settings')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-2xl">settings</span>
+      <span class="nav-label text-[10px] mt-0.5">Cài đặt</span>
+    </button>
+  </nav>
+
+  <!-- Global Loading Indicator -->
+  <div id="global-loading-indicator" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center pointer-events-none">
+    <div class="glass-card-solid px-5 py-3 rounded-2xl flex items-center gap-3 border border-primary/30 shadow-2xl">
+      <svg class="animate-spin h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span class="text-xs font-semibold text-white">Đang xử lý...</span>
+    </div>
+  </div>
+
+  <!-- Global Toast Notifications Container -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
+
+  <!-- MODAL: THÊM / SỬA HỘI THÁNH -->
+  <div id="modal-church" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="glass-card-solid rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
+        <h3 id="modal-church-title" class="text-base font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">add_home</span>
+          Thêm Hội Thánh Mới
+        </h3>
+        <button onclick="closeModal('modal-church')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form id="form-church" onsubmit="handleSaveChurch(event)" class="p-6 space-y-4 overflow-y-auto">
+        <input type="hidden" id="church-id" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Tên Hội Thánh *</label>
+            <input id="church-ten" required class="glass-input w-full rounded-xl px-4 py-2.5 text-sm font-semibold" placeholder="VD: Hội Thánh Tin Lành Tân Minh" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Mã Hội Thánh</label>
+            <input id="church-ma" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-mono uppercase" placeholder="Tự sinh nếu để trống (VD: HT_TML)" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Mục Sư / Quản Nhiệm</label>
+            <input id="church-mucsu" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="VD: MS Nguyễn Văn A" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Địa Chỉ</label>
+            <input id="church-diachi" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="Số nhà, đường, thôn..." />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Quận / Huyện</label>
+            <input id="church-quanhuyen" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="VD: Hàm Tân" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Tỉnh / Thành Phố</label>
+            <input id="church-tinhthanh" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="VD: Bình Thuận" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Số Điện Thoại</label>
+            <input id="church-sdt" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="0901234567" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Email</label>
+            <input id="church-email" type="email" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="httl.tanminh@gmail.com" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Ngày Thành Lập</label>
+            <input id="church-ngaythanhlap" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="DD/MM/YYYY" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Trạng Thái</label>
+            <select id="church-trangthai" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs">
+              <option value="active">Đang sinh hoạt (Active)</option>
+              <option value="inactive">Tạm ngưng</option>
+            </select>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Ghi Chú</label>
+            <textarea id="church-ghichu" rows="2" class="glass-input w-full rounded-xl px-4 py-2 text-xs" placeholder="Ghi chú thêm về Hội Thánh..."></textarea>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-church')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5 transition-colors">Hủy</button>
+          <button type="submit" class="px-6 py-2.5 rounded-full bg-primary-container hover:bg-accent-hover text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Hội Thánh</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: THÊM / SỬA BAN NGÀNH -->
+  <div id="modal-ministry" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="glass-card-solid rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
+        <h3 id="modal-min-title" class="text-base font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-secondary">groups</span>
+          Thêm Ban Ngành Mới
+        </h3>
+        <button onclick="closeModal('modal-ministry')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form id="form-ministry" onsubmit="handleSaveMinistry(event)" class="p-6 space-y-4 overflow-y-auto">
+        <input type="hidden" id="min-id" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Thuộc Hội Thánh *</label>
+            <select id="min-hoithanh-id" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold"></select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Tên Ban Ngành *</label>
+            <input id="min-ten" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold" placeholder="VD: Ban Thanh Tráng" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Loại Ban Ngành *</label>
+            <select id="min-loai" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold">
+              <option value="THANH_TRANG">Ban Thanh Tráng</option>
+              <option value="THANH_NIEN">Ban Thanh Niên</option>
+              <option value="THIEU_NHI">Ban Thiếu Nhi</option>
+              <option value="PHU_NU">Ban Phụ Nữ</option>
+              <option value="NAM_GIOI">Ban Nam Giới</option>
+              <option value="LAO_NIEN">Ban Lão Niên</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Trưởng Ban</label>
+            <input id="min-truongban" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="Họ và tên Trưởng ban" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Thư Ký / Thủ Quỹ</label>
+            <input id="min-thuky" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="Họ và tên Thư ký" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Số Điện Thoại Liên Hệ</label>
+            <input id="min-sdt" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="0987654321" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Lịch Sinh Hoạt &amp; Ghi Chú</label>
+            <textarea id="min-ghichu" rows="2" class="glass-input w-full rounded-xl px-4 py-2 text-xs" placeholder="VD: Sinh hoạt vào 16h00 chiều Chúa Nhật..."></textarea>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-ministry')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5 transition-colors">Hủy</button>
+          <button type="submit" class="px-6 py-2.5 rounded-full bg-secondary-container hover:bg-pink-700 text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Ban Ngành</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: GÁN GOOGLE SHEET ID CÓ SẴN -->
+  <div id="modal-link-sheet" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="glass-card-solid rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col">
+      <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-emerald-400">link</span>
+          Cập Nhật Google Sheet Cho Ban Ngành
+        </h3>
+        <button onclick="closeModal('modal-link-sheet')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form id="form-link-sheet" onsubmit="handleSaveLinkedSheet(event)" class="p-6 space-y-4">
+        <input type="hidden" id="link-min-id" />
+        <div>
+          <span class="text-xs text-text-secondary block">Ban ngành áp dụng:</span>
+          <span id="link-min-name" class="text-sm font-bold text-white block mt-0.5">...</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-text-secondary mb-1">Google Spreadsheet ID hoặc URL *</label>
+          <input id="link-sheet-id" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-mono" placeholder="Dán ID hoặc link Sheet vào đây" />
+        </div>
+
+        <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-link-sheet')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5 transition-colors">Hủy</button>
+          <button type="submit" class="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Kết Nối</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // REST API CLIENT FOR GITHUB PAGES (CONNECTING TO GOOGLE APPS SCRIPT)
+    // =========================================================================
+    const GAS_MASTER_API_URL = 'https://script.google.com/macros/s/AKfycbwzRHsez-rhqp2Rina_fKUdFlqgeGitlgkyCnWku8OzYQx_5L64Fc-Lh5pAMaiYN85sHA/exec';
+
+    var state = {
+      kpis: { total_churches: 0, total_ministries: 0, connected_sheets: 0, pending_sheets: 0 },
+      churches: [],
+      ministries: [],
+      driveFolder: { id: '', name: 'HOI THANH', url: '' },
+      masterSpreadsheet: { id: '', name: 'QLHT', url: '' },
+      banNganhWebAppUrl: 'https://script.google.com/macros/s/AKfycbx9jjjOgGQUh79YP514sDqJWgEc2Nc7GjmHvfq4lDF-C-DiaxdV64N966LLSX85AzMS/exec',
+      currentView: 'dashboard',
+      searchChurch: '',
+      searchMin: '',
+      filterMinChurch: 'all',
+      filterMinType: 'all',
+      activeModal: null
+    };
+
+    async function runGAS(action, ...args) {
+      try {
+        let url = GAS_MASTER_API_URL;
+        let options = {};
+
+        if (action === 'apiGetInitialData') {
+          url += '?action=' + encodeURIComponent(action) + '&t=' + Date.now();
+          options = { method: 'GET', redirect: 'follow' };
+        } else {
+          let payload = { action: action };
+          if (action === 'apiSaveChurch') payload.data = args[0];
+          else if (action === 'apiDeleteChurch') payload.id = args[0];
+          else if (action === 'apiSaveMinistry') payload.data = args[0];
+          else if (action === 'apiDeleteMinistry') payload.id = args[0];
+          else if (action === 'apiCreateMinistrySheet') { payload.banNganhId = args[0]; payload.customTitle = args[1]; }
+          else if (action === 'apiLinkMinistrySheet') { payload.banNganhId = args[0]; payload.rawInput = args[1]; payload.webAppUrl = args[2]; }
+          else if (action === 'apiSaveSettings') { payload.driveFolder = args[0]; payload.masterSheet = args[1]; payload.banNganhWebAppUrl = args[2]; }
+
+          options = {
+            method: 'POST',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          };
+        }
+
+        const res = await fetch(url, options);
+        const json = await res.json();
+        return json;
+      } catch (err) {
+        console.error('Fetch Error [' + action + ']:', err);
+        showToast('Lỗi kết nối máy chủ: ' + err.message, 'error');
+        return { success: false, message: err.message || String(err) };
+      }
+    }
+
+    async function initApp() {
+      showLoading(true);
+      try {
+        const res = await runGAS('apiGetInitialData');
+        if (res && res.success && res.data) {
+          state.kpis = res.data.kpis || state.kpis;
+          state.churches = res.data.churches || [];
+          state.ministries = res.data.ministries || [];
+          state.driveFolder = res.data.driveFolder || state.driveFolder;
+          state.masterSpreadsheet = res.data.masterSpreadsheet || state.masterSpreadsheet;
+          state.banNganhWebAppUrl = res.data.banNganhWebAppUrl || state.banNganhWebAppUrl;
+          renderAll();
+        } else {
+          showToast('Không thể tải dữ liệu: ' + (res.message || 'Lỗi không xác định'), 'error');
+        }
+      } catch (e) {
+        console.error('initApp Error:', e);
+        showToast('Lỗi khởi động: ' + e.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function navigateTo(viewName, params = {}) {
+      state.currentView = viewName;
+      document.querySelectorAll('.app-view').forEach(el => el.classList.add('hidden'));
+
+      const target = document.getElementById('view-' + viewName);
+      if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('animate-fade-in');
+      }
+
+      document.querySelectorAll('.nav-link-btn').forEach(btn => {
+        if (btn.getAttribute('data-page') === viewName) {
+          btn.className = 'nav-link-btn px-4 py-2 rounded-full text-xs font-bold bg-primary-container/20 text-primary border border-primary-container/40 transition-all';
+        } else {
+          btn.className = 'nav-link-btn px-4 py-2 rounded-full text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 transition-all border border-transparent';
+        }
+      });
+
+      document.querySelectorAll('.bottom-nav-btn').forEach(btn => {
+        const isCurrent = btn.getAttribute('data-page') === viewName;
+        btn.className = isCurrent 
+          ? 'bottom-nav-btn flex flex-col items-center justify-center text-primary drop-shadow-[0_0_8px_rgba(255,181,152,0.5)] active:scale-90 transition-transform'
+          : 'bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform';
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      if (viewName === 'ministries' && params.hoiThanhId) {
+        state.filterMinChurch = params.hoiThanhId;
+        const fChurch = document.getElementById('min-filter-church');
+        if (fChurch) fChurch.value = params.hoiThanhId;
+        renderMinistries();
+      }
+    }
+
+    function renderAll() {
+      renderDashboard();
+      renderChurches();
+      renderMinistries();
+      renderSettings();
+    }
+
+    function renderDashboard() {
+      document.getElementById('dash-kpi-churches').textContent = state.churches.length;
+      document.getElementById('dash-kpi-ministries').textContent = state.ministries.length;
+      const connCount = state.ministries.filter(m => !!m.spreadsheetId).length;
+      document.getElementById('dash-kpi-connected').textContent = connCount;
+      document.getElementById('dash-kpi-pending').textContent = state.ministries.length - connCount;
+
+      if (state.driveFolder.name) {
+        document.getElementById('dash-drive-name').textContent = state.driveFolder.name;
+      }
+      if (state.driveFolder.url) {
+        document.getElementById('dash-drive-link').href = state.driveFolder.url;
+      }
+
+      if (state.masterSpreadsheet.name) {
+        document.getElementById('dash-master-name').textContent = state.masterSpreadsheet.name;
+      }
+      if (state.masterSpreadsheet.url) {
+        document.getElementById('dash-master-link').href = state.masterSpreadsheet.url;
+      }
+
+      const churchesEl = document.getElementById('dash-recent-churches');
+      if (state.churches.length > 0) {
+        churchesEl.innerHTML = state.churches.slice(0, 5).map(c => `
+          <div onclick="navigateTo('ministries', { hoiThanhId: '${c.id}' })" class="p-3 rounded-2xl bg-surface-elevated/70 border border-white/5 hover:border-primary/30 flex items-center justify-between cursor-pointer transition-all">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-primary-container/15 text-primary flex items-center justify-center font-bold text-xs">
+                <span class="material-symbols-outlined text-base">church</span>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white">${c.tenHT}</h4>
+                <p class="text-[11px] text-text-secondary">${c.mucSu || c.tinhThanh || 'Chưa cập nhật'}</p>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary-container/20 text-primary border border-primary-container/30">
+              ${c.soLuongBanNganh || 0} ban ngành
+            </span>
+          </div>
+        `).join('');
+      } else {
+        churchesEl.innerHTML = `<div class="text-center py-6 text-xs text-text-secondary">Chưa có Hội Thánh nào</div>`;
+      }
+
+      const minEl = document.getElementById('dash-recent-ministries');
+      if (state.ministries.length > 0) {
+        minEl.innerHTML = state.ministries.slice(0, 6).map(m => {
+          const hasSheet = !!m.spreadsheetId;
+          const webUrl = getMinistryWebAppUrl(m);
+
+          return `
+            <div class="p-3 rounded-2xl bg-surface-elevated/70 border border-white/5 hover:border-secondary/30 flex items-center justify-between gap-3 transition-all">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-secondary-container/15 text-secondary flex items-center justify-center font-bold text-xs shrink-0">
+                  <span class="material-symbols-outlined text-base">groups</span>
+                </div>
+                <div class="min-w-0">
+                  <h4 class="text-xs font-bold text-white truncate">${m.tenBN}</h4>
+                  <p class="text-[11px] text-text-secondary truncate">${m.tenHoiThanh || ''}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                ${hasSheet ? `
+                  <a href="${m.spreadsheetUrl || ('https://docs.google.com/spreadsheets/d/' + m.spreadsheetId + '/edit')}" target="_blank" class="p-2 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-emerald-400 transition-colors" title="Mở Google Sheet">
+                    <span class="material-symbols-outlined text-[17px]">table_chart</span>
+                  </a>
+                  ${webUrl ? `
+                    <a href="${webUrl}" target="_blank" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-md transition-all">
+                      <span>Mở App</span>
+                      <span class="material-symbols-outlined text-xs">rocket_launch</span>
+                    </a>
+                  ` : ''}
+                ` : `
+                  <span class="text-[10px] text-warning-amber font-semibold bg-amber-500/10 px-2 py-0.5 rounded-full">Chưa có Sheet</span>
+                `}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        minEl.innerHTML = `<div class="text-center py-6 text-xs text-text-secondary">Chưa có Ban Ngành nào</div>`;
+      }
+    }
+
+    function getMinistryWebAppUrl(m) {
+      if (m.webAppUrl) return m.webAppUrl;
+      if (state.banNganhWebAppUrl && m.spreadsheetId) {
+        return `${state.banNganhWebAppUrl}?sheetId=${encodeURIComponent(m.spreadsheetId)}&banNganhId=${encodeURIComponent(m.id)}&title=${encodeURIComponent(m.tenBN)}`;
+      }
+      return '';
+    }
+
+    function renderChurches() {
+      let list = state.churches || [];
+      if (state.searchChurch) {
+        const q = state.searchChurch.toLowerCase();
+        list = list.filter(c => 
+          (c.tenHT || '').toLowerCase().includes(q) ||
+          (c.maHT || '').toLowerCase().includes(q) ||
+          (c.mucSu || '').toLowerCase().includes(q) ||
+          (c.tinhThanh || '').toLowerCase().includes(q)
+        );
+      }
+
+      const badge = document.getElementById('churches-count-badge');
+      if (badge) badge.textContent = `Tổng cộng: ${list.length} Hội Thánh`;
+
+      const container = document.getElementById('churches-grid-container');
+      if (!container) return;
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-3 glass-card rounded-3xl p-12 text-center text-xs text-text-secondary space-y-3">
+            <span class="material-symbols-outlined text-4xl text-primary/60">church</span>
+            <p class="font-medium text-sm text-white">Chưa có Hội Thánh nào</p>
+            <p>Bấm nút <strong>"+ Thêm Hội Thánh Mới"</strong> để bắt đầu tạo Hội Thánh.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(c => `
+        <div class="glass-card rounded-3xl p-5 border border-white/10 hover:border-primary/40 flex flex-col justify-between shadow-lg transition-all duration-200 group">
+          <div>
+            <div class="flex justify-between items-start gap-2 mb-3">
+              <div class="w-11 h-11 rounded-2xl bg-primary-container/20 border border-primary-container/30 text-primary flex items-center justify-center font-bold shrink-0">
+                <span class="material-symbols-outlined text-2xl">church</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <button onclick="openEditChurchModal('${c.id}')" class="p-2 text-text-secondary hover:text-white rounded-full hover:bg-white/5 transition-colors" title="Sửa"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+                <button onclick="deleteChurch('${c.id}')" class="p-2 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5 transition-colors" title="Xóa"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+              </div>
+            </div>
+
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/5 text-primary border border-white/10 inline-block mb-1">${c.maHT || 'HT_CODE'}</span>
+            <h3 class="text-base font-bold text-white leading-snug group-hover:text-primary transition-colors">${c.tenHT}</h3>
+            <p class="text-xs text-text-secondary mt-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">person</span>
+              <span>${c.mucSu || 'Chưa có Quản nhiệm'}</span>
+            </p>
+
+            <div class="mt-4 pt-3 border-t border-white/5 space-y-1.5 text-[11px] text-text-secondary">
+              ${c.diaChi ? `<div class="flex items-center gap-1.5 truncate"><span class="material-symbols-outlined text-[14px]">location_on</span><span>${c.diaChi}, ${c.tinhThanh || ''}</span></div>` : ''}
+              ${c.sdt ? `<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px]">call</span><span>${c.sdt}</span></div>` : ''}
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-t border-white/10 flex justify-between items-center">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-secondary-container/20 text-secondary border border-secondary-container/30">
+              ${c.soLuongBanNganh || 0} ban ngành
+            </span>
+            <button onclick="navigateTo('ministries', { hoiThanhId: '${c.id}' })" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-primary text-xs font-semibold flex items-center gap-1 transition-all">
+              <span>Xem ban ngành</span>
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openAddChurchModal() {
+      document.getElementById('form-church').reset();
+      document.getElementById('church-id').value = '';
+      document.getElementById('modal-church-title').innerHTML = `<span class="material-symbols-outlined text-primary">add_home</span> Thêm Hội Thánh Mới`;
+      openModal('modal-church');
+    }
+
+    function openEditChurchModal(id) {
+      const c = state.churches.find(item => String(item.id) === String(id));
+      if (!c) return;
+
+      document.getElementById('church-id').value = c.id;
+      document.getElementById('church-ten').value = c.tenHT || '';
+      document.getElementById('church-ma').value = c.maHT || '';
+      document.getElementById('church-mucsu').value = c.mucSu || '';
+      document.getElementById('church-diachi').value = c.diaChi || '';
+      document.getElementById('church-quanhuyen').value = c.quanHuyen || '';
+      document.getElementById('church-tinhthanh').value = c.tinhThanh || '';
+      document.getElementById('church-sdt').value = c.sdt || '';
+      document.getElementById('church-email').value = c.email || '';
+      document.getElementById('church-ngaythanhlap').value = c.ngayThanhLap || '';
+      document.getElementById('church-trangthai').value = c.trangThai || 'active';
+      document.getElementById('church-ghichu').value = c.ghiChu || '';
+
+      document.getElementById('modal-church-title').innerHTML = `<span class="material-symbols-outlined text-primary">edit</span> Cập Nhật Hội Thánh`;
+      openModal('modal-church');
+    }
+
+    async function handleSaveChurch(e) {
+      e.preventDefault();
+      const payload = {
+        id: document.getElementById('church-id').value || null,
+        tenHT: document.getElementById('church-ten').value.trim(),
+        maHT: document.getElementById('church-ma').value.trim(),
+        mucSu: document.getElementById('church-mucsu').value.trim(),
+        diaChi: document.getElementById('church-diachi').value.trim(),
+        quanHuyen: document.getElementById('church-quanhuyen').value.trim(),
+        tinhThanh: document.getElementById('church-tinhthanh').value.trim(),
+        sdt: document.getElementById('church-sdt').value.trim(),
+        email: document.getElementById('church-email').value.trim(),
+        ngayThanhLap: document.getElementById('church-ngaythanhlap').value.trim(),
+        trangThai: document.getElementById('church-trangthai').value,
+        ghiChu: document.getElementById('church-ghichu').value.trim()
+      };
+
+      showLoading(true);
+      try {
+        const res = await runGAS('apiSaveChurch', payload);
+        if (res && res.success) {
+          showToast(res.message || 'Lưu Hội Thánh thành công!', 'success');
+          closeModal('modal-church');
+          await initApp();
+        } else {
+          showToast(res.message || 'Lỗi khi lưu Hội Thánh', 'error');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function deleteChurch(id) {
+      if (!confirm('Bạn có chắc muốn xóa Hội Thánh này?')) return;
+      showLoading(true);
+      try {
+        const res = await runGAS('apiDeleteChurch', id);
+        if (res && res.success) {
+          showToast('Đã xóa Hội Thánh!', 'info');
+          await initApp();
+        } else {
+          showToast(res.message || 'Không thể xóa', 'error');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function renderMinistries() {
+      const fChurch = document.getElementById('min-filter-church');
+      const mChurch = document.getElementById('min-hoithanh-id');
+      const opts = (state.churches || []).map(c => `<option value="${c.id}">${c.tenHT}</option>`).join('');
+
+      if (fChurch) fChurch.innerHTML = `<option value="all">Tất cả Hội Thánh</option>` + opts;
+      if (mChurch) mChurch.innerHTML = opts || `<option value="">Chưa có Hội Thánh nào</option>`;
+
+      if (fChurch && state.filterMinChurch) fChurch.value = state.filterMinChurch;
+
+      let list = state.ministries || [];
+      if (state.filterMinChurch !== 'all') {
+        list = list.filter(m => String(m.hoiThanhId) === String(state.filterMinChurch));
+      }
+      if (state.filterMinType !== 'all') {
+        list = list.filter(m => m.loaiBN === state.filterMinType);
+      }
+      if (state.searchMin) {
+        const q = state.searchMin.toLowerCase();
+        list = list.filter(m => 
+          (m.tenBN || '').toLowerCase().includes(q) ||
+          (m.maBN || '').toLowerCase().includes(q) ||
+          (m.truongBan || '').toLowerCase().includes(q) ||
+          (m.tenHoiThanh || '').toLowerCase().includes(q)
+        );
+      }
+
+      const badge = document.getElementById('min-count-badge');
+      if (badge) badge.textContent = `Tổng cộng: ${list.length} Ban Ngành`;
+
+      const container = document.getElementById('ministries-grid-container');
+      if (!container) return;
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-3 glass-card rounded-3xl p-12 text-center text-xs text-text-secondary space-y-3">
+            <span class="material-symbols-outlined text-4xl text-secondary/60">groups</span>
+            <p class="font-medium text-sm text-white">Không tìm thấy Ban Ngành nào</p>
+            <p>Bấm nút <strong>"+ Thêm Ban Ngành Mới"</strong> để tạo ban ngành.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const typeIcons = {
+        THANH_TRANG: { icon: 'diversity_3', color: 'text-primary' },
+        THANH_NIEN: { icon: 'local_fire_department', color: 'text-sky-400' },
+        THIEU_NHI: { icon: 'child_care', color: 'text-pink-400' },
+        PHU_NU: { icon: 'favorite', color: 'text-pink-500' },
+        NAM_GIOI: { icon: 'shield', color: 'text-emerald-400' },
+        LAO_NIEN: { icon: 'elderly', color: 'text-amber-400' }
+      };
+
+      container.innerHTML = list.map(m => {
+        const hasSheet = !!m.spreadsheetId;
+        const webUrl = getMinistryWebAppUrl(m);
+        const tInfo = typeIcons[m.loaiBN] || { icon: 'groups', color: 'text-primary' };
+
+        return `
+          <div class="glass-card rounded-3xl p-5 border border-white/10 hover:border-secondary/40 flex flex-col justify-between shadow-lg transition-all duration-200 group">
+            <div>
+              <div class="flex justify-between items-start gap-2 mb-3">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div class="w-10 h-10 rounded-2xl bg-surface-elevated border border-white/10 ${tInfo.color} flex items-center justify-center font-bold shrink-0">
+                    <span class="material-symbols-outlined text-xl">${tInfo.icon}</span>
+                  </div>
+                  <div class="min-w-0">
+                    <span class="text-[10px] font-semibold text-primary block truncate">${m.tenHoiThanh || ''}</span>
+                    <h3 class="text-sm font-bold text-white group-hover:text-secondary transition-colors truncate">${m.tenBN}</h3>
+                  </div>
+                </div>
+                
+                <div class="flex items-center gap-1 shrink-0">
+                  <button onclick="openEditMinistryModal('${m.id}')" class="p-1.5 text-text-secondary hover:text-white rounded-full hover:bg-white/5 transition-colors" title="Sửa"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                  <button onclick="deleteMinistry('${m.id}')" class="p-1.5 text-text-secondary hover:text-rose-400 rounded-full hover:bg-white/5 transition-colors" title="Xóa"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+                </div>
+              </div>
+
+              <div class="space-y-1 text-[11px] text-text-secondary pt-1">
+                ${m.truongBan ? `<div><span class="text-text-secondary/70">Trưởng ban:</span> <span class="text-white font-medium">${m.truongBan}</span></div>` : ''}
+                ${m.thuky ? `<div><span class="text-text-secondary/70">Thư ký:</span> <span class="text-white font-medium">${m.thuky}</span></div>` : ''}
+                ${m.sdtLienHe ? `<div><span class="text-text-secondary/70">SĐT:</span> <span class="text-white font-mono">${m.sdtLienHe}</span></div>` : ''}
+              </div>
+
+              <!-- GSheet Info Card -->
+              <div class="mt-4 p-3 rounded-2xl ${hasSheet ? 'bg-emerald-950/20 border border-emerald-500/20' : 'bg-amber-950/20 border border-warning-amber/20'} flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="material-symbols-outlined text-base ${hasSheet ? 'text-emerald-400' : 'text-warning-amber'} shrink-0">${hasSheet ? 'table_chart' : 'warning'}</span>
+                  <span class="text-[11px] font-semibold ${hasSheet ? 'text-emerald-400' : 'text-warning-amber'} truncate">${hasSheet ? 'Đã tạo Google Sheet' : 'Chưa có Google Sheet'}</span>
+                </div>
+                ${hasSheet ? `<a href="${m.spreadsheetUrl || ('https://docs.google.com/spreadsheets/d/' + m.spreadsheetId + '/edit')}" target="_blank" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1 transition-colors shrink-0"><span>Mở Sheet</span><span class="material-symbols-outlined text-xs">open_in_new</span></a>` : ''}
+              </div>
+            </div>
+
+            <!-- Bottom Action Buttons -->
+            <div class="mt-5 pt-3 border-t border-white/10 flex flex-col gap-2">
+              ${hasSheet ? `
+                <div class="flex items-center justify-between gap-2">
+                  <button onclick="openLinkSheetModal('${m.id}')" class="text-[11px] text-text-secondary hover:text-white flex items-center gap-1"><span class="material-symbols-outlined text-xs">edit</span> Đổi Sheet ID</button>
+                  
+                  ${webUrl ? `
+                    <a href="${webUrl}" target="_blank" class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all">
+                      <span class="material-symbols-outlined text-[16px]">rocket_launch</span>
+                      <span>Mở Web App Ban Ngành</span>
+                    </a>
+                  ` : `
+                    <button onclick="navigateTo('settings')" class="flex-1 py-2 px-3 rounded-xl bg-surface-elevated hover:bg-white/10 text-pink-300 text-[11px] font-bold flex items-center justify-center gap-1 border border-pink-500/30">
+                      <span class="material-symbols-outlined text-xs">settings</span>
+                      <span>Cấu hình Web App URL</span>
+                    </button>
+                  `}
+                </div>
+              ` : `
+                <div class="flex items-center gap-2 w-full justify-between">
+                  <button onclick="autoCreateMinistrySheet('${m.id}')" class="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all">
+                    <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                    <span>Tạo Sheet Tự Động</span>
+                  </button>
+                  <button onclick="openLinkSheetModal('${m.id}')" class="py-2.5 px-3 rounded-xl glass-card hover:bg-white/10 text-white text-xs font-semibold flex items-center gap-1 transition-all" title="Gán ID có sẵn">
+                    <span class="material-symbols-outlined text-[16px]">link</span>
+                  </button>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openAddMinistryModal() {
+      document.getElementById('form-ministry').reset();
+      document.getElementById('min-id').value = '';
+      document.getElementById('modal-min-title').innerHTML = `<span class="material-symbols-outlined text-secondary">groups</span> Thêm Ban Ngành Mới`;
+      openModal('modal-ministry');
+    }
+
+    function openEditMinistryModal(id) {
+      const m = state.ministries.find(item => String(item.id) === String(id));
+      if (!m) return;
+
+      document.getElementById('min-id').value = m.id;
+      document.getElementById('min-hoithanh-id').value = m.hoiThanhId || '';
+      document.getElementById('min-ten').value = m.tenBN || '';
+      document.getElementById('min-loai').value = m.loaiBN || 'THANH_TRANG';
+      document.getElementById('min-truongban').value = m.truongBan || '';
+      document.getElementById('min-thuky').value = m.thuky || '';
+      document.getElementById('min-sdt').value = m.sdtLienHe || '';
+      document.getElementById('min-ghichu').value = m.ghiChu || '';
+
+      document.getElementById('modal-min-title').innerHTML = `<span class="material-symbols-outlined text-secondary">edit</span> Cập Nhật Ban Ngành`;
+      openModal('modal-ministry');
+    }
+
+    async function handleSaveMinistry(e) {
+      e.preventDefault();
+      const payload = {
+        id: document.getElementById('min-id').value || null,
+        hoiThanhId: document.getElementById('min-hoithanh-id').value,
+        tenBN: document.getElementById('min-ten').value.trim(),
+        loaiBN: document.getElementById('min-loai').value,
+        truongBan: document.getElementById('min-truongban').value.trim(),
+        thuky: document.getElementById('min-thuky').value.trim(),
+        sdtLienHe: document.getElementById('min-sdt').value.trim(),
+        ghiChu: document.getElementById('min-ghichu').value.trim()
+      };
+
+      showLoading(true);
+      try {
+        const res = await runGAS('apiSaveMinistry', payload);
+        if (res && res.success) {
+          showToast(res.message || 'Lưu Ban Ngành thành công!', 'success');
+          closeModal('modal-ministry');
+          await initApp();
+        } else {
+          showToast(res.message || 'Lỗi lưu Ban Ngành', 'error');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function deleteMinistry(id) {
+      if (!confirm('Bạn có chắc muốn xóa Ban Ngành này?')) return;
+      showLoading(true);
+      try {
+        const res = await runGAS('apiDeleteMinistry', id);
+        if (res && res.success) {
+          showToast('Đã xóa Ban Ngành', 'info');
+          await initApp();
+        } else {
+          showToast(res.message || 'Không thể xóa', 'error');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function autoCreateMinistrySheet(id) {
+      const m = state.ministries.find(item => String(item.id) === String(id));
+      if (!m) return;
+
+      if (!confirm(`Hệ thống sẽ tự động tạo file Google Sheet mới cho "${m.tenBN}" trên Google Drive và nạp sẵn 10 bảng dữ liệu chuẩn. Tiếp tục?`)) return;
+
+      showLoading(true);
+      try {
+        const res = await runGAS('apiCreateMinistrySheet', id);
+        if (res && res.success) {
+          showToast(res.message || 'Tạo Sheet thành công!', 'success');
+          await initApp();
+          if (res.data && res.data.webAppUrl) {
+            if (confirm(`Đã tạo Sheet và tạo Link Web App cho "${m.tenBN}". Bạn có muốn mở Web App của ban ngành ngay không?`)) {
+              window.open(res.data.webAppUrl, '_blank');
+            }
+          } else if (res.data && res.data.url) {
+            window.open(res.data.url, '_blank');
+          }
+        } else {
+          showToast(res.message || 'Lỗi tạo Sheet', 'error');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function openLinkSheetModal(id) {
+      const m = state.ministries.find(item => String(item.id) === String(id));
+      if (!m) return;
+
+      document.getElementById('link-min-id').value = m.id;
+      document.getElementById('link-min-name').textContent = `${m.tenBN} (${m.tenHoiThanh || ''})`;
+      document.getElementById('link-sheet-id').value = m.spreadsheetId || '';
+      openModal('modal-link-sheet');
+    }
+
+    async function handleSaveLinkedSheet(e) {
+      e.preventDefault();
+      const banNganhId = document.getElementById('link-min-id').value;
+      const rawSheet = document.getElementById('link-sheet-id').value.trim();
+      if (!rawSheet) return;
+
+      showLoading(true);
+      try {
+        const res = await runGAS('apiLinkMinistrySheet', banNganhId, rawSheet);
+        if (res && res.success) {
+          showToast(res.message || 'Gán Sheet thành công!', 'success');
+          closeModal('modal-link-sheet');
+          await initApp();
+        } else {
+          showToast(res.message || 'Lỗi gán Sheet', 'error');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function renderSettings() {
+      const driveInput = document.getElementById('cfg-drive-folder-id');
+      const driveStatus = document.getElementById('cfg-drive-status-name');
+      const driveLink = document.getElementById('cfg-drive-status-link');
+
+      if (state.driveFolder.id && driveInput) driveInput.value = state.driveFolder.id;
+      if (driveStatus) driveStatus.textContent = 'Đã kết nối: ' + (state.driveFolder.name || 'HOI THANH');
+      if (driveLink && state.driveFolder.url) driveLink.href = state.driveFolder.url;
+
+      const masterInput = document.getElementById('cfg-master-sheet-id');
+      const masterStatus = document.getElementById('cfg-master-status-name');
+      const masterLink = document.getElementById('cfg-master-status-link');
+
+      if (state.masterSpreadsheet.id && masterInput) masterInput.value = state.masterSpreadsheet.id;
+      if (masterStatus) masterStatus.textContent = 'Đã kết nối: ' + (state.masterSpreadsheet.name || 'QLHT');
+      if (masterLink && state.masterSpreadsheet.url) masterLink.href = state.masterSpreadsheet.url;
+
+      const webAppInput = document.getElementById('cfg-bannganh-webapp-url');
+      if (webAppInput && state.banNganhWebAppUrl) {
+        webAppInput.value = state.banNganhWebAppUrl;
+      }
+    }
+
+    async function handleSaveDriveFolder() {
+      const folderId = document.getElementById('cfg-drive-folder-id').value.trim();
+      if (!folderId) return;
+
+      showLoading(true);
+      try {
+        const res = await runGAS('apiSaveSettings', folderId, null, null);
+        if (res && res.success) {
+          showToast('Lưu thư mục Google Drive thành công!', 'success');
+          await initApp();
+        } else {
+          showToast(res.message || 'Lỗi lưu thư mục', 'error');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function handleSaveMasterSheet() {
+      const sheetId = document.getElementById('cfg-master-sheet-id').value.trim();
+      if (!sheetId) return;
+
+      showLoading(true);
+      try {
+        const res = await runGAS('apiSaveSettings', null, sheetId, null);
+        if (res && res.success) {
+          showToast('Lưu kết nối Google Sheet Master thành công!', 'success');
+          await initApp();
+        } else {
+          showToast(res.message || 'Lỗi lưu kết nối', 'error');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function handleSaveBanNganhWebAppUrl() {
+      const webAppUrl = document.getElementById('cfg-bannganh-webapp-url').value.trim();
+
+      showLoading(true);
+      try {
+        const res = await runGAS('apiSaveSettings', null, null, webAppUrl);
+        if (res && res.success) {
+          showToast('Đã lưu & đồng bộ đường dẫn Web App Ban Ngành thành công!', 'success');
+          await initApp();
+        } else {
+          showToast(res.message || 'Lỗi lưu URL', 'error');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function openModal(modalId) {
+      const el = document.getElementById(modalId);
+      if (el) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+        state.activeModal = modalId;
+      }
+    }
+
+    function closeModal(modalId) {
+      const el = document.getElementById(modalId);
+      if (el) {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+        document.body.style.overflow = '';
+        if (state.activeModal === modalId) state.activeModal = null;
+      }
+    }
+
+    function closeAllModals() {
+      document.querySelectorAll('.app-modal').forEach(m => {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      });
+      document.body.style.overflow = '';
+      state.activeModal = null;
+    }
+
+    function showLoading(show) {
+      const loader = document.getElementById('global-loading-indicator');
+      if (loader) {
+        if (show) loader.classList.remove('hidden');
+        else loader.classList.add('hidden');
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      const bgColors = {
+        success: 'bg-emerald-600/90 border-emerald-400/50 text-white',
+        error: 'bg-rose-600/90 border-rose-400/50 text-white',
+        info: 'bg-surface-elevated/90 border-primary/40 text-on-surface',
+        warning: 'bg-amber-600/90 border-amber-400/50 text-white'
+      };
+      const icons = {
+        success: 'check_circle',
+        error: 'error',
+        info: 'info',
+        warning: 'warning'
+      };
+
+      toast.className = `flex items-center gap-3 px-5 py-3 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 ${bgColors[type] || bgColors.info}`;
+      toast.innerHTML = `
+        <span class="material-symbols-outlined text-[20px]">${icons[type] || 'info'}</span>
+        <span class="font-medium text-sm">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => toast.classList.remove('translate-y-4', 'opacity-0'), 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeAllModals();
+    });
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+  </script>
+</body>
+</html>

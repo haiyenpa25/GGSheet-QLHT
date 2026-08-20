@@ -1,0 +1,6 @@
+**/**
+!*.gs
+!*.html
+!appsscript.json
+preview_master.html
+README.md

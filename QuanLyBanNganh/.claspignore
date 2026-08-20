@@ -1,0 +1,5 @@
+# Ignore non-Apps Script files
+tham-khao/**
+README.md
+.clasp.json
+.git/**

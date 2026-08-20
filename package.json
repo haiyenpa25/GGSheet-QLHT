@@ -1,0 +1,13 @@
+{
+  "name": "he-thong-quan-ly-hoi-thanh",
+  "version": "1.0.0",
+  "description": "Hệ thống Quản lý Phân cấp Hội Thánh & Ban Ngành",
+  "scripts": {
+    "push:hoithanh": "cd QuanLyHoiThanh && npx @google/clasp push -f",
+    "push:bannganh": "cd QuanLyBanNganh && npx @google/clasp push -f",
+    "push:all": "npm run push:hoithanh && npm run push:bannganh"
+  },
+  "keywords": ["google-apps-script", "church-management"],
+  "author": "",
+  "license": "MIT"
+}

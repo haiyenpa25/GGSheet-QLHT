@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html class="dark" lang="vi">
+<head>
+  <base target="_top">
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+  <title>Quản Lý Hội Thánh &amp; Ban Ngành</title>
+
+  <!-- Tailwind CSS & Google Fonts & Material Icons -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "surface": "#0b1326",
+          "surface-container": "#171f33",
+          "surface-container-low": "#131b2e",
+          "surface-elevated": "#182238",
+          "primary": "#ffb598",
+          "primary-container": "#e58c67",
+          "accent-hover": "#d97b54",
+          "secondary": "#ffb0cd",
+          "secondary-container": "#aa0266",
+          "tertiary": "#4edea3",
+          "tertiary-container": "#10b981",
+          "info-blue": "#38bdf8",
+          "warning-amber": "#f59e0b",
+          "error": "#ffb4ab",
+          "text-secondary": "#94a3b8",
+          "on-surface": "#dae2fd",
+          "background": "#0b1326"
+        },
+        borderRadius: {
+          "xl": "0.75rem",
+          "2xl": "1.125rem",
+          "3xl": "1.5rem"
+        },
+        fontFamily: {
+          sans: ['Inter', 'sans-serif']
+        }
+      }
+    }
+  }
+  </script>
+
+  <?!= include('Styles'); ?>
+</head>
+
+<body class="bg-background text-on-surface font-sans min-h-screen selection:bg-primary-container selection:text-white">
+  <!-- Ambient Space Glows -->
+  <div class="ambient-glow w-[400px] h-[400px] bg-primary-container/15 top-[-100px] left-[-100px]"></div>
+  <div class="ambient-glow w-[450px] h-[450px] bg-blue-600/15 bottom-[50px] right-[-120px]" style="animation-delay: -8s;"></div>
+
+  <!-- TopAppBar -->
+  <header id="app-top-header" class="bg-surface-container-low/90 backdrop-blur-2xl fixed top-0 left-0 right-0 w-full h-16 z-50 border-b border-white/10 shadow-lg flex justify-between items-center px-4 sm:px-6">
+    <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('dashboard')">
+      <div class="w-10 h-10 rounded-2xl glass-card flex items-center justify-center border border-primary/40 text-primary">
+        <span class="material-symbols-outlined text-[24px]">church</span>
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white tracking-tight leading-tight">Quản Lý Hội Thánh</h1>
+        <p class="text-[10px] text-text-secondary">Hệ Thống Phân Cấp &amp; Ban Ngành</p>
+      </div>
+    </div>
+
+    <!-- Desktop Navigation Links -->
+    <div class="hidden md:flex items-center gap-1.5">
+      <button data-page="dashboard" onclick="navigateTo('dashboard')" class="nav-link-btn px-4 py-2 rounded-full text-xs font-bold bg-primary-container/20 text-primary border border-primary-container/40 transition-all">
+        Tổng Quan
+      </button>
+      <button data-page="churches" onclick="navigateTo('churches')" class="nav-link-btn px-4 py-2 rounded-full text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 transition-all border border-transparent">
+        Hội Thánh
+      </button>
+      <button data-page="ministries" onclick="navigateTo('ministries')" class="nav-link-btn px-4 py-2 rounded-full text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 transition-all border border-transparent">
+        Ban Ngành &amp; Sheets
+      </button>
+      <button data-page="settings" onclick="navigateTo('settings')" class="nav-link-btn px-4 py-2 rounded-full text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 transition-all border border-transparent">
+        Cài Đặt Hệ Thống
+      </button>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-2">
+      <button onclick="navigateTo('settings')" class="p-2.5 text-text-secondary hover:text-primary transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Cài Đặt Hệ Thống">
+        <span class="material-symbols-outlined text-[20px]">settings</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="pt-24 pb-28 sm:pb-16 px-4 sm:px-6 max-w-6xl mx-auto min-h-screen">
+    
+    <!-- VIEW 1: DASHBOARD -->
+    <section id="view-dashboard" class="app-view space-y-6">
+      <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-primary/25 bg-gradient-to-r from-surface-elevated/90 via-surface-container/70 to-surface-elevated/90">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div class="space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container/20 border border-primary-container/40 text-primary text-xs font-semibold">
+              <span class="material-symbols-outlined text-[16px]">account_tree</span>
+              <span>Trung Tâm Điều Phối Hệ Thống</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Hệ Thống Quản Lý Hội Thánh &amp; Ban Ngành</h2>
+            <p class="text-xs sm:text-sm text-text-secondary max-w-2xl leading-relaxed">
+              Tạo Hội Thánh ➔ Tự động tạo Thư mục Google Drive ➔ Tạo Ban Ngành ➔ Tạo Google Sheet và tự động liên kết Web App Quản Lý Ban Ngành.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2.5 flex-wrap shrink-0">
+            <button onclick="openAddChurchModal()" class="px-4 py-2.5 rounded-2xl bg-primary-container hover:bg-accent-hover text-white text-xs font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all">
+              <span class="material-symbols-outlined text-[18px]">add_home</span>
+              <span>Thêm Hội Thánh</span>
+            </button>
+            <button onclick="openAddMinistryModal()" class="px-4 py-2.5 rounded-2xl bg-secondary-container/80 hover:bg-secondary-container text-white text-xs font-bold flex items-center gap-2 shadow-lg active:scale-95 transition-all">
+              <span class="material-symbols-outlined text-[18px]">add_circle</span>
+              <span>Thêm Ban Ngành</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Bento KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div onclick="navigateTo('churches')" class="glass-card rounded-2xl p-5 border border-white/10 hover:border-primary/40 cursor-pointer transition-all duration-200 active:scale-95 group">
+          <div class="flex justify-between items-start mb-2">
+            <span class="w-10 h-10 rounded-xl bg-primary-container/20 text-primary flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">church</span>
+            </span>
+            <span class="material-symbols-outlined text-text-secondary text-sm group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">arrow_outward</span>
+          </div>
+          <h3 id="dash-kpi-churches" class="text-3xl font-extrabold text-white mt-1">--</h3>
+          <p class="text-xs text-text-secondary mt-0.5 font-medium">Hội Thánh Trực Thuộc</p>
+        </div>
+
+        <div onclick="navigateTo('ministries')" class="glass-card rounded-2xl p-5 border border-white/10 hover:border-secondary/40 cursor-pointer transition-all duration-200 active:scale-95 group">
+          <div class="flex justify-between items-start mb-2">
+            <span class="w-10 h-10 rounded-xl bg-secondary-container/20 text-secondary flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">diversity_3</span>
+            </span>
+            <span class="material-symbols-outlined text-text-secondary text-sm group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">arrow_outward</span>
+          </div>
+          <h3 id="dash-kpi-ministries" class="text-3xl font-extrabold text-white mt-1">--</h3>
+          <p class="text-xs text-text-secondary mt-0.5 font-medium">Tổng Số Ban Ngành</p>
+        </div>
+
+        <div onclick="navigateTo('ministries')" class="glass-card rounded-2xl p-5 border border-emerald-500/20 bg-emerald-950/10 cursor-pointer transition-all duration-200 active:scale-95 group">
+          <div class="flex justify-between items-start mb-2">
+            <span class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">cloud_done</span>
+            </span>
+            <span class="material-symbols-outlined text-emerald-400/60 text-sm">check</span>
+          </div>
+          <h3 id="dash-kpi-connected" class="text-3xl font-extrabold text-emerald-400 mt-1">--</h3>
+          <p class="text-xs text-text-secondary mt-0.5 font-medium">GSheet Đã Tạo</p>
+        </div>
+
+        <div onclick="navigateTo('ministries')" class="glass-card rounded-2xl p-5 border border-warning-amber/20 bg-amber-950/10 cursor-pointer transition-all duration-200 active:scale-95 group">
+          <div class="flex justify-between items-start mb-2">
+            <span class="w-10 h-10 rounded-xl bg-warning-amber/20 text-warning-amber flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">pending</span>
+            </span>
+            <span class="material-symbols-outlined text-warning-amber/60 text-sm">schedule</span>
+          </div>
+          <h3 id="dash-kpi-pending" class="text-3xl font-extrabold text-warning-amber mt-1">--</h3>
+          <p class="text-xs text-text-secondary mt-0.5 font-medium">Chờ Tạo GSheet</p>
+        </div>
+      </div>
+
+      <!-- Drive & Master Status Bar -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="glass-card rounded-2xl p-4 border border-white/10 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center font-bold shrink-0">
+              <span class="material-symbols-outlined">folder_shared</span>
+            </div>
+            <div>
+              <span class="text-[11px] font-semibold text-text-secondary block">Thư mục Google Drive:</span>
+              <span id="dash-drive-name" class="text-xs font-bold text-white block truncate max-w-[220px]">HOI THANH</span>
+            </div>
+          </div>
+          <a id="dash-drive-link" href="https://drive.google.com/drive/folders/1dy78gH_lwfvPUKaZMRCsiOwN2ZPWcBGj" target="_blank" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-primary text-xs font-semibold flex items-center gap-1 shrink-0 transition-colors">
+            <span>Mở Drive</span>
+            <span class="material-symbols-outlined text-sm">open_in_new</span>
+          </a>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-white/10 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold shrink-0">
+              <span class="material-symbols-outlined">table_chart</span>
+            </div>
+            <div>
+              <span class="text-[11px] font-semibold text-text-secondary block">Cơ sở dữ liệu Master (QLHT):</span>
+              <span id="dash-master-name" class="text-xs font-bold text-emerald-400 block truncate max-w-[220px]">QLHT</span>
+            </div>
+          </div>
+          <a id="dash-master-link" href="https://docs.google.com/spreadsheets/d/124O4hYFaxmZn1hg8FyRP4fci6hw84ziTg8o3eAUwMV0/edit" target="_blank" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-emerald-400 text-xs font-semibold flex items-center gap-1 shrink-0 transition-colors">
+            <span>Mở Sheet</span>
+            <span class="material-symbols-outlined text-sm">open_in_new</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Recent Lists -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-white/10 shadow-xl space-y-4">
+          <div class="flex justify-between items-center border-b border-white/10 pb-3">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary">church</span>
+              Danh Sách Hội Thánh
+            </h3>
+            <button onclick="navigateTo('churches')" class="text-xs text-primary hover:underline font-semibold">Xem tất cả &rarr;</button>
+          </div>
+          <div id="dash-recent-churches" class="space-y-2.5">
+            <div class="text-center py-6 text-xs text-text-secondary">Đang tải danh sách Hội Thánh...</div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-white/10 shadow-xl space-y-4">
+          <div class="flex justify-between items-center border-b border-white/10 pb-3">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary">diversity_3</span>
+              Danh Sách Ban Ngành
+            </h3>
+            <button onclick="navigateTo('ministries')" class="text-xs text-secondary hover:underline font-semibold">Xem tất cả &rarr;</button>
+          </div>
+          <div id="dash-recent-ministries" class="space-y-2.5">
+            <div class="text-center py-6 text-xs text-text-secondary">Đang tải danh sách Ban Ngành...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: CHURCHES -->
+    <section id="view-churches" class="app-view hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-white tracking-tight">Danh Sách Hội Thánh</h2>
+          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý các Chi Hội / Hội Thánh cơ sở trực thuộc hệ thống.</p>
+        </div>
+        <button onclick="openAddChurchModal()" class="py-2.5 px-4 rounded-full bg-primary-container hover:bg-accent-hover text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
+          <span class="material-symbols-outlined text-[18px]">add_home</span>
+          <span>Thêm Hội Thánh Mới</span>
+        </button>
+      </div>
+
+      <div class="glass-card rounded-2xl p-3 sm:p-4 border border-white/10 flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div class="relative w-full sm:w-80">
+          <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-[18px]">search</span>
+          <input
+            id="churches-search-input"
+            oninput="state.searchChurch = this.value; renderChurches();"
+            class="glass-input w-full rounded-full pl-10 pr-4 py-2 text-xs"
+            placeholder="Tìm theo tên, mã, quản nhiệm, tỉnh thành..."
+          />
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <span id="churches-count-badge" class="text-xs text-text-secondary font-semibold">Đang tải...</span>
+        </div>
+      </div>
+
+      <div id="churches-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-3 text-center py-12 text-xs text-text-secondary">Đang tải danh sách Hội Thánh...</div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: MINISTRIES -->
+    <section id="view-ministries" class="app-view hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-white tracking-tight">Danh Sách Ban Ngành</h2>
+          <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Quản lý ban ngành, tạo Google Sheet CSDL và truy cập Web App Quản Lý Ban Ngành.</p>
+        </div>
+        <button onclick="openAddMinistryModal()" class="py-2.5 px-4 rounded-full bg-secondary-container hover:bg-pink-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0">
+          <span class="material-symbols-outlined text-[18px]">add_circle</span>
+          <span>Thêm Ban Ngành Mới</span>
+        </button>
+      </div>
+
+      <div class="glass-card rounded-2xl p-4 border border-white/10 flex flex-col md:flex-row gap-3 items-center justify-between">
+        <div class="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto flex-1">
+          <div class="relative w-full sm:w-64">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[18px]">search</span>
+            <input
+              id="min-search-input"
+              oninput="state.searchMin = this.value; renderMinistries();"
+              class="glass-input w-full rounded-full pl-9 pr-3 py-2 text-xs"
+              placeholder="Tìm tên, mã ban, trưởng ban..."
+            />
+          </div>
+
+          <select id="min-filter-church" onchange="state.filterMinChurch = this.value; renderMinistries();" class="glass-input w-full sm:w-56 rounded-full px-3 py-2 text-xs font-semibold">
+            <option value="all">Tất cả Hội Thánh</option>
+          </select>
+
+          <select id="min-filter-type" onchange="state.filterMinType = this.value; renderMinistries();" class="glass-input w-full sm:w-48 rounded-full px-3 py-2 text-xs font-semibold">
+            <option value="all">Tất cả Loại Ban</option>
+            <option value="THANH_TRANG">Ban Thanh Tráng</option>
+            <option value="THANH_NIEN">Ban Thanh Niên</option>
+            <option value="THIEU_NHI">Ban Thiếu Nhi</option>
+            <option value="PHU_NU">Ban Phụ Nữ</option>
+            <option value="NAM_GIOI">Ban Nam Giới</option>
+            <option value="LAO_NIEN">Ban Lão Niên</option>
+          </select>
+        </div>
+
+        <span id="min-count-badge" class="text-xs text-text-secondary font-semibold shrink-0">Đang tải...</span>
+      </div>
+
+      <div id="ministries-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-3 text-center py-12 text-xs text-text-secondary">Đang tải danh sách ban ngành...</div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: SETTINGS -->
+    <section id="view-settings" class="app-view hidden space-y-6 max-w-4xl mx-auto">
+      <div>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Cấu Hình Toàn Hệ Thống</h2>
+        <p class="text-xs sm:text-sm text-text-secondary mt-0.5">Thiết lập thư mục Google Drive, CSDL Master và đường dẫn Web App Quản Lý Ban Ngành.</p>
+      </div>
+
+      <!-- Drive Folder Card -->
+      <div class="glass-card rounded-3xl p-6 shadow-xl border border-blue-500/30 bg-blue-950/10 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-2xl">folder_shared</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">1. Thư Mục Google Drive Gốc</h3>
+            <p class="text-xs text-text-secondary">Tất cả file Google Sheet của Hội Thánh và Ban Ngành sẽ được lưu trong thư mục này.</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Google Drive Folder ID hoặc URL *</label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input id="cfg-drive-folder-id" value="1dy78gH_lwfvPUKaZMRCsiOwN2ZPWcBGj" class="glass-input flex-1 rounded-xl px-4 py-2.5 text-xs font-mono" placeholder="1dy78gH_lwfvPUKaZMRCsiOwN2ZPWcBGj" />
+              <button onclick="handleSaveDriveFolder()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">save</span>
+                <span>Lưu Thư Mục</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-surface-elevated/70 rounded-2xl border border-white/5 text-xs flex items-center justify-between">
+            <div>
+              <span class="text-text-secondary block">Trạng thái thư mục:</span>
+              <span id="cfg-drive-status-name" class="font-bold text-blue-400">HOI THANH</span>
+            </div>
+            <a id="cfg-drive-status-link" href="https://drive.google.com/drive/folders/1dy78gH_lwfvPUKaZMRCsiOwN2ZPWcBGj" target="_blank" class="text-blue-400 hover:underline flex items-center gap-1 font-semibold">
+              Mở Thư Mục <span class="material-symbols-outlined text-sm">open_in_new</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Master Sheet Card -->
+      <div class="glass-card rounded-3xl p-6 shadow-xl border border-emerald-500/30 bg-emerald-950/10 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-2xl">table_chart</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">2. Cơ Sở Dữ Liệu Master (Spreadsheet QLHT)</h3>
+            <p class="text-xs text-text-secondary">Lưu trữ danh bạ Hội Thánh, Ban Ngành và điều phối toàn hệ thống.</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Google Spreadsheet ID hoặc URL *</label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input id="cfg-master-sheet-id" value="124O4hYFaxmZn1hg8FyRP4fci6hw84ziTg8o3eAUwMV0" class="glass-input flex-1 rounded-xl px-4 py-2.5 text-xs font-mono" placeholder="124O4hYFaxmZn1hg8FyRP4fci6hw84ziTg8o3eAUwMV0" />
+              <button onclick="handleSaveMasterSheet()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">link</span>
+                <span>Lưu Kết Nối Sheet</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-surface-elevated/70 rounded-2xl border border-white/5 text-xs flex items-center justify-between">
+            <div>
+              <span class="text-text-secondary block">Trạng thái kết nối Master:</span>
+              <span id="cfg-master-status-name" class="font-bold text-emerald-400">QLHT</span>
+            </div>
+            <a id="cfg-master-status-link" href="https://docs.google.com/spreadsheets/d/124O4hYFaxmZn1hg8FyRP4fci6hw84ziTg8o3eAUwMV0/edit" target="_blank" class="text-emerald-400 hover:underline flex items-center gap-1 font-semibold">
+              Mở Sheet Master <span class="material-symbols-outlined text-sm">open_in_new</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ban Nganh Web App Base URL Card -->
+      <div class="glass-card rounded-3xl p-6 shadow-xl border border-pink-500/30 bg-pink-950/10 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-pink-500/20 text-secondary flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-2xl">rocket_launch</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">3. Đường Dẫn Web App Quản Lý Ban Ngành</h3>
+            <p class="text-xs text-text-secondary">Đường link triển khai (Web App URL) của dự án QuanLyBanNganh để tự động sinh link mở app cho các Ban Ngành.</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Web App Deployment URL *</label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input id="cfg-bannganh-webapp-url" value="https://script.google.com/macros/s/AKfycbx9jjjOgGQUh79YP514sDqJWgEc2Nc7GjmHvfq4lDF-C-DiaxdV64N966LLSX85AzMS/exec" class="glass-input flex-1 rounded-xl px-4 py-2.5 text-xs font-mono" placeholder="https://script.google.com/macros/s/AKfy.../exec" />
+              <button onclick="handleSaveBanNganhWebAppUrl()" class="px-5 py-2.5 rounded-xl bg-secondary-container hover:bg-pink-700 text-white text-xs font-bold transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">sync</span>
+                <span>Lưu &amp; Đồng Bộ Link</span>
+              </button>
+            </div>
+          </div>
+          <p class="text-[11px] text-text-secondary italic">
+            💡 Hệ thống sẽ tự động ghép tham số <code>?sheetId=...&amp;title=...</code> để khi bấm "Mở Web App" sẽ nạp đúng dữ liệu của từng ban ngành.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation Bar (Mobile) -->
+  <nav id="app-bottom-nav" class="glass-card backdrop-blur-3xl fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-md h-16 rounded-full border border-white/10 shadow-[0_8px_28px_rgba(0,0,0,0.5)] flex justify-around items-center px-3 z-40 md:hidden">
+    <button data-page="dashboard" onclick="navigateTo('dashboard')" class="bottom-nav-btn flex flex-col items-center justify-center text-primary active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+      <span class="nav-label text-[10px] mt-0.5 font-bold">Tổng quan</span>
+    </button>
+    <button data-page="churches" onclick="navigateTo('churches')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-2xl">church</span>
+      <span class="nav-label text-[10px] mt-0.5">Hội Thánh</span>
+    </button>
+    <button data-page="ministries" onclick="navigateTo('ministries')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-2xl">diversity_3</span>
+      <span class="nav-label text-[10px] mt-0.5">Ban Ngành</span>
+    </button>
+    <button data-page="settings" onclick="navigateTo('settings')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-2xl">settings</span>
+      <span class="nav-label text-[10px] mt-0.5">Cài đặt</span>
+    </button>
+  </nav>
+
+  <!-- Global Loading Indicator -->
+  <div id="global-loading-indicator" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center pointer-events-none">
+    <div class="glass-card-solid px-5 py-3 rounded-2xl flex items-center gap-3 border border-primary/30 shadow-2xl">
+      <svg class="animate-spin h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span class="text-xs font-semibold text-white">Đang xử lý...</span>
+    </div>
+  </div>
+
+  <!-- Global Toast Notifications Container -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
+
+  <!-- MODAL: THÊM / SỬA HỘI THÁNH -->
+  <div id="modal-church" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="glass-card-solid rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
+        <h3 id="modal-church-title" class="text-base font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">add_home</span>
+          Thêm Hội Thánh Mới
+        </h3>
+        <button onclick="closeModal('modal-church')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form id="form-church" onsubmit="handleSaveChurch(event)" class="p-6 space-y-4 overflow-y-auto">
+        <input type="hidden" id="church-id" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Tên Hội Thánh *</label>
+            <input id="church-ten" required class="glass-input w-full rounded-xl px-4 py-2.5 text-sm font-semibold" placeholder="VD: Hội Thánh Tin Lành Tân Minh" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Mã Hội Thánh</label>
+            <input id="church-ma" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-mono uppercase" placeholder="Tự sinh nếu để trống (VD: HT_TML)" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Mục Sư / Quản Nhiệm</label>
+            <input id="church-mucsu" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="VD: MS Nguyễn Văn A" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Địa Chỉ</label>
+            <input id="church-diachi" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="Số nhà, đường, thôn..." />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Quận / Huyện</label>
+            <input id="church-quanhuyen" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="VD: Hàm Tân" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Tỉnh / Thành Phố</label>
+            <input id="church-tinhthanh" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="VD: Bình Thuận" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Số Điện Thoại</label>
+            <input id="church-sdt" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="0901234567" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Email</label>
+            <input id="church-email" type="email" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="httl.tanminh@gmail.com" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Ngày Thành Lập</label>
+            <input id="church-ngaythanhlap" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="DD/MM/YYYY" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Trạng Thái</label>
+            <select id="church-trangthai" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs">
+              <option value="active">Đang sinh hoạt (Active)</option>
+              <option value="inactive">Tạm ngưng</option>
+            </select>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Ghi Chú</label>
+            <textarea id="church-ghichu" rows="2" class="glass-input w-full rounded-xl px-4 py-2 text-xs" placeholder="Ghi chú thêm về Hội Thánh..."></textarea>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-church')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5 transition-colors">Hủy</button>
+          <button type="submit" class="px-6 py-2.5 rounded-full bg-primary-container hover:bg-accent-hover text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Hội Thánh</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: THÊM / SỬA BAN NGÀNH -->
+  <div id="modal-ministry" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="glass-card-solid rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
+        <h3 id="modal-min-title" class="text-base font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-secondary">groups</span>
+          Thêm Ban Ngành Mới
+        </h3>
+        <button onclick="closeModal('modal-ministry')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form id="form-ministry" onsubmit="handleSaveMinistry(event)" class="p-6 space-y-4 overflow-y-auto">
+        <input type="hidden" id="min-id" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Thuộc Hội Thánh *</label>
+            <select id="min-hoithanh-id" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold"></select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Tên Ban Ngành *</label>
+            <input id="min-ten" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold" placeholder="VD: Ban Thanh Tráng" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Loại Ban Ngành *</label>
+            <select id="min-loai" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold">
+              <option value="THANH_TRANG">Ban Thanh Tráng</option>
+              <option value="THANH_NIEN">Ban Thanh Niên</option>
+              <option value="THIEU_NHI">Ban Thiếu Nhi</option>
+              <option value="PHU_NU">Ban Phụ Nữ</option>
+              <option value="NAM_GIOI">Ban Nam Giới</option>
+              <option value="LAO_NIEN">Ban Lão Niên</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Trưởng Ban</label>
+            <input id="min-truongban" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="Họ và tên Trưởng ban" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Thư Ký / Thủ Quỹ</label>
+            <input id="min-thuky" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="Họ và tên Thư ký" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Số Điện Thoại Liên Hệ</label>
+            <input id="min-sdt" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="0987654321" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Lịch Sinh Hoạt &amp; Ghi Chú</label>
+            <textarea id="min-ghichu" rows="2" class="glass-input w-full rounded-xl px-4 py-2 text-xs" placeholder="VD: Sinh hoạt vào 16h00 chiều Chúa Nhật..."></textarea>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-ministry')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5 transition-colors">Hủy</button>
+          <button type="submit" class="px-6 py-2.5 rounded-full bg-secondary-container hover:bg-pink-700 text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Ban Ngành</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: GÁN GOOGLE SHEET ID CÓ SẴN -->
+  <div id="modal-link-sheet" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="glass-card-solid rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col">
+      <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-emerald-400">link</span>
+          Cập Nhật Google Sheet Cho Ban Ngành
+        </h3>
+        <button onclick="closeModal('modal-link-sheet')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form id="form-link-sheet" onsubmit="handleSaveLinkedSheet(event)" class="p-6 space-y-4">
+        <input type="hidden" id="link-min-id" />
+        <div>
+          <span class="text-xs text-text-secondary block">Ban ngành áp dụng:</span>
+          <span id="link-min-name" class="text-sm font-bold text-white block mt-0.5">...</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-text-secondary mb-1">Google Spreadsheet ID hoặc URL *</label>
+          <input id="link-sheet-id" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-mono" placeholder="Dán ID hoặc link Sheet vào đây" />
+        </div>
+
+        <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-link-sheet')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5 transition-colors">Hủy</button>
+          <button type="submit" class="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Kết Nối</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <?!= include('JavaScript'); ?>
+</body>
+</html>
