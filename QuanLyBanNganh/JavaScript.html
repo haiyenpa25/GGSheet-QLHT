@@ -974,7 +974,7 @@
               </div>
             </div>
 
-            <!-- Quick Action Buttons Toolbar -->
+            
             <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-1.5">
               ${phoneActionsHtml}
               <button onclick="openQuickVisitModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-pink-500/20 text-pink-400 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all" title="Tạo phiếu thăm viếng">
@@ -1132,7 +1132,7 @@
     if (!container) return;
 
     container.innerHTML = `
-      <!-- Top Hero Card -->
+      
       <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-5 rounded-2xl bg-surface-elevated border border-white/10">
         <div class="w-16 h-16 rounded-3xl ${isFemale ? 'bg-pink-500/20 text-pink-400 border-pink-500/40' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'} border-2 flex items-center justify-center font-bold text-2xl shrink-0 shadow-lg">
           <span class="material-symbols-outlined text-3xl">${isFemale ? 'face_3' : 'person'}</span>
@@ -1152,7 +1152,7 @@
           ${address ? `<p class="text-xs text-text-secondary truncate"><span class="material-symbols-outlined text-sm inline-block align-middle">location_on</span> ${address}</p>` : ''}
         </div>
 
-        <!-- Quick Contact Buttons -->
+        
         <div class="flex sm:flex-col gap-2 shrink-0">
           ${cleanPhone ? `
             <a href="tel:${cleanPhone}" class="px-3.5 py-2 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-all">
@@ -1167,7 +1167,7 @@
         </div>
       </div>
 
-      <!-- Spiritual KPI Dashboard Strip -->
+      
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 text-center space-y-1">
           <span class="text-[11px] font-bold text-text-secondary uppercase">Đi Nhóm Chuyên Cần</span>
@@ -1188,7 +1188,7 @@
         </div>
       </div>
 
-      <!-- Visitation History -->
+      
       <div class="space-y-2">
         <div class="flex justify-between items-center">
           <h4 class="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
@@ -1216,7 +1216,7 @@
         </div>
       </div>
 
-      <!-- Bottom Actions -->
+      
       <div class="pt-3 border-t border-white/10 flex justify-end gap-2">
         <button onclick="closeModal('modal-member-profile'); openEditMemberModal('${m.id}')" class="px-4 py-2 rounded-xl glass-card hover:bg-white/10 text-emerald-400 text-xs font-bold flex items-center gap-1">
           <span class="material-symbols-outlined text-sm">edit</span>
@@ -2109,9 +2109,9 @@
             </div>
           </div>
 
-          <!-- Controls: Có mặt, Thuộc câu gốc, Số câu KT đáp, Ghi chú -->
+          
           <div class="flex items-center gap-3.5 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
-            <!-- Có Mặt Toggle -->
+            
             <label class="flex items-center gap-2 cursor-pointer select-none">
               <span class="text-xs font-semibold ${att.coMat ? 'text-emerald-400 font-bold' : 'text-text-secondary'}">Có mặt</span>
               <div class="switch-toggle">
@@ -2120,7 +2120,7 @@
               </div>
             </label>
 
-            <!-- Thuộc Câu Gốc Toggle -->
+            
             <label class="flex items-center gap-2 cursor-pointer select-none">
               <span class="text-xs font-semibold ${att.thuocCauGoc ? 'text-sky-400 font-bold' : 'text-text-secondary'}">Thuộc câu gốc</span>
               <div class="switch-toggle">
@@ -2129,7 +2129,7 @@
               </div>
             </label>
 
-            <!-- Số Câu KT Đáp (Điền số) -->
+            
             <div class="flex items-center gap-1.5 bg-surface-elevated/90 px-2 py-1 rounded-xl border border-white/10" title="Số câu Kinh Thánh đáp trong giờ đố KT">
               <span class="text-[11px] font-bold text-amber-400 flex items-center gap-0.5">
                 <span class="material-symbols-outlined text-[13px]">help</span>
@@ -2145,7 +2145,7 @@
               />
             </div>
 
-            <!-- Ghi Chú Input -->
+            
             <input
               type="text"
               placeholder="Ghi chú..."
@@ -2371,7 +2371,7 @@
 
     container.innerHTML = `
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <!-- Box 1: Bảng Vàng Chuyên Cần -->
+        
         <div class="glass-card rounded-3xl p-5 border border-emerald-500/30 bg-emerald-950/15 space-y-3 shadow-lg">
           <div class="flex items-center gap-2 pb-2 border-b border-white/10">
             <span class="material-symbols-outlined text-xl text-emerald-400">workspace_premium</span>
@@ -2400,7 +2400,7 @@
           </div>
         </div>
 
-        <!-- Box 2: Vua Đố Kinh Thánh -->
+        
         <div class="glass-card rounded-3xl p-5 border border-amber-500/30 bg-amber-950/15 space-y-3 shadow-lg">
           <div class="flex items-center gap-2 pb-2 border-b border-white/10">
             <span class="material-symbols-outlined text-xl text-amber-400">military_tech</span>
@@ -2428,7 +2428,7 @@
           </div>
         </div>
 
-        <!-- Box 3: Thi Đua Tổ Nhóm -->
+        
         <div class="glass-card rounded-3xl p-5 border border-sky-500/30 bg-sky-950/15 space-y-3 shadow-lg">
           <div class="flex items-center gap-2 pb-2 border-b border-white/10">
             <span class="material-symbols-outlined text-xl text-sky-400">groups_3</span>
@@ -3374,7 +3374,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
 
     return `
       <div style="font-family: 'Times New Roman', Times, serif; color: #0f172a; background: #ffffff; padding: 10px; box-sizing: border-box;">
-        <!-- Header Giáo Hội -->
+        
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px;">
           <div>
             <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #0f172a;">${opts.churchName}</div>
@@ -3386,7 +3386,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
           </div>
         </div>
 
-        <!-- Khung Chủ Đề & Lời Chúa -->
+        
         ${opts.showTheme ? `
           <div style="background: #f8fafc; border: 1.5px solid #334155; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; text-align: center;">
             <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase; color: #0f172a;">
@@ -3398,7 +3398,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
           </div>
         ` : ''}
 
-        <!-- Bảng Phân Công Lịch Sinh Hoạt -->
+        
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 8.5pt;">
           <thead>
             <tr style="background-color: #e2e8f0; color: #0f172a;">
@@ -3418,7 +3418,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
           </tbody>
         </table>
 
-        <!-- Chân Trang & Ký Tên -->
+        
         ${opts.showSignatures ? `
           <div style="page-break-inside: avoid; margin-top: 15px; padding-top: 8px;">
             <div style="text-align: center; font-style: italic; font-size: 9pt; color: #475569; margin-bottom: 15px;">
@@ -3615,7 +3615,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
               </div>
             </div>
 
-            <!-- Content & Result -->
+            
             <div class="p-3 bg-surface-elevated/70 rounded-2xl border border-white/5 text-xs text-text-secondary space-y-2 mt-3">
               <div>
                 <span class="text-text-secondary/70 font-semibold block text-[10px] uppercase">Nhu Cầu Cầu Nguyện:</span>
@@ -3634,7 +3634,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
             </div>
           </div>
 
-          <!-- Bottom Actions: Quick Status Switch & Contacts -->
+          
           <div class="pt-2 border-t border-white/10 flex items-center justify-between gap-1.5">
             <select onchange="handleQuickUpdateVisStatus('${v.id}', this.value)" class="glass-input rounded-xl px-2 py-1 text-[11px] font-bold text-emerald-300 flex-1">
               <option value="CHUA_XU_LY" ${status === 'CHUA_XU_LY' ? 'selected' : ''}>🔴 Chưa Xử Lý</option>
@@ -3978,7 +3978,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
     }
 
     container.innerHTML = `
-      <!-- Section 1: Cảnh Báo Vắng -->
+      
       <div class="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 space-y-3">
         <div class="flex justify-between items-center">
           <h4 class="text-xs font-bold text-amber-300 uppercase flex items-center gap-1.5">
@@ -3990,7 +3990,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
         ${section1Html}
       </div>
 
-      <!-- Section 2: Sinh Nhật Trong Tháng -->
+      
       <div class="p-4 rounded-2xl bg-pink-950/20 border border-pink-500/30 space-y-3">
         <div class="flex justify-between items-center">
           <h4 class="text-xs font-bold text-pink-300 uppercase flex items-center gap-1.5">
@@ -4001,10 +4001,10 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
         ${section2Html}
       </div>
 
-      <!-- Section 3: Phân Công Chúa Nhật Gần Nhất -->
+      
       ${section3Html}
 
-      <!-- Section 4: Urgent Care Cases -->
+      
       ${section4Html}
     `;
 
