@@ -3,7 +3,7 @@
  * Google Apps Script Backend (Batch-Optimized & Multi-tenant Ready)
  */
 
-const DEFAULT_SPREADSHEET_ID = '1qI_qFmXjbnnw21qPdxeWSUpBH9itFp6TznpAKMZZwME';
+const DEFAULT_SPREADSHEET_ID = '13oCKGzsOyy3x9VrsI-NNxFaXBTpdOvveUoTiWegcEZw';
 
 function testAuth() {
   Logger.log('Đang kiểm tra quyền truy cập Sheet...');
