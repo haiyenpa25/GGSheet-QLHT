@@ -14,6 +14,7 @@ const DEFAULT_BAN_NGANH_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycby
 const SHEET_NAMES = {
   HOI_THANH: 'HoiThanh',
   BAN_NGANH: 'BanNganh',
+  BAN_NGANH_STATS: 'BanNganhStats',
   CAU_HINH: 'CauHinh'
 };
 
@@ -25,6 +26,11 @@ const SCHEMAS = {
   [SHEET_NAMES.BAN_NGANH]: [
     'id', 'hoiThanhId', 'maBN', 'tenBN', 'loaiBN', 'truongBan', 'thuky',
     'sdtLienHe', 'spreadsheetId', 'spreadsheetUrl', 'webAppUrl', 'trangThai', 'ghiChu', 'ngayTao'
+  ],
+  [SHEET_NAMES.BAN_NGANH_STATS]: [
+    'ministryId', 'churchId', 'totalMembers', 'activeMembers', 'attendanceRate4Weeks',
+    'absentWarnings', 'activeCareCases', 'monthIncome', 'monthExpense', 'balance',
+    'upcomingBirthdays', 'lastUpdatedAt'
   ],
   [SHEET_NAMES.CAU_HINH]: [
     'key', 'value', 'moTa', 'ngayCapNhat'

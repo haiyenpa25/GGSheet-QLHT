@@ -1236,3 +1236,111 @@ function apiBatchAssignGroup(memberIds, toId, customSheetId) {
     try { lock.releaseLock(); } catch(e) {}
   }
 }
+
+function apiBulkImportMembers(payload, customSheetId) {
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(5000); } catch(e) {}
+  try {
+    const list = payload.members || payload.data || (Array.isArray(payload) ? payload : []);
+    if (!Array.isArray(list) || list.length === 0) {
+      throw new Error('Danh sách nhập vào trống');
+    }
+
+    const ss = getSpreadsheet(customSheetId);
+    let sheet = ss.getSheetByName(SHEET_NAMES.THANH_VIEN);
+    if (!sheet) {
+      setupDatabase(customSheetId);
+      sheet = ss.getSheetByName(SHEET_NAMES.THANH_VIEN);
+    }
+
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+
+    // Map existing members by phone or name to avoid duplication
+    let existingData = [];
+    if (lastRow > 1) {
+      existingData = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    }
+
+    const sdtIdx = headers.map(normalizeHeaderKey).indexOf('sdt');
+    const hoTenIdx = headers.map(normalizeHeaderKey).indexOf('hoten');
+    const existingPhones = new Set();
+    const existingNames = new Set();
+
+    existingData.forEach(r => {
+      if (sdtIdx !== -1 && r[sdtIdx]) existingPhones.add(String(r[sdtIdx]).trim());
+      if (hoTenIdx !== -1 && r[hoTenIdx]) existingNames.add(String(r[hoTenIdx]).trim().toLowerCase());
+    });
+
+    const rowsToAppend = [];
+    let addedCount = 0;
+    let skippedCount = 0;
+    const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm:ss');
+
+    list.forEach(m => {
+      const name = (m.hoTen || '').trim();
+      const phone = (m.sdt || '').trim();
+
+      if (!name) {
+        skippedCount++;
+        return;
+      }
+
+      // Check duplicates
+      if (phone && existingPhones.has(phone)) {
+        skippedCount++;
+        return;
+      }
+      if (!phone && existingNames.has(name.toLowerCase())) {
+        skippedCount++;
+        return;
+      }
+
+      const rec = {
+        id: 'id_' + Utilities.getUuid().substring(0, 8),
+        maTV: m.maTV || ('TV_' + Utilities.getUuid().substring(0, 5).toUpperCase()),
+        hoTen: name,
+        sdt: phone,
+        ngaySinh: m.ngaySinh || '',
+        gioiTinh: m.gioiTinh || 'Nam',
+        toId: m.toId || m.to || '',
+        chucVu: m.chucVu || 'Ban viên',
+        diaChi: m.diaChi || '',
+        trangThai: 'active',
+        ghiChu: m.ghiChu || '',
+        ngayTao: nowStr
+      };
+
+      const row = headers.map(h => {
+        const norm = normalizeHeaderKey(h);
+        if (rec[h] !== undefined) return rec[h];
+        if (norm && rec[norm] !== undefined) return rec[norm];
+        return '';
+      });
+
+      rowsToAppend.push(row);
+      if (phone) existingPhones.add(phone);
+      existingNames.add(name.toLowerCase());
+      addedCount++;
+    });
+
+    if (rowsToAppend.length > 0) {
+      // 1 LẦN BATCH WRITE DUY NHẤT CHO TOÀN BỘ DANH SÁCH NHẬP
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAppend.length, headers.length).setValues(rowsToAppend);
+    }
+
+    return {
+      success: true,
+      added: addedCount,
+      skipped: skippedCount,
+      total: list.length,
+      message: `Đã nhập thành công ${addedCount} ban viên mới${skippedCount > 0 ? ` (bỏ qua ${skippedCount} bản ghi trùng/trống)` : ''}!`
+    };
+  } catch (err) {
+    return { success: false, message: err.message || String(err) };
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
+}
+
