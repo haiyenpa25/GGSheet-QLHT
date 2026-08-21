@@ -162,6 +162,12 @@
 
     <!-- Right Controls -->
     <div class="flex items-center gap-2">
+      <!-- Online / Offline Network Status Badge -->
+      <div id="network-status-badge" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="network-status-text">Trực tuyến</span>
+      </div>
+
       <!-- User Profile Header Widget -->
       <div id="user-profile-header" class="relative hidden items-center gap-2 pl-2 border-l border-white/10">
         <button onclick="toggleUserDropdown()" class="flex items-center gap-2 p-1.5 rounded-full hover:bg-white/5 transition-colors focus:outline-none">
@@ -821,6 +827,59 @@
           <button type="submit" class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-container text-white text-xs font-bold shadow-md">Cập Nhật</button>
         </div>
       </form>
+    </div>
+  <!-- MODAL: XEM & IN MÃ QR CODE BAN NGÀNH -->
+  <div id="modal-ministry-qr" class="app-modal fixed inset-0 z-[100] hidden items-center justify-center bg-black/80 backdrop-blur-xl p-4 animate-fade-in">
+    <div class="glass-card-solid border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 text-center relative">
+      <div class="flex justify-between items-center border-b border-white/10 pb-3">
+        <div class="flex items-center gap-2 text-left">
+          <span class="material-symbols-outlined text-purple-400 text-2xl">qr_code_2</span>
+          <div>
+            <h3 class="text-base font-bold text-white" id="qr-modal-title">Mã QR Web App</h3>
+            <p class="text-[11px] text-text-secondary" id="qr-modal-subtitle">Quét để mở ứng dụng trên điện thoại</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-ministry-qr')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <!-- QR Code Image Card -->
+      <div class="p-6 bg-white rounded-3xl shadow-2xl inline-block mx-auto border-4 border-purple-500/30" id="qr-printable-area">
+        <img id="qr-code-img" src="" alt="QR Code" class="w-56 h-56 mx-auto object-contain rounded-xl" />
+        <div class="mt-3 text-slate-900 font-bold text-sm" id="qr-modal-footer-name">Ban Thanh Tráng</div>
+        <div class="text-[10px] text-slate-500 font-mono mt-0.5" id="qr-modal-footer-url">/ht-thanh-my-loi/thanh-trang</div>
+      </div>
+
+      <div class="flex items-center justify-center gap-2 pt-2">
+        <button type="button" onclick="downloadQrCode()" class="flex-1 py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all">
+          <span class="material-symbols-outlined text-base">download</span>
+          <span>Tải Ảnh QR</span>
+        </button>
+        <button type="button" onclick="printQrCode()" class="py-2.5 px-4 rounded-xl glass-card hover:bg-white/10 text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+          <span class="material-symbols-outlined text-base">print</span>
+          <span>In Ra Giấy</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PWA INSTALL PROMPT BANNER (1-CHẠM CÀI ĐẶT APP DI ĐỘNG) -->
+  <div id="pwa-install-banner" class="hidden fixed bottom-20 md:bottom-6 left-4 right-4 max-w-md mx-auto z-50 animate-fade-in">
+    <div class="glass-card-solid rounded-2xl p-3 sm:p-3.5 border border-primary/40 shadow-2xl bg-slate-950/95 backdrop-blur-2xl flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-container to-secondary text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-md">
+          <span class="material-symbols-outlined">install_mobile</span>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs font-bold text-white truncate">Cài Đặt App Lên Màn Hình Chính</div>
+          <div class="text-[10px] text-text-secondary truncate">Mở siêu tốc 0.01s như app điện thoại</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button onclick="triggerPwaInstall()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-primary-container to-secondary text-white text-xs font-bold shadow-md hover:opacity-95 active:scale-95 transition-all">
+          Cài Đặt
+        </button>
+        <button onclick="dismissPwaBanner()" class="p-1.5 text-text-secondary hover:text-white rounded-lg"><span class="material-symbols-outlined text-base">close</span></button>
+      </div>
     </div>
   </div>
 

@@ -1067,6 +1067,147 @@
   }
 
   // =========================================================================
+  // MINISTRY QR CODE GENERATOR & PRINT / DOWNLOAD
+  // =========================================================================
+  let currentQrMinistry = null;
+
+  function openMinistryQrModal(minId) {
+    const m = state.ministries.find(item => String(item.id) === String(minId));
+    if (!m) return;
+    currentQrMinistry = m;
+
+    const webUrl = getMinistryWebAppUrl(m);
+    const modalTitle = document.getElementById('qr-modal-title');
+    const modalSubtitle = document.getElementById('qr-modal-subtitle');
+    const footerName = document.getElementById('qr-modal-footer-name');
+    const footerUrl = document.getElementById('qr-modal-footer-url');
+    const img = document.getElementById('qr-code-img');
+
+    if (modalTitle) modalTitle.textContent = `Mã QR: ${m.tenBN}`;
+    if (modalSubtitle) modalSubtitle.textContent = m.tenHoiThanh || 'Hội Thánh Tin Lành';
+    if (footerName) footerName.textContent = m.tenBN;
+    if (footerUrl) footerUrl.textContent = webUrl;
+
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=350x350&margin=10&data=${encodeURIComponent(webUrl)}`;
+    if (img) img.src = qrApiUrl;
+
+    openModal('modal-ministry-qr');
+  }
+
+  function downloadQrCode() {
+    if (!currentQrMinistry) return;
+    const img = document.getElementById('qr-code-img');
+    if (!img || !img.src) return;
+
+    const a = document.createElement('a');
+    a.href = img.src;
+    a.download = `QR_${currentQrMinistry.tenBN || 'BanNganh'}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('Đã bắt đầu tải ảnh QR Code!', 'success');
+  }
+
+  function printQrCode() {
+    if (!currentQrMinistry) return;
+    const webUrl = getMinistryWebAppUrl(currentQrMinistry);
+    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=15&data=${encodeURIComponent(webUrl)}`;
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      showToast('Vui lòng cho phép mở cửa sổ popup để in!', 'warning');
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Mã QR - ${currentQrMinistry.tenBN}</title>
+        <style>
+          body { font-family: 'Times New Roman', serif; text-align: center; padding: 40px; }
+          .card { max-width: 450px; margin: 0 auto; border: 2px solid #000; padding: 30px; border-radius: 20px; }
+          h2 { margin: 0 0 5px 0; font-size: 24px; text-transform: uppercase; }
+          h3 { margin: 0 0 20px 0; font-size: 18px; color: #444; }
+          img { width: 280px; height: 280px; margin: 15px auto; }
+          p { font-size: 14px; margin: 5px 0; font-family: sans-serif; }
+          .url { font-family: monospace; font-size: 13px; font-weight: bold; color: #0066cc; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2>HỘI THÁNH TIN LÀNH</h2>
+          <h3>${currentQrMinistry.tenHoiThanh || ''} &bull; ${currentQrMinistry.tenBN}</h3>
+          <img src="${qrApiUrl}" alt="QR" />
+          <p><strong>QUÉT MÃ ĐỂ TRUY CẬP ỨNG DỤNG BAN NGÀNH</strong></p>
+          <p class="url">${webUrl}</p>
+        </div>
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
+  }
+
+  // =========================================================================
+  // PWA INSTALL BANNER & NETWORK STATUS
+  // =========================================================================
+  let deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner && !sessionStorage.getItem('pwa_dismissed')) {
+      banner.classList.remove('hidden');
+    }
+  });
+
+  async function triggerPwaInstall() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        showToast('Cảm ơn bạn đã cài đặt ứng dụng!', 'success');
+      }
+      deferredPrompt = null;
+      dismissPwaBanner();
+    } else {
+      showToast('Trên iPhone: Bấm nút Chia sẻ (Share) ➔ Chọn "Thêm vào MH chính"', 'info');
+    }
+  }
+
+  function dismissPwaBanner() {
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.classList.add('hidden');
+    sessionStorage.setItem('pwa_dismissed', 'true');
+  }
+
+  function updateNetworkStatus() {
+    const badge = document.getElementById('network-status-badge');
+    const text = document.getElementById('network-status-text');
+    if (!badge || !text) return;
+
+    if (navigator.onLine) {
+      badge.className = 'hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+      text.textContent = 'Trực tuyến';
+    } else {
+      badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30';
+      text.textContent = 'Ngoại tuyến (Cache)';
+      showToast('Đang chạy ở chế độ ngoại tuyến (dữ liệu từ bộ nhớ đệm)!', 'warning');
+    }
+  }
+
+  window.addEventListener('online', updateNetworkStatus);
+  window.addEventListener('offline', updateNetworkStatus);
+  updateNetworkStatus();
+
+  // =========================================================================
   // BOOTSTRAP RUNNER
   // =========================================================================
 

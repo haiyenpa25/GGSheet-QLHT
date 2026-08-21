@@ -1002,7 +1002,7 @@
       const role = getMemberRole(m);
 
       const zaloBtnHtml = cleanPhone
-        ? '<a href="https://zalo.me/' + cleanPhone + '" target="_blank" class="px-2.5 py-1.5 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 text-[11px] font-bold flex items-center gap-1 transition-all" title="Gửi lời chúc mừng qua Zalo"><span class="material-symbols-outlined text-sm">cake</span><span>Chúc Zalo</span></a>'
+        ? `<button onclick="sendBirthdayZalo('${name.replace(/'/g, "\\'")}', '${cleanPhone}')" class="px-2.5 py-1.5 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 shadow" title="Sao chép lời chúc và mở Zalo"><span class="material-symbols-outlined text-sm">cake</span><span>Chúc Zalo</span></button>`
         : '<span class="text-[10px] text-text-secondary italic">Chưa có SĐT</span>';
 
       return `
@@ -4616,6 +4616,337 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
     }
   }
 
+  // =========================================================================
+  // 1. ZALO INTERACTION (1-TAP BIRTHDAY GREETING & DUTY SCHEDULE REMINDER)
+  // =========================================================================
+  function sendBirthdayZalo(name, phone) {
+    const cleanPhone = cleanPhoneNumber(phone);
+    const greeting = `🎉 Chúc mừng sinh nhật ${name}! Nguyện xin Ba Ngôi Đức Chúa Trời ban phước dồi dào trên tuổi mới của ${name}, tràn đầy sức mới, ơn lành, bình an và niềm vui trong Chúa! (Thi Thiên 20:4) 🎂`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(greeting).then(() => {
+        showToast('Đã sao chép lời chúc sinh nhật! Đang mở Zalo...', 'success');
+      }).catch(() => {});
+    }
+
+    if (cleanPhone) {
+      window.open(`https://zalo.me/${cleanPhone}`, '_blank');
+    } else {
+      showToast('Đã sao chép lời chúc vào bộ nhớ tạm (Ban viên chưa có SĐT)!', 'info');
+    }
+  }
+
+  function sendDutyScheduleZalo() {
+    const schedules = state.schedules || [];
+    if (schedules.length === 0) {
+      showToast('Chưa có lịch sinh hoạt nào!', 'warning');
+      return;
+    }
+
+    // Find closest upcoming Sunday
+    const now = new Date();
+    const currentIso = now.toISOString().split('T')[0];
+    let target = schedules.find(s => s.ngayNhom >= currentIso) || schedules[schedules.length - 1];
+
+    if (!target) {
+      showToast('Không tìm thấy lịch sinh hoạt tuần này!', 'warning');
+      return;
+    }
+
+    const banTitle = state.banNganhTitle || 'Ban Thanh Tráng';
+    const message = `⛪ LỊCH PHỤC VỤ CHÚA NHẬT (${formatDateVN(target.ngayNhom)}) - ${banTitle.toUpperCase()}\n` +
+      `📖 Chủ đề: ${target.chuDe || 'Thờ phượng Chúa'}\n` +
+      `✨ Câu gốc: ${target.cauGoc || ''}\n` +
+      `-------------------------\n` +
+      `🎤 Hướng dẫn CT: ${target.huongDan || 'Ban Điều Hành'}\n` +
+      `👥 Tổ phụ trách: ${target.toPhuTrach || 'Theo phân công'}\n` +
+      `📖 Giảng luận / Chia sẻ: ${target.dienGia || 'Quản Nhiệm / Ban Viên'}\n` +
+      `❓ Đố Kinh Thánh: ${target.doKinhThanh || 'Theo phân công'}\n` +
+      `🎹 Đàn / Âm nhạc: ${target.dan || 'Theo phân công'}\n` +
+      `🎛️ Chiếu vi tính: ${target.chieu || 'Theo phân công'}\n` +
+      `🚪 Tiếp tân: ${target.tiepTan || 'Theo phân công'}\n` +
+      `-------------------------\n` +
+      `🙏 Kính xin quý ban viên có tên trong ban phục vụ sắp xếp thời gian có mặt trước 15 phút để cầu nguyện và chuẩn bị chu đáo!`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(message).then(() => {
+        showToast('Đã sao chép tin nhắn nhắc lịch phân công! Hãy dán vào nhóm Zalo.', 'success');
+      }).catch(() => {});
+    }
+
+    window.open('https://chat.zalo.me/', '_blank');
+  }
+
+  // =========================================================================
+  // 2. EXPORT MEMBERS TO EXCEL (.CSV UTF-8 BOM)
+  // =========================================================================
+  function exportMembersToExcel() {
+    const list = getFilteredMembers();
+    if (!list || list.length === 0) {
+      showToast('Không có dữ liệu ban viên để xuất!', 'warning');
+      return;
+    }
+
+    const headers = ['Mã BV', 'Họ và Tên', 'Giới Tính', 'Ngày Sinh', 'Số Điện Thoại', 'Email', 'Địa Chỉ', 'Tổ Nhóm', 'Chức Vụ', 'Tình Trạng Hôn Nhân', 'Trạng Thái'];
+    
+    const rows = list.map(m => [
+      `"${(m.maThanhVien || m.maBV || m.id || '').replace(/"/g, '""')}"`,
+      `"${getMemberName(m).replace(/"/g, '""')}"`,
+      `"${(m.gioiTinh || '').replace(/"/g, '""')}"`,
+      `"${(m.ngaySinh || '').replace(/"/g, '""')}"`,
+      `"${(getMemberPhone(m) || '').replace(/"/g, '""')}"`,
+      `"${(m.email || '').replace(/"/g, '""')}"`,
+      `"${(m.diaChi || '').replace(/"/g, '""')}"`,
+      `"${getGroupName(m.toId).replace(/"/g, '""')}"`,
+      `"${getMemberRole(m).replace(/"/g, '""')}"`,
+      `"${(m.honNhan || '').replace(/"/g, '""')}"`,
+      `"${(m.trangThai === 'active' ? 'Đang sinh hoạt' : (m.trangThai || '')).replace(/"/g, '""')}"`
+    ]);
+
+    // UTF-8 BOM for Excel Vietnamese compatibility
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const cleanDate = new Date().toISOString().split('T')[0];
+    a.download = `DanhSachBanVien_${slugify(state.banNganhTitle || 'BanNganh')}_${cleanDate}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Đã xuất thành công ${list.length} ban viên ra file Excel (.CSV)!`, 'success');
+  }
+
+  // =========================================================================
+  // 3. FINANCE STATEMENT REPORT (MODAL & PRINT PDF/A4)
+  // =========================================================================
+  function openFinanceReportModal() {
+    const preview = document.getElementById('finance-report-preview');
+    if (!preview) return;
+
+    const funds = state.funds || [];
+    const txs = state.transactions || [];
+    const banTitle = state.banNganhTitle || 'Ban Thanh Tráng';
+
+    let totalThu = 0;
+    let totalChi = 0;
+    txs.forEach(t => {
+      const amt = Number(t.soTien) || 0;
+      if (t.loaiGiaoDich === 'THU') totalThu += amt;
+      else if (t.loaiGiaoDich === 'CHI') totalChi += amt;
+    });
+
+    const totalBalance = funds.reduce((s, f) => s + (Number(f.soDuHienTai) || 0), 0);
+
+    preview.innerHTML = `
+      <div class="p-5 bg-white/5 rounded-2xl border border-white/10 space-y-4">
+        <div class="text-center pb-3 border-b border-white/10">
+          <h4 class="text-base font-bold text-white uppercase">${banTitle.toUpperCase()}</h4>
+          <p class="text-xs text-text-secondary">Báo Cáo Tình Hình Thu - Chi & Số Dư Quỹ</p>
+          <p class="text-[11px] text-emerald-400 font-medium mt-1">Tính đến ngày: ${new Date().toLocaleDateString('vi-VN')}</p>
+        </div>
+
+        <!-- 3 Summary KPI Cards -->
+        <div class="grid grid-cols-3 gap-2.5 text-center">
+          <div class="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+            <span class="text-[10px] text-emerald-300 block font-semibold">TỔNG THU</span>
+            <span class="text-sm font-extrabold text-emerald-400">${formatVND(totalThu)}</span>
+          </div>
+          <div class="p-3 bg-rose-500/10 rounded-xl border border-rose-500/20">
+            <span class="text-[10px] text-rose-300 block font-semibold">TỔNG CHI</span>
+            <span class="text-sm font-extrabold text-rose-400">${formatVND(totalChi)}</span>
+          </div>
+          <div class="p-3 bg-sky-500/10 rounded-xl border border-sky-500/20">
+            <span class="text-[10px] text-sky-300 block font-semibold">SỐ DƯ HIỆN TẠI</span>
+            <span class="text-sm font-extrabold text-sky-300">${formatVND(totalBalance)}</span>
+          </div>
+        </div>
+
+        <!-- Funds Breakdown -->
+        <div class="space-y-2 pt-2">
+          <span class="text-[11px] font-bold text-white block uppercase">Chi Tiết Các Quỹ:</span>
+          <div class="space-y-1.5">
+            ${funds.map(f => `
+              <div class="flex justify-between items-center p-2.5 bg-surface-elevated/80 rounded-xl border border-white/5 text-xs">
+                <span class="text-white font-medium">${f.tenQuy}</span>
+                <span class="font-bold text-emerald-400 font-mono">${formatVND(f.soDuHienTai || 0)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+
+    openModal('modal-finance-report');
+  }
+
+  function printFinanceReport() {
+    const funds = state.funds || [];
+    const txs = state.transactions || [];
+    const banTitle = state.banNganhTitle || 'Ban Thanh Tráng';
+
+    let totalThu = 0;
+    let totalChi = 0;
+    txs.forEach(t => {
+      const amt = Number(t.soTien) || 0;
+      if (t.loaiGiaoDich === 'THU') totalThu += amt;
+      else if (t.loaiGiaoDich === 'CHI') totalChi += amt;
+    });
+
+    const totalBalance = funds.reduce((s, f) => s + (Number(f.soDuHienTai) || 0), 0);
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      showToast('Vui lòng cho phép mở popup để in!', 'warning');
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Báo Cáo Sổ Quỹ - ${banTitle}</title>
+        <style>
+          body { font-family: 'Times New Roman', serif; padding: 30px 40px; color: #111; line-height: 1.5; }
+          .header { text-align: center; margin-bottom: 25px; }
+          .header h2 { margin: 0; font-size: 20px; text-transform: uppercase; }
+          .header h3 { margin: 4px 0 0 0; font-size: 16px; font-weight: normal; }
+          .header p { margin: 5px 0 0 0; font-size: 13px; font-style: italic; color: #555; }
+          .summary-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          .summary-table th, .summary-table td { border: 1px solid #333; padding: 8px 12px; font-size: 13px; }
+          .summary-table th { background: #f0f0f0; text-align: left; }
+          .text-right { text-align: right; }
+          .font-bold { font-weight: bold; }
+          .signatures { margin-top: 40px; display: flex; justify-content: space-between; text-align: center; }
+          .sig-box { width: 45%; }
+          .sig-title { font-weight: bold; font-size: 13px; text-transform: uppercase; margin-bottom: 60px; }
+          @media print { body { padding: 15px; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>HỘI THÁNH TIN LÀNH</h2>
+          <h3>BÁO CÁO THU CHI &amp; TÌNH HÌNH TÀI CHÍNH ${banTitle.toUpperCase()}</h3>
+          <p>Thời điểm báo cáo: ${new Date().toLocaleDateString('vi-VN')}</p>
+        </div>
+
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Hạng Mục Báo Cáo</th>
+              <th class="text-right" style="width: 180px;">Số Tiền (VNĐ)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1. Tổng các khoản Thu trong kỳ</td>
+              <td class="text-right font-bold">${formatVND(totalThu)}</td>
+            </tr>
+            <tr>
+              <td>2. Tổng các khoản Chi trong kỳ</td>
+              <td class="text-right font-bold">${formatVND(totalChi)}</td>
+            </tr>
+            <tr style="background: #f9f9f9;">
+              <td class="font-bold">3. TỔNG SỐ DƯ QUỸ KHẢ DỤNG HIỆN TẠI</td>
+              <td class="text-right font-bold" style="font-size: 15px;">${formatVND(totalBalance)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>Chi Tiết Phân Bổ Các Quỹ:</h4>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Tên Quỹ</th>
+              <th class="text-right" style="width: 180px;">Số Dư Hiện Tại</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${funds.map(f => `
+              <tr>
+                <td>${f.tenQuy}</td>
+                <td class="text-right font-bold">${formatVND(f.soDuHienTai || 0)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="signatures">
+          <div class="sig-box">
+            <div class="sig-title">Thủ Quỹ Ban</div>
+            <div>(Ký và ghi rõ họ tên)</div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-title">Trưởng Ban Điều Hành</div>
+            <div>(Ký và ghi rõ họ tên)</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
+  }
+
+  // =========================================================================
+  // 4. PWA INSTALL BANNER & NETWORK STATUS FOR BAN NGANH
+  // =========================================================================
+  let deferredPromptBn = null;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPromptBn = e;
+    const banner = document.getElementById('pwa-install-banner-bn');
+    if (banner && !sessionStorage.getItem('pwa_bn_dismissed')) {
+      banner.classList.remove('hidden');
+    }
+  });
+
+  async function triggerPwaInstallBn() {
+    if (deferredPromptBn) {
+      deferredPromptBn.prompt();
+      const choice = await deferredPromptBn.userChoice;
+      if (choice.outcome === 'accepted') {
+        showToast('Cảm ơn bạn đã cài đặt ứng dụng Ban Ngành!', 'success');
+      }
+      deferredPromptBn = null;
+      dismissPwaBannerBn();
+    } else {
+      showToast('Trên iPhone: Bấm nút Chia sẻ (Share) ➔ Chọn "Thêm vào MH chính"', 'info');
+    }
+  }
+
+  function dismissPwaBannerBn() {
+    const banner = document.getElementById('pwa-install-banner-bn');
+    if (banner) banner.classList.add('hidden');
+    sessionStorage.setItem('pwa_bn_dismissed', 'true');
+  }
+
+  function updateNetworkStatusBn() {
+    const badge = document.getElementById('network-status-badge-bn');
+    const text = document.getElementById('network-status-text-bn');
+    if (!badge || !text) return;
+
+    if (navigator.onLine) {
+      badge.className = 'hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+      text.textContent = 'Trực tuyến';
+    } else {
+      badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30';
+      text.textContent = 'Ngoại tuyến (Cache)';
+      showToast('Đang chạy ở chế độ ngoại tuyến (dữ liệu từ bộ nhớ đệm)!', 'warning');
+    }
+  }
+
+  window.addEventListener('online', updateNetworkStatusBn);
+  window.addEventListener('offline', updateNetworkStatusBn);
+  updateNetworkStatusBn();
+
   // Explicitly expose key functions on window to ensure accessibility in all iframe contexts
   window.navigateTo = navigateTo;
   window.initApp = initApp;
@@ -4635,6 +4966,13 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
   window.handleRoleGroupFilterChange = handleRoleGroupFilterChange;
   window.fillPresetAccountBn = fillPresetAccountBn;
   window.handleAuthGateLoginBn = handleAuthGateLoginBn;
+  window.sendBirthdayZalo = sendBirthdayZalo;
+  window.sendDutyScheduleZalo = sendDutyScheduleZalo;
+  window.exportMembersToExcel = exportMembersToExcel;
+  window.openFinanceReportModal = openFinanceReportModal;
+  window.printFinanceReport = printFinanceReport;
+  window.triggerPwaInstallBn = triggerPwaInstallBn;
+  window.dismissPwaBannerBn = dismissPwaBannerBn;
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllModals();
