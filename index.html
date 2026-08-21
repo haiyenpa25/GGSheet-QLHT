@@ -2310,15 +2310,14 @@
             <p><strong>QUÉT MÃ ĐỂ TRUY CẬP ỨNG DỤNG BAN NGÀNH</strong></p>
             <p class="url">${fullUrl}</p>
           </div>
-          <script>
-            window.onload = function() {
-              window.print();
-            };
-          </script>
         </body>
         </html>
       `);
       printWin.document.close();
+      setTimeout(() => {
+        printWin.focus();
+        printWin.print();
+      }, 250);
     }
 
     // =========================================================================

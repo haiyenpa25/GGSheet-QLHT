@@ -3950,16 +3950,15 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
       </head>
       <body>
         ${htmlContent}
-        <script>
-          window.onload = function() {
-            window.print();
-          };
-        </script>
       </body>
       </html>
     `);
     printWin.document.close();
     closeModal('modal-print-schedule');
+    setTimeout(() => {
+      printWin.focus();
+      printWin.print();
+    }, 250);
   }
 
   function triggerPrintSchedule() {
@@ -4952,16 +4951,14 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
             <div>(Ký và ghi rõ họ tên)</div>
           </div>
         </div>
-
-        <script>
-          window.onload = function() {
-            window.print();
-          };
-        </script>
       </body>
       </html>
     `);
     printWin.document.close();
+    setTimeout(() => {
+      printWin.focus();
+      printWin.print();
+    }, 250);
   }
 
   // =========================================================================
@@ -5909,15 +5906,14 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
       </head>
       <body>
         ${canvas.innerHTML}
-        <script>
-          window.onload = function() {
-            window.print();
-          };
-        </script>
       </body>
       </html>
     `);
     printWin.document.close();
+    setTimeout(() => {
+      printWin.focus();
+      printWin.print();
+    }, 250);
   }
 
   function sendPastoralReportZalo() {
