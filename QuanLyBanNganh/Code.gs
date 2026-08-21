@@ -153,7 +153,8 @@ function getSpreadsheet(customSheetId) {
     try {
       return SpreadsheetApp.openById(savedId.trim());
     } catch (err) {
-      Logger.log('Lỗi mở Sheet bằng ID: ' + err.message);
+      Logger.log('Lỗi mở Sheet bằng ID (' + savedId + '): ' + err.message);
+      throw new Error(`Không thể truy cập Google Sheet [ID: ${savedId.trim()}]. Lỗi: ${err.message}. Hãy mở file Sheet trên Google Drive > Bấm "Chia sẻ" > Đổi sang "Bất kỳ ai có đường liên kết (Người chỉnh sửa)"!`);
     }
   }
   try {

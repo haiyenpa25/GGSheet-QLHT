@@ -302,20 +302,66 @@
       if (res && res.success && res.data) {
         applyData(res.data);
         saveToLocalCache(res.data);
+        hideConnectionAlert();
         renderCurrentView();
         if (showLoader) showToast('Đồng bộ dữ liệu thành công!', 'success');
       } else {
-        if (!state.members.length) {
-          showToast('Chưa kết nối dữ liệu: ' + (res.message || 'Vui lòng kiểm tra cài đặt Sheet'), 'warning');
-        }
+        const errorMsg = (res && res.message) ? res.message : 'Chưa thể kết nối tới Google Sheet';
+        console.error('apiGetInitialData Error:', errorMsg);
+        showToast('Lỗi: ' + errorMsg, 'error');
+        showConnectionAlert(errorMsg);
       }
     } catch (e) {
       console.error('refreshData Error:', e);
       if (showLoader) showToast('Lỗi nạp dữ liệu: ' + e.message, 'error');
+      showConnectionAlert(e.message);
     } finally {
       if (refreshIcon) refreshIcon.classList.remove('animate-spin');
       if (showLoader) showLoading(false);
     }
+  }
+
+  function showConnectionAlert(msg) {
+    let alertBox = document.getElementById('db-connection-alert');
+    if (!alertBox) {
+      alertBox = document.createElement('div');
+      alertBox.id = 'db-connection-alert';
+      const mainContainer = document.querySelector('main');
+      if (mainContainer) mainContainer.insertBefore(alertBox, mainContainer.firstChild);
+    }
+    if (alertBox) {
+      const sheetUrl = 'https://docs.google.com/spreadsheets/d/' + (state.activeSheetId || '1ql_qFmXjbnnw21qPdxeWSUpBH9itFp6TznpAKMZZwME') + '/edit';
+      alertBox.className = 'mb-6 p-4 sm:p-5 rounded-3xl bg-rose-950/80 border border-rose-500/50 backdrop-blur-xl shadow-2xl animate-fade-in text-white';
+      alertBox.innerHTML = `
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/30">
+              <span class="material-symbols-outlined text-xl">gpp_maybe</span>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-rose-200">Chưa tải được dữ liệu từ Google Sheet</h4>
+              <p class="text-xs text-rose-300/90 mt-0.5 leading-relaxed">${msg}</p>
+              <p class="text-[11px] text-text-secondary mt-1">ID Sheet hiện tại: <code class="px-1.5 py-0.5 bg-black/40 rounded text-rose-300 font-mono">${state.activeSheetId || 'Chưa gán'}</code></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <a href="${sheetUrl}" target="_blank" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all">
+              <span class="material-symbols-outlined text-sm">open_in_new</span>
+              <span>Mở Google Sheet</span>
+            </a>
+            <button onclick="refreshData(true)" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1 transition-all">
+              <span class="material-symbols-outlined text-sm">refresh</span>
+              <span>Thử lại</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  function hideConnectionAlert() {
+    const alertBox = document.getElementById('db-connection-alert');
+    if (alertBox) alertBox.remove();
   }
 
   function navigateTo(viewName) {
