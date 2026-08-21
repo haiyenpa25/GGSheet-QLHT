@@ -6,9 +6,10 @@
 const DEFAULT_SPREADSHEET_ID = '1qI_qFmXjbnnw21qPdxeWSUpBH9itFp6TznpAKMZZwME';
 
 function testAuth() {
-  const user = Session.getActiveUser().getEmail();
-  Logger.log('Tài khoản ủy quyền thành công: ' + user);
-  return 'SUCCESS: ' + user;
+  Logger.log('Đang kiểm tra quyền truy cập Sheet...');
+  const ss = getSpreadsheet('');
+  Logger.log('Kết nối thành công tới Google Sheet: ' + ss.getName() + ' (ID: ' + ss.getId() + ')');
+  return 'SUCCESS: ' + ss.getName();
 }
 
 const SHEET_NAMES = {
