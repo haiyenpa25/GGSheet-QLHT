@@ -45,9 +45,9 @@
 
   <script>
     window.SERVER_CONFIG = {
-      sheetId: '<?= sheetId ?>',
-      banNganhId: '<?= banNganhId ?>',
-      banNganhTitle: '<?= banNganhTitle ?>'
+      sheetId: String('<?= sheetId ?>').trim(),
+      banNganhId: String('<?= banNganhId ?>').trim() || 'id_41451e0a',
+      banNganhTitle: String('<?= banNganhTitle ?>').trim() || 'Ban Thanh Tráng'
     };
   </script>
 

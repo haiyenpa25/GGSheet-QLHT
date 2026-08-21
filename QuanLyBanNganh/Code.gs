@@ -5,6 +5,12 @@
 
 const DEFAULT_SPREADSHEET_ID = '1qI_qFmXjbnnw21qPdxeWSUpBH9itFp6TznpAKMZZwME';
 
+function testAuth() {
+  const user = Session.getActiveUser().getEmail();
+  Logger.log('Tài khoản ủy quyền thành công: ' + user);
+  return 'SUCCESS: ' + user;
+}
+
 const SHEET_NAMES = {
   USERS: 'Users',
   THANH_VIEN: 'ThanhVien',
