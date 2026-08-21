@@ -4250,14 +4250,25 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
       <span class="font-medium text-sm">${message}</span>
     `;
 
-    container.appendChild(toast);
-
-    setTimeout(() => toast.classList.remove('translate-y-4', 'opacity-0'), 10);
-    setTimeout(() => {
-      toast.classList.add('opacity-0', 'translate-x-full');
-      setTimeout(() => toast.remove(), 300);
-    }, 3500);
+    if (container && typeof container.appendChild === 'function') {
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.remove('translate-y-4', 'opacity-0'), 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
   }
+
+  // Explicitly expose key functions on window to ensure accessibility in all iframe contexts
+  window.navigateTo = navigateTo;
+  window.initApp = initApp;
+  window.openModal = openModal;
+  window.closeModal = closeModal;
+  window.closeAllModals = closeAllModals;
+  window.refreshData = refreshData;
+  window.showToast = showToast;
+  window.previewBulkMembers = previewBulkMembers;
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllModals();
