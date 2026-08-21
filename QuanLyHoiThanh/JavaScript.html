@@ -223,9 +223,12 @@
   }
 
   function getMinistryWebAppUrl(m) {
-    if (m.webAppUrl) return m.webAppUrl;
-    if (state.banNganhWebAppUrl && m.spreadsheetId) {
-      return `${state.banNganhWebAppUrl}?sheetId=${encodeURIComponent(m.spreadsheetId)}&banNganhId=${encodeURIComponent(m.id)}&title=${encodeURIComponent(m.tenBN)}`;
+    if (m.webAppUrl && !m.webAppUrl.includes('script.google.com')) return m.webAppUrl;
+    if (m.spreadsheetId) {
+      return `https://haiyenpa25.github.io/GGSheet-QLHT/ban-nganh.html?sheetId=${encodeURIComponent(m.spreadsheetId)}&banNganhId=${encodeURIComponent(m.id)}&title=${encodeURIComponent(m.tenBN || 'Ban Ngành')}`;
+    }
+    if (state.banNganhWebAppUrl) {
+      return `${state.banNganhWebAppUrl}?sheetId=${encodeURIComponent(m.spreadsheetId || '')}&banNganhId=${encodeURIComponent(m.id)}&title=${encodeURIComponent(m.tenBN || '')}`;
     }
     return '';
   }
