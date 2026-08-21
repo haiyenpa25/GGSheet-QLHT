@@ -1,11 +1,11 @@
 {
   "name": "QuanLyBanNganh",
   "displayName": "Quản Lý Ban Thanh Tráng",
-  "scriptId": "1tj_RVNqCmRSOz6SL8ygDdLBAUWRfjksiIvHzQmlCVIeIY2uUfHgWjzZq",
+  "scriptId": "1LZFcGd2kp9A_ApRM27iUsLLSb8lxRh9S9vTom1oM56EPWOSUGTJY9sbj",
   "spreadsheetId": "1qI_qFmXjbnnw21qPdxeWSUpBH9itFp6TznpAKMZZwME",
-  "deploymentId": "AKfycbyTzZ_cRWo7DUaIb65Y7ihwRYuu7KY5OMvaFfZqQRTvYt1Mjv8LZebFzPbqEkF3jglI",
-  "webAppUrl": "https://script.google.com/macros/s/AKfycbyTzZ_cRWo7DUaIb65Y7ihwRYuu7KY5OMvaFfZqQRTvYt1Mjv8LZebFzPbqEkF3jglI/exec",
+  "deploymentId": "AKfycbznG9ns1n1hqGj6gwqeuOZWZebA1tDOdpt07858Y_BKdjfVsyKMXkutud1beTtwgEZWjA",
+  "webAppUrl": "https://script.google.com/macros/s/AKfycbznG9ns1n1hqGj6gwqeuOZWZebA1tDOdpt07858Y_BKdjfVsyKMXkutud1beTtwgEZWjA/exec",
   "banNganhId": "id_41451e0a",
   "title": "Ban Thanh Tráng",
-  "version": "1.0.0"
+  "version": "2.0.0"
 }
