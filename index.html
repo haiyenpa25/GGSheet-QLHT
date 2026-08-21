@@ -804,8 +804,40 @@
       }
     }
 
+    const MASTER_CACHE_KEY = 'qlht_master_portal_cache';
+
+    function loadFromCache() {
+      try {
+        const raw = localStorage.getItem(MASTER_CACHE_KEY);
+        if (raw) {
+          const cached = JSON.parse(raw);
+          if (cached && cached.data) {
+            state.kpis = cached.data.kpis || state.kpis;
+            state.churches = cached.data.churches || [];
+            state.ministries = cached.data.ministries || [];
+            state.driveFolder = cached.data.driveFolder || state.driveFolder;
+            state.masterSpreadsheet = cached.data.masterSpreadsheet || state.masterSpreadsheet;
+            state.banNganhWebAppUrl = cached.data.banNganhWebAppUrl || state.banNganhWebAppUrl;
+            renderAll();
+            return true;
+          }
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function saveToCache(data) {
+      try {
+        localStorage.setItem(MASTER_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: data }));
+      } catch (e) {}
+    }
+
     async function initApp() {
-      showLoading(true);
+      // 1. TẢI TỨC THÌ TỪ LOCAL CACHE TRONG 0.01s
+      const hasCached = loadFromCache();
+      if (!hasCached) {
+        showLoading(true);
+      }
       try {
         const res = await runGAS('apiGetInitialData');
         if (res && res.success && res.data) {
@@ -816,13 +848,13 @@
           state.masterSpreadsheet = res.data.masterSpreadsheet || state.masterSpreadsheet;
           state.banNganhWebAppUrl = res.data.banNganhWebAppUrl || state.banNganhWebAppUrl;
           renderAll();
-        } else {
-          showToast('Vui lòng mở trực tiếp Web App trên Google Apps Script để cấp quyền!', 'warning');
+          saveToCache(res.data);
+        } else if (!hasCached) {
           renderCorsFallback();
         }
       } catch (e) {
         console.error('initApp Error:', e);
-        renderCorsFallback();
+        if (!hasCached) renderCorsFallback();
       } finally {
         showLoading(false);
       }

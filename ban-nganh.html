@@ -2399,14 +2399,15 @@
 
     initRoleAndScope();
 
-    // 1. TẢI TỪ LOCAL CACHE (NẾU CÓ DỮ LIỆU CỦA ĐÚNG SHEET ID NÀY)
-    loadFromLocalCache();
+    // 1. TẢI TỪ LOCAL CACHE (HIỂN THỊ TỨC THÌ 0.01s - KHÔNG PHẢI CHỜ ĐỢI)
+    const hasCache = loadFromLocalCache();
 
-    // Render ngay giao diện mặc định/cache để tránh màn hình --
+    // Render ngay giao diện
     renderCurrentView();
 
-    // 2. TẢI DỮ LIỆU MỚI NHẤT TỪ GOOGLE SHEET VỚI LOADING CHỈ BÁO
-    await refreshData(true);
+    // 2. NẠP NỀN DỮ LIỆU TỪ GOOGLE SHEET (NẾU ĐÃ CÓ CACHE THÌ NẠP NỀN KHÔNG CHẶN MÀN HÌNH)
+    const needFullLoader = !hasCache;
+    refreshData(needFullLoader);
   }
 
   function getCacheKey() {
@@ -2422,11 +2423,13 @@
         if (cached && cached.data) {
           applyData(cached.data);
           renderAll();
+          return true;
         }
       }
     } catch (e) {
       console.warn('Cache load error:', e);
     }
+    return false;
   }
 
   function saveToLocalCache(data) {
