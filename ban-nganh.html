@@ -2085,9 +2085,10 @@
           <div>
             <label class="block text-[11px] font-bold text-text-secondary mb-1">Hướng Giấy &amp; Khổ In *</label>
             <select id="print-cfg-orientation" onchange="updatePrintPreview()" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-bold text-white">
-              <option value="landscape" selected>Khổ A4 Ngang (Đẹp &amp; Thoáng nhất)</option>
-              <option value="portrait">Khổ A4 Dọc (Chuẩn A4)</option>
-              <option value="a5">Khổ A5 (Sổ tay nhỏ gọn)</option>
+              <option value="2_in_1_portrait" selected>📄 1 Tờ A4 Đứng In 2 Tờ (Trên &amp; Dưới - Mẫu Chuẩn)</option>
+              <option value="portrait">Khổ A4 Đứng (1 Tờ / Trang)</option>
+              <option value="landscape">Khổ A4 Ngang (1 Tờ / Trang)</option>
+              <option value="a5">Khổ A5 (1 Tờ / Trang)</option>
             </select>
           </div>
 
@@ -6076,123 +6077,121 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
     const rangeSelect = document.getElementById('print-cfg-range');
     let range = rangeSelect ? rangeSelect.value : 'current';
     if (range === 'current') {
-      range = state.selectedScheduleQuarter !== 'all' ? state.selectedScheduleQuarter : 'I';
+      range = state.selectedScheduleQuarter !== 'all' ? state.selectedScheduleQuarter : 'II';
     }
 
     const orientSelect = document.getElementById('print-cfg-orientation');
-    const orientation = orientSelect ? orientSelect.value : 'landscape';
+    const orientation = orientSelect ? orientSelect.value : '2_in_1_portrait';
 
     const churchName = (document.getElementById('print-cfg-church-name')?.value || 'HỘI THÁNH TIN LÀNH VIỆT NAM').trim();
-    const branchName = (document.getElementById('print-cfg-branch-name')?.value || `BAN ${(state.banNganhTitle || 'THANH TRÁNG').toUpperCase()} - CHI HỘI THỦ THIÊM`).trim();
-    const timeStr = (document.getElementById('print-cfg-time')?.value || '16h00 Chiều Chúa Nhật').trim();
+    const branchName = (document.getElementById('print-cfg-branch-name')?.value || `BAN ${(state.banNganhTitle || 'THANH TRÁNG').toUpperCase()}`).trim();
+    const timeStr = (document.getElementById('print-cfg-time')?.value || 'Vào lúc 16h00 chiều Chúa Nhật hàng tuần').trim();
     const showTheme = document.getElementById('print-cfg-show-theme') ? document.getElementById('print-cfg-show-theme').checked : true;
-    const showSignatures = document.getElementById('print-cfg-show-signatures') ? document.getElementById('print-cfg-show-signatures').checked : true;
+    const showSignatures = document.getElementById('print-cfg-show-signatures') ? document.getElementById('print-cfg-show-signatures').checked : false;
 
     return { range, orientation, churchName, branchName, timeStr, showTheme, showSignatures };
   }
 
-  function buildPrintScheduleHTML(opts) {
-    const year = state.selectedScheduleYear || new Date().getFullYear();
-    let sessions = [...(state.schedules || [])];
-
-    if (opts.range !== 'all') {
-      sessions = sessions.filter(s => String(s.quy || '').toUpperCase() === String(opts.range).toUpperCase());
+  function formatPrintDate(dStr) {
+    if (!dStr) return '--';
+    const parts = String(dStr).trim().split(/[\/\-\.]/);
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        // YYYY-MM-DD
+        return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}`;
+      } else {
+        // DD/MM/YYYY
+        return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}`;
+      }
     }
+    return dStr;
+  }
 
-    const activeQ = opts.range;
-    const theme = getThemeForQuarter(activeQ !== 'all' ? activeQ : 'NAM');
-
-    const titleText = opts.range === 'all' 
-      ? `LỊCH SINH HOẠT CẢ NĂM ${year}` 
-      : `LỊCH SINH HOẠT QUÝ ${opts.range} - NĂM ${year}`;
-
-    const banName = state.banNganhTitle || 'Thanh Tráng';
+  function renderQuarterFlyerSingleHTML(opts, quarterRoman, sessions, theme, is2in1 = true) {
+    const year = state.selectedScheduleYear || new Date().getFullYear();
+    const banName = (state.banNganhTitle || 'THANH TRÁNG').toUpperCase();
 
     let tableRowsHTML = '';
-    if (sessions.length === 0) {
-      tableRowsHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px; color: #64748b; font-style: italic;">Chưa có dữ liệu buổi sinh hoạt nào cho quý này.</td></tr>`;
+    if (!sessions || sessions.length === 0) {
+      tableRowsHTML = `<tr><td colspan="6" style="text-align:center; padding: 12px; color: #64748b; font-style: italic;">Chưa có dữ liệu buổi sinh hoạt nào cho quý này.</td></tr>`;
     } else {
-      tableRowsHTML = sessions.map((s, idx) => {
-        const isSpecialEvent = (s.deTai || '').toUpperCase().includes('NGHỈ') || 
-                               (s.deTai || '').toUpperCase().includes('DÃ NGOẠI') || 
-                               (s.deTai || '').toUpperCase().includes('LIÊN BAN');
+      tableRowsHTML = sessions.map(s => {
+        const dateFormatted = formatPrintDate(s.ngayNhom);
+        const deTai = (s.deTai || s.chuDe || '').trim();
+        const cauGoc = (s.cauGoc || '').trim();
+        const doKt = (s.doKT || s.doKinhThanh || s.nguoiDoKT || '').trim();
+        const toPhuTrach = (s.toPhuTrach || '').trim();
+        const phuTrach = (s.phuTrach || s.dienGia || s.huongDan || '').trim();
 
-        if (isSpecialEvent && !s.huongDan && !s.phuTrach && !s.dienGia) {
+        const isSpecialEvent = deTai.toUpperCase().includes('NGHỈ') || 
+                               deTai.toUpperCase().includes('HIẾU KÍNH') || 
+                               deTai.toUpperCase().includes('DÃ NGOẠI') || 
+                               deTai.toUpperCase().includes('LIÊN BAN');
+
+        if (isSpecialEvent && !cauGoc && !doKt && !toPhuTrach && !phuTrach) {
           return `
-            <tr class="event-row" style="background-color: #fef3c7; font-weight: bold;">
-              <td style="text-align: center; font-weight: bold; border: 1px solid #475569; padding: 5px;">${idx + 1}</td>
-              <td style="text-align: center; font-weight: bold; border: 1px solid #475569; padding: 5px;">${s.ngayNhom || '--'}</td>
-              <td colspan="7" style="text-align: center; text-transform: uppercase; letter-spacing: 1px; color: #92400e; border: 1px solid #475569; padding: 5px;">${s.deTai}</td>
+            <tr style="background-color: #f1f5f9; font-weight: bold;">
+              <td style="text-align: center; border: 1px solid #000; padding: ${is2in1 ? '2.5px 2px' : '4px 3px'}; font-size: ${is2in1 ? '8pt' : '8.5pt'}; font-weight: bold;">${dateFormatted}</td>
+              <td colspan="5" style="text-align: center; text-transform: uppercase; border: 1px solid #000; padding: ${is2in1 ? '2.5px 4px' : '4px 6px'}; color: #000; font-weight: bold; letter-spacing: 0.3px; font-size: ${is2in1 ? '8pt' : '8.5pt'};">${deTai}</td>
             </tr>
           `;
         }
 
-        const doKtFormatted = [s.doKT, s.nguoiDoKT].filter(Boolean).join(' - ') || '--';
-        const dienGiaFormatted = s.dienGia || s.phuTrach || '--';
-
-        const printRolesHtml = [
-          s.amNhac ? '🎹 ' + s.amNhac : '',
-          s.mayChieu ? '🎛️ ' + s.mayChieu : '',
-          s.tiepTan ? '🚪 ' + s.tiepTan : ''
-        ].filter(Boolean).join('<br/>');
-
         return `
-          <tr style="border-bottom: 1px solid #cbd5e1;">
-            <td style="text-align: center; font-weight: 600; border: 1px solid #475569; padding: 5px 3px;">${idx + 1}</td>
-            <td style="text-align: center; font-weight: bold; border: 1px solid #475569; padding: 5px 3px; white-space: nowrap;">${s.ngayNhom || '--'}</td>
-            <td style="font-weight: bold; color: #0f172a; border: 1px solid #475569; padding: 5px 4px;">${s.deTai || '--'}</td>
-            <td style="font-style: italic; color: #0369a1; border: 1px solid #475569; padding: 5px 4px;">${s.cauGoc || '--'}</td>
-            <td style="color: #334155; border: 1px solid #475569; padding: 5px 4px;">${doKtFormatted}</td>
-            <td style="border: 1px solid #475569; padding: 5px 4px;">${s.huongDan || '--'}</td>
-            <td style="text-align: center; font-weight: 600; color: #059669; border: 1px solid #475569; padding: 5px 4px;">${s.toPhuTrach || '--'}</td>
-            <td style="font-weight: bold; border: 1px solid #475569; padding: 5px 4px;">${dienGiaFormatted}</td>
-            <td style="font-size: 8pt; border: 1px solid #475569; padding: 5px 3px; color: #334155;">
-              ${printRolesHtml}
-            </td>
+          <tr>
+            <td style="text-align: center; border: 1px solid #000; padding: ${is2in1 ? '2.5px 2px' : '4px 3px'}; font-size: ${is2in1 ? '8pt' : '8.5pt'}; font-weight: 600; white-space: nowrap;">${dateFormatted}</td>
+            <td style="text-align: left; border: 1px solid #000; padding: ${is2in1 ? '2.5px 3px' : '4px 5px'}; font-size: ${is2in1 ? '8pt' : '8.5pt'}; font-weight: bold; text-transform: uppercase; color: #000;">${deTai || '--'}</td>
+            <td style="text-align: left; border: 1px solid #000; padding: ${is2in1 ? '2.5px 3px' : '4px 5px'}; font-size: ${is2in1 ? '8pt' : '8.5pt'};">${cauGoc || ''}</td>
+            <td style="text-align: left; border: 1px solid #000; padding: ${is2in1 ? '2.5px 3px' : '4px 5px'}; font-size: ${is2in1 ? '8pt' : '8.5pt'};">${doKt || ''}</td>
+            <td style="text-align: center; border: 1px solid #000; padding: ${is2in1 ? '2.5px 2px' : '4px 3px'}; font-size: ${is2in1 ? '8pt' : '8.5pt'};">${toPhuTrach || ''}</td>
+            <td style="text-align: center; border: 1px solid #000; padding: ${is2in1 ? '2.5px 2px' : '4px 3px'}; font-size: ${is2in1 ? '8pt' : '8.5pt'}; font-weight: 500;">${phuTrach || ''}</td>
           </tr>
         `;
       }).join('');
     }
 
+    const titleQuarter = quarterRoman === 'all' ? `NĂM ${year}` : `QUÝ ${quarterRoman} NĂM ${year}`;
+
     return `
-      <div style="font-family: 'Times New Roman', Times, serif; color: #0f172a; background: #ffffff; padding: 10px; box-sizing: border-box;">
-        
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px;">
-          <div>
-            <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #0f172a;">${opts.churchName}</div>
-            <div style="font-size: 11pt; font-weight: bold; color: #047857; margin-top: 2px;">${opts.branchName}</div>
+      <div class="program-flyer" style="font-family: 'Times New Roman', Times, serif; color: #000; background: #fff; line-height: 1.2; box-sizing: border-box; padding: ${is2in1 ? '2px 4px' : '8px 12px'};">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: ${is2in1 ? '4px' : '8px'};">
+          <div style="font-size: ${is2in1 ? '11.5pt' : '13.5pt'}; font-weight: bold; text-transform: uppercase; letter-spacing: 0.3px; color: #000; line-height: 1.2;">
+            CHƯƠNG TRÌNH THỜ PHƯỢNG CHÚA &amp; SINH HOẠT BAN ${banName}
           </div>
-          <div style="text-align: right;">
-            <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase; color: #0f172a;">${titleText}</div>
-            <div style="font-size: 9pt; font-style: italic; color: #475569; margin-top: 2px;">(${opts.timeStr})</div>
+          <div style="font-size: ${is2in1 ? '11pt' : '13pt'}; font-weight: bold; text-transform: uppercase; color: #000; margin-top: 1px;">
+            ${titleQuarter}
+          </div>
+          <div style="font-size: ${is2in1 ? '8.5pt' : '9.5pt'}; font-style: italic; color: #222; margin-top: 1px;">
+            (${opts.timeStr || 'Vào lúc 16h00 chiều Chúa Nhật hàng tuần'})
           </div>
         </div>
 
-        
+        <!-- Theme & Verse -->
         ${opts.showTheme ? `
-          <div style="background: #f8fafc; border: 1.5px solid #334155; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; text-align: center;">
-            <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase; color: #0f172a;">
-              CHỦ ĐỀ ${activeQ !== 'all' ? `QUÝ ${activeQ}` : `NĂM ${year}`}: <span style="color: #047857; font-size: 11pt;">${theme.chuDe || 'KỶ LUẬT THUỘC LINH'}</span>
+          <div style="text-align: center; margin-bottom: ${is2in1 ? '4px' : '8px'}; line-height: 1.25;">
+            <div style="font-size: ${is2in1 ? '9pt' : '10pt'};">
+              <strong>Chủ đề:</strong> <span style="text-transform: uppercase; font-weight: bold;">${theme.chuDe || 'QUYẾT TÂM'}</span>
             </div>
-            <div style="font-size: 9.5pt; font-style: italic; color: #334155; margin-top: 4px;">
-              “${theme.noiDungCauGoc || 'Hãy tập tành sự tin kính; vì sự tập tành thân thể ích lợi ít bề, còn sự tin kính ích cho mọi sự.'}” &mdash; <strong style="color: #0f172a; font-style: normal;">${theme.cauGoc || 'I Ti-mô-thê 4:7-8'}</strong>
+            <div style="font-size: ${is2in1 ? '9pt' : '10pt'}; margin-top: 1px;">
+              <strong>Câu gốc:</strong> ${theme.cauGoc || 'Giê-rê-mi 29:13'}
+            </div>
+            <div style="font-size: ${is2in1 ? '8.5pt' : '9.5pt'}; font-style: italic; color: #111; margin-top: 1px;">
+              ‘${theme.noiDungCauGoc || 'Các ngươi sẽ tìm ta, và gặp được, khi các ngươi tìm kiếm ta hết lòng.'}’
             </div>
           </div>
         ` : ''}
 
-        
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 8.5pt;">
+        <!-- Table (6 columns matching exactly user layout) -->
+        <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: ${is2in1 ? '8pt' : '8.5pt'}; color: #000; margin-bottom: ${is2in1 ? '4px' : '8px'};">
           <thead>
-            <tr style="background-color: #e2e8f0; color: #0f172a;">
-              <th style="border: 1px solid #334155; padding: 6px 2px; text-align: center; width: 3%;">STT</th>
-              <th style="border: 1px solid #334155; padding: 6px 3px; text-align: center; width: 9%;">NGÀY</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 18%;">ĐỀ TÀI</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 14%;">CÂU GỐC</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 13%;">ĐỐ KINH THÁNH</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 11%;">HƯỚNG DẪN</th>
-              <th style="border: 1px solid #334155; padding: 6px 3px; text-align: center; width: 9%;">TỔ P.TRÁCH</th>
-              <th style="border: 1px solid #334155; padding: 6px 4px; text-align: left; width: 11%;">GIẢNG LUẬN</th>
-              <th style="border: 1px solid #334155; padding: 6px 3px; text-align: left; width: 12%;">NHÂN SỰ PHỤC VỤ</th>
+            <tr style="background-color: #f1f5f9;">
+              <th style="border: 1px solid #000; padding: ${is2in1 ? '3px 2px' : '5px 3px'}; text-align: center; width: 8%; font-weight: bold;">NGÀY</th>
+              <th style="border: 1px solid #000; padding: ${is2in1 ? '3px 3px' : '5px 4px'}; text-align: center; width: 30%; font-weight: bold;">ĐỀ TÀI</th>
+              <th style="border: 1px solid #000; padding: ${is2in1 ? '3px 3px' : '5px 4px'}; text-align: center; width: 17%; font-weight: bold;">CÂU GỐC</th>
+              <th style="border: 1px solid #000; padding: ${is2in1 ? '3px 3px' : '5px 4px'}; text-align: center; width: 20%; font-weight: bold;">ĐỐ KT</th>
+              <th style="border: 1px solid #000; padding: ${is2in1 ? '3px 2px' : '5px 3px'}; text-align: center; width: 12.5%; font-weight: bold;">TỔ PHỤ TRÁCH</th>
+              <th style="border: 1px solid #000; padding: ${is2in1 ? '3px 2px' : '5px 3px'}; text-align: center; width: 12.5%; font-weight: bold;">PHỤ TRÁCH</th>
             </tr>
           </thead>
           <tbody>
@@ -6200,30 +6199,55 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
           </tbody>
         </table>
 
-        
-        ${opts.showSignatures ? `
-          <div style="page-break-inside: avoid; margin-top: 15px; padding-top: 8px;">
-            <div style="text-align: center; font-style: italic; font-size: 9pt; color: #475569; margin-bottom: 15px;">
-              “Kính chúc Quý Anh Chị Em một tuần mới tràn đầy ơn phước &amp; sự dẫn dắt của Chúa Cứu Thế Giê-xu!”
-            </div>
-
-            <div style="display: flex; justify-content: space-between; text-align: center; padding: 0 40px; font-size: 9.5pt;">
-              <div>
-                <div style="font-weight: bold; text-transform: uppercase;">TRƯỞNG BAN ${banName.toUpperCase()}</div>
-                <div style="font-size: 8pt; color: #64748b; font-style: italic; margin-top: 2px;">(Ký &amp; ghi rõ họ tên)</div>
-                <div style="height: 55px;"></div>
-              </div>
-
-              <div>
-                <div style="font-weight: bold; text-transform: uppercase;">QUẢN NHIỆM HỘI THÁNH</div>
-                <div style="font-size: 8pt; color: #64748b; font-style: italic; margin-top: 2px;">(Duyệt &amp; ký tên)</div>
-                <div style="height: 55px;"></div>
-              </div>
-            </div>
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: ${is2in1 ? '3px' : '6px'}; line-height: 1.25;">
+          <div style="font-size: ${is2in1 ? '8pt' : '9pt'}; font-style: italic; color: #111;">
+            Chương trình này thay lời mời, xin các Anh/Chị thêm lời cầu nguyện và tham dự đầy đủ.
           </div>
-        ` : ''}
+          <div style="font-size: ${is2in1 ? '8.5pt' : '9.5pt'}; font-weight: bold; font-style: italic; margin-top: 1px;">
+            Ban Điều Hành &ndash; ${year}
+          </div>
+        </div>
       </div>
     `;
+  }
+
+  function buildPrintScheduleHTML(opts) {
+    let sessions = [...(state.schedules || [])];
+
+    if (opts.range !== 'all') {
+      sessions = sessions.filter(s => String(s.quy || '').toUpperCase() === String(opts.range).toUpperCase());
+    }
+
+    const activeQ = opts.range !== 'all' ? opts.range : 'II';
+    const theme = getThemeForQuarter(activeQ);
+
+    if (opts.orientation === '2_in_1_portrait') {
+      const singleSheet = renderQuarterFlyerSingleHTML(opts, activeQ, sessions, theme, true);
+
+      return `
+        <div class="a4-portrait-2in1-wrapper" style="width: 100%; max-width: 210mm; margin: 0 auto; background: #fff; box-sizing: border-box;">
+          <!-- TỜ 1 (NỬA TRÊN) -->
+          <div class="sheet-half sheet-top" style="box-sizing: border-box; padding: 4px 6px;">
+            ${singleSheet}
+          </div>
+
+          <!-- ĐƯỜNG CẮT PHÂN ĐÔI GIẤY (CUT LINE) -->
+          <div class="print-cut-line" style="margin: 4px 0; text-align: center; position: relative; border-top: 1px dashed #64748b; line-height: 0;">
+            <span style="background: #fff; padding: 0 10px; font-size: 7.5pt; font-family: sans-serif; color: #64748b; font-weight: bold; position: relative; top: -5px;">
+              ✂ CẮT TẠI ĐÂY (ĐƯỢC 2 TỜ CHƯƠNG TRÌNH / 1 TRANG A4) ✂
+            </span>
+          </div>
+
+          <!-- TỜ 2 (NỬA DƯỚI) -->
+          <div class="sheet-half sheet-bottom" style="box-sizing: border-box; padding: 4px 6px;">
+            ${singleSheet}
+          </div>
+        </div>
+      `;
+    } else {
+      return renderQuarterFlyerSingleHTML(opts, activeQ, sessions, theme, false);
+    }
   }
 
   function updatePrintPreview() {
@@ -6235,31 +6259,75 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
 
   function triggerPrintScheduleNow() {
     const opts = getPrintOptions();
-    const printContainer = document.getElementById('print-schedule-container');
-    if (printContainer) {
-      printContainer.innerHTML = buildPrintScheduleHTML(opts);
+    const htmlContent = buildPrintScheduleHTML(opts);
+
+    const is2in1 = opts.orientation === '2_in_1_portrait';
+    const isPortrait = opts.orientation === 'portrait' || is2in1;
+    const isA5 = opts.orientation === 'a5';
+
+    let pageCss = '@page { size: A4 portrait; margin: 4mm 6mm; }';
+    if (isA5) {
+      pageCss = '@page { size: A5 landscape; margin: 4mm 6mm; }';
+    } else if (opts.orientation === 'landscape') {
+      pageCss = '@page { size: A4 landscape; margin: 5mm 8mm; }';
     }
 
-    // Dynamic @page orientation rule
-    let dynStyle = document.getElementById('dynamic-print-orientation-style');
-    if (!dynStyle) {
-      dynStyle = document.createElement('style');
-      dynStyle.id = 'dynamic-print-orientation-style';
-      document.head.appendChild(dynStyle);
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      showToast('Vui lòng cho phép mở popup để in lịch!', 'warning');
+      return;
     }
 
-    if (opts.orientation === 'portrait') {
-      dynStyle.innerHTML = `@media print { @page { size: portrait; margin: 8mm 10mm; } }`;
-    } else if (opts.orientation === 'a5') {
-      dynStyle.innerHTML = `@media print { @page { size: A5 landscape; margin: 6mm 8mm; } }`;
-    } else {
-      dynStyle.innerHTML = `@media print { @page { size: landscape; margin: 6mm 8mm; } }`;
-    }
-
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Chương Trình Quý - ${state.banNganhTitle || 'Ban Thanh Tráng'}</title>
+        <style>
+          * { box-sizing: border-box; }
+          body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            color: #000;
+            font-family: 'Times New Roman', Times, serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          ${pageCss}
+          .a4-portrait-2in1-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          .sheet-half {
+            width: 100%;
+            page-break-inside: avoid;
+          }
+          .print-cut-line {
+            margin: 4px 0;
+            page-break-inside: avoid;
+          }
+          @media print {
+            body { padding: 0; }
+            .a4-portrait-2in1-wrapper { page-break-after: always; }
+          }
+        </style>
+      </head>
+      <body>
+        ${htmlContent}
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
     closeModal('modal-print-schedule');
-    setTimeout(() => {
-      window.print();
-    }, 200);
   }
 
   function triggerPrintSchedule() {
@@ -7341,6 +7409,8 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
   window.exportMembersToExcel = exportMembersToExcel;
   window.openFinanceReportModal = openFinanceReportModal;
   window.printFinanceReport = printFinanceReport;
+  window.openPrintScheduleModal = openPrintScheduleModal;
+  window.triggerPrintScheduleNow = triggerPrintScheduleNow;
   window.triggerPwaInstallBn = triggerPwaInstallBn;
   window.dismissPwaBannerBn = dismissPwaBannerBn;
 
