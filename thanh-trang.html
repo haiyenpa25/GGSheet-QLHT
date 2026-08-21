@@ -312,26 +312,50 @@
       </button>
     </div>
 
-    <!-- Right Controls: Role Switcher + Notification Bell + Refresh + Settings -->
+    <!-- Right Controls: User Profile + Auth + Notification Bell + Refresh + Settings -->
     <div class="flex items-center gap-2">
-      <!-- Role Switcher -->
-      <div class="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-2xl glass-card border border-white/10 text-xs shadow-sm">
-        <span class="material-symbols-outlined text-sm text-emerald-400">admin_panel_settings</span>
-        <select id="user-role-select" onchange="handleRoleChange(this.value)" class="bg-transparent text-white font-bold text-[11px] focus:outline-none cursor-pointer">
-          <option value="admin" class="bg-slate-900 text-white">👑 Trưởng Ban (Toàn quyền)</option>
-          <option value="thu_ky" class="bg-slate-900 text-white">✍️ Thư Ký (Ban viên &amp; Điểm danh)</option>
-          <option value="thu_quy" class="bg-slate-900 text-white">💰 Thủ Quỹ (Sổ Quỹ &amp; Thu Chi)</option>
-          <option value="to_truong" class="bg-slate-900 text-white">👥 Tổ Trưởng (Chỉ xem Tổ mình)</option>
-        </select>
+      <!-- User Profile Dropdown Widget -->
+      <div id="user-profile-header-bn" class="flex items-center gap-1.5 pl-2 border-l border-white/10 relative">
+        <button onclick="toggleUserDropdownBn()" class="flex items-center gap-2 p-1.5 pr-2.5 rounded-full glass-card hover:border-emerald-400/40 transition-all">
+          <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white font-bold text-xs shadow-md" id="header-user-avatar-bn">
+            👑
+          </div>
+          <div class="hidden sm:block text-left">
+            <div class="text-xs font-bold text-white truncate max-w-[110px]" id="header-user-name-bn">Trưởng Ban</div>
+            <div class="text-[10px] text-emerald-400 font-semibold leading-none" id="header-user-role-bn">Toàn quyền</div>
+          </div>
+          <span class="material-symbols-outlined text-sm text-text-secondary">arrow_drop_down</span>
+        </button>
+
+        <!-- User Dropdown Menu -->
+        <div id="user-dropdown-menu-bn" class="hidden absolute right-0 top-11 w-60 glass-card-solid rounded-2xl p-2 border border-white/10 shadow-2xl z-50 animate-fade-in text-xs">
+          <div class="p-3 border-b border-white/10 mb-1">
+            <div class="font-bold text-white text-sm" id="dropdown-user-fullname-bn">Trưởng Ban</div>
+            <div class="text-[11px] text-text-secondary truncate" id="dropdown-user-email-bn">admin@bannganh.vn</div>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" id="dropdown-user-badge-bn">Trưởng Ban (Toàn quyền)</span>
+          </div>
+          <button onclick="openChangePasswordModalBn()" class="w-full text-left px-3 py-2 rounded-xl text-text-secondary hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors">
+            <span class="material-symbols-outlined text-[16px]">key</span>
+            <span>Đổi mật khẩu</span>
+          </button>
+          <button onclick="openLoginModalBn()" class="w-full text-left px-3 py-2 rounded-xl text-emerald-400 hover:bg-emerald-500/10 flex items-center gap-2 transition-colors">
+            <span class="material-symbols-outlined text-[16px]">switch_account</span>
+            <span>Đổi tài khoản / Ban viên</span>
+          </button>
+          <button onclick="handleLogoutBn()" class="w-full text-left px-3 py-2 rounded-xl text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-colors mt-1">
+            <span class="material-symbols-outlined text-[16px]">logout</span>
+            <span>Đăng xuất</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Scope Group Select (Hiển thị khi chọn vai trò Tổ Trưởng) -->
+      <!-- Scope Group Select (Hiển thị khi đăng nhập với vai trò Tổ Trưởng) -->
       <select id="role-group-filter-select" onchange="handleRoleGroupFilterChange(this.value)" class="hidden glass-input rounded-xl px-2 py-1 text-xs font-bold text-emerald-300">
         <!-- Render groups dynamically -->
       </select>
 
       <!-- Notification Bell -->
-      <button onclick="openNotificationsModal()" class="relative p-2 rounded-2xl glass-card hover:bg-white/10 text-white border border-white/10 transition-all active:scale-95 shadow-md" title="Trung tâm thông báo &amp; Cảnh báo">
+      <button onclick="openNotificationsModal()" class="relative p-2 rounded-2xl glass-card hover:bg-white/10 text-white border border-white/10 transition-all active:scale-95 shadow-md" title="Trung tâm thông báo & Cảnh báo">
         <span class="material-symbols-outlined text-[20px]">notifications</span>
         <span id="notif-badge-count" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-slate-900 shadow-md">0</span>
       </button>
@@ -2106,6 +2130,84 @@
     </div>
   </div>
 
+  <!-- MODAL ĐĂNG NHẬP BAN NGÀNH -->
+  <div id="modal-login-bn" class="app-modal hidden fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl items-center justify-center p-4 animate-fade-in">
+    <div class="glass-card-solid border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 relative">
+      <div class="text-center space-y-2">
+        <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-emerald-400 mx-auto flex items-center justify-center text-white shadow-xl shadow-emerald-500/20 border border-white/20">
+          <span class="material-symbols-outlined text-3xl">diversity_3</span>
+        </div>
+        <h2 class="text-xl font-bold text-white tracking-tight" id="login-bn-title">Quản Lý Ban Ngành</h2>
+        <p class="text-xs text-text-secondary">Đăng nhập Ban Điều Hành hoặc tra cứu theo Số điện thoại</p>
+      </div>
+
+      <form id="form-login-bn" onsubmit="handleLoginSubmitBn(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1.5">Tên đăng nhập / Số điện thoại / Mã Ban viên</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-3 text-text-secondary text-[18px]">account_circle</span>
+            <input type="text" id="login-bn-identifier" required placeholder="admin, thuky, thuquy, totruong hoặc SĐT" class="w-full pl-10 pr-4 py-2.5 rounded-2xl glass-input text-xs focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          </div>
+        </div>
+
+        <div id="login-bn-pass-group">
+          <label class="block text-xs font-medium text-text-secondary mb-1.5">Mật khẩu</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-3 text-text-secondary text-[18px]">lock</span>
+            <input type="password" id="login-bn-password" placeholder="Mặc định: 123456 (nếu có)" class="w-full pl-10 pr-10 py-2.5 rounded-2xl glass-input text-xs focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+            <button type="button" onclick="togglePasswordVisibilityBn('login-bn-password', this)" class="absolute right-3.5 top-2.5 text-text-secondary hover:text-white">
+              <span class="material-symbols-outlined text-[18px]">visibility</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-white/5 border border-white/10 text-[11px] text-text-secondary space-y-1">
+          <div class="font-bold text-white flex items-center gap-1"><span class="material-symbols-outlined text-xs text-emerald-400">info</span> Tài khoản mẫu:</div>
+          <div>• <strong>Trưởng ban:</strong> <code>admin</code> / <code>123456</code> (Toàn quyền)</div>
+          <div>• <strong>Thư ký:</strong> <code>thuky</code> / <code>123456</code> &nbsp;|&nbsp; <strong>Thủ quỹ:</strong> <code>thuquy</code> / <code>123456</code></div>
+          <div>• <strong>Ban viên:</strong> Nhập <strong>Số điện thoại</strong> hoặc <strong>Mã BV</strong> (Chế độ xem cá nhân)</div>
+        </div>
+
+        <button type="submit" id="btn-login-bn-submit" class="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 text-white text-xs font-bold shadow-lg shadow-emerald-600/25 hover:opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-base">login</span>
+          <span>Đăng Nhập Ban Ngành</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL ĐỔI MẬT KHẨU BAN NGÀNH -->
+  <div id="modal-change-password-bn" class="app-modal hidden fixed inset-0 z-[105] bg-black/80 backdrop-blur-xl items-center justify-center p-4 animate-fade-in">
+    <div class="glass-card-solid border border-white/15 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5">
+      <div class="flex justify-between items-center pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <span class="material-symbols-outlined text-emerald-400 text-xl">key</span>
+          <h3 class="text-base font-bold text-white">Đổi Mật Khẩu</h3>
+        </div>
+        <button onclick="closeModal('modal-change-password-bn')" class="p-1 text-text-secondary hover:text-white rounded-full"><span class="material-symbols-outlined text-lg">close</span></button>
+      </div>
+
+      <form id="form-change-password-bn" onsubmit="handleChangePasswordSubmitBn(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1">Mật khẩu hiện tại</label>
+          <input type="password" id="chg-old-password-bn" required class="w-full px-3.5 py-2.5 rounded-2xl glass-input text-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1">Mật khẩu mới</label>
+          <input type="password" id="chg-new-password-bn" required minlength="6" class="w-full px-3.5 py-2.5 rounded-2xl glass-input text-xs" placeholder="Tối thiểu 6 ký tự">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1">Xác nhận mật khẩu mới</label>
+          <input type="password" id="chg-confirm-password-bn" required minlength="6" class="w-full px-3.5 py-2.5 rounded-2xl glass-input text-xs">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-change-password-bn')" class="px-4 py-2 rounded-xl border border-white/10 text-xs font-semibold text-text-secondary">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md">Cập Nhật</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- GLOBAL LOADING INDICATOR -->
   <div id="global-loading-indicator" class="hidden fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center">
     <div class="glass-card-solid px-6 py-4 rounded-3xl border border-emerald-500/30 flex items-center gap-3 shadow-2xl animate-fade-in">
@@ -2330,7 +2432,16 @@
     const sheetId = state.activeSheetId || '13oCKGzsOyy3x9VrsI-NNxFaXBTpdOvveUoTiWegcEZw';
     let params = { action: action, sheetId: sheetId, customSheetId: sheetId };
 
-    if (action === 'apiGetInitialData') {
+    if (action === 'apiLogin') {
+      params.identifier = (args[0] && (args[0].identifier || args[0].username)) || args[0];
+      params.password = (args[0] && args[0].password) || args[1];
+      params.sheetId = (args[0] && args[0].sheetId) || args[2] || sheetId;
+    } else if (action === 'apiChangePassword') {
+      params.userId = args[0].userId;
+      params.oldPassword = args[0].oldPassword;
+      params.newPassword = args[0].newPassword;
+      params.sheetId = args[0].sheetId || sheetId;
+    } else if (action === 'apiGetInitialData') {
       params.customSheetId = args[0] || sheetId;
     } else if (args.length === 1) {
       if (typeof args[0] === 'object') {
@@ -2485,6 +2596,228 @@
     // 2. NẠP NỀN DỮ LIỆU TỪ GOOGLE SHEET (NẾU ĐÃ CÓ CACHE THÌ NẠP NỀN KHÔNG CHẶN MÀN HÌNH)
     const needFullLoader = !hasCache;
     refreshData(needFullLoader);
+  }
+
+  // =========================================================================
+  // AUTHENTICATION & ROLE-BASED ACCESS CONTROL (RBAC) FOR BAN NGANH
+  // =========================================================================
+
+  const AUTH_SESSION_KEY_BN = 'qlbn_auth_session';
+
+  function loadAuthSessionBn() {
+    try {
+      const raw = localStorage.getItem(AUTH_SESSION_KEY_BN) || sessionStorage.getItem(AUTH_SESSION_KEY_BN);
+      if (raw) {
+        const session = JSON.parse(raw);
+        if (session && session.user) {
+          state.currentUser = session.user;
+          updateAuthUIBn();
+          return session.user;
+        }
+      }
+    } catch (e) {}
+
+    // Default: Trưởng ban (toàn quyền)
+    state.currentUser = {
+      id: 'usr_admin',
+      username: 'admin',
+      fullName: 'Trưởng Ban',
+      role: 'TRUONG_BAN',
+      email: 'admin@bannganh.vn'
+    };
+    updateAuthUIBn();
+    return state.currentUser;
+  }
+
+  function saveAuthSessionBn(user, token, remember = true) {
+    const session = { user, token, timestamp: Date.now() };
+    state.currentUser = user;
+    if (remember) {
+      localStorage.setItem(AUTH_SESSION_KEY_BN, JSON.stringify(session));
+    } else {
+      sessionStorage.setItem(AUTH_SESSION_KEY_BN, JSON.stringify(session));
+    }
+    updateAuthUIBn();
+  }
+
+  function clearAuthSessionBn() {
+    state.currentUser = null;
+    localStorage.removeItem(AUTH_SESSION_KEY_BN);
+    sessionStorage.removeItem(AUTH_SESSION_KEY_BN);
+    loadAuthSessionBn();
+  }
+
+  function updateAuthUIBn() {
+    const uAvatar = document.getElementById('header-user-avatar-bn');
+    const uName = document.getElementById('header-user-name-bn');
+    const uRole = document.getElementById('header-user-role-bn');
+    const dropFullName = document.getElementById('dropdown-user-fullname-bn');
+    const dropEmail = document.getElementById('dropdown-user-email-bn');
+    const dropBadge = document.getElementById('dropdown-user-badge-bn');
+    const groupSelect = document.getElementById('role-group-filter-select');
+
+    if (!state.currentUser) return;
+
+    const roleMap = {
+      'TRUONG_BAN': { label: 'Trưởng Ban', badge: 'Trưởng Ban (Toàn quyền)', icon: '👑' },
+      'THU_KY': { label: 'Thư Ký', badge: 'Thư Ký (Nhân sự & Điểm danh)', icon: '✍️' },
+      'THU_QUY': { label: 'Thủ Quỹ', badge: 'Thủ Quỹ (Sổ Quỹ & Tài chính)', icon: '💰' },
+      'TO_TRUONG': { label: 'Tổ Trưởng', badge: 'Tổ Trưởng', icon: '👥' },
+      'BAN_VIEN': { label: 'Ban Viên', badge: 'Ban Viên (Chỉ xem)', icon: '👤' }
+    };
+
+    const rInfo = roleMap[state.currentUser.role] || { label: 'Ban Viên', badge: state.currentUser.role, icon: '👤' };
+
+    if (uAvatar) uAvatar.textContent = rInfo.icon;
+    if (uName) uName.textContent = state.currentUser.fullName || state.currentUser.username;
+    if (uRole) uRole.textContent = rInfo.label;
+    if (dropFullName) dropFullName.textContent = state.currentUser.fullName || state.currentUser.username;
+    if (dropEmail) dropEmail.textContent = state.currentUser.email || (state.currentUser.sdt || (state.currentUser.username + '@bannganh.vn'));
+    if (dropBadge) dropBadge.textContent = rInfo.badge;
+
+    if (groupSelect) {
+      if (state.currentUser.role === 'TO_TRUONG') {
+        groupSelect.classList.remove('hidden');
+        renderRoleGroupOptions();
+      } else {
+        groupSelect.classList.add('hidden');
+      }
+    }
+
+    applyRbacPermissions();
+  }
+
+  function applyRbacPermissions() {
+    if (!state.currentUser) return;
+    const role = state.currentUser.role;
+    
+    // Auto populate Tổ Trưởng scope if available
+    if (role === 'TO_TRUONG' && state.currentUser.toId) {
+      state.scopeGroupId = state.currentUser.toId;
+    } else {
+      state.scopeGroupId = 'all';
+    }
+  }
+
+  function toggleUserDropdownBn() {
+    const menu = document.getElementById('user-dropdown-menu-bn');
+    if (menu) menu.classList.toggle('hidden');
+  }
+
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('user-dropdown-menu-bn');
+    const uHeader = document.getElementById('user-profile-header-bn');
+    if (menu && !menu.classList.contains('hidden') && uHeader && !uHeader.contains(e.target)) {
+      menu.classList.add('hidden');
+    }
+  });
+
+  function openLoginModalBn() {
+    const menu = document.getElementById('user-dropdown-menu-bn');
+    if (menu) menu.classList.add('hidden');
+    openModal('modal-login-bn');
+  }
+
+  async function handleLoginSubmitBn(e) {
+    e.preventDefault();
+    const iden = document.getElementById('login-bn-identifier').value.trim();
+    const pass = document.getElementById('login-bn-password').value;
+
+    if (!iden) return;
+
+    const btn = document.getElementById('btn-login-bn-submit');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-base">progress_activity</span><span>Đang đăng nhập...</span>`;
+    }
+
+    try {
+      const res = await runGAS('apiLogin', { identifier: iden, password: pass, sheetId: state.activeSheetId });
+      if (res && res.success && res.user) {
+        saveAuthSessionBn(res.user, res.token, true);
+        closeModal('modal-login-bn');
+        showToast(res.message || `Đăng nhập thành công: ${res.user.fullName}`, 'success');
+        renderCurrentView();
+      } else {
+        showToast((res && res.message) || 'Thông tin đăng nhập không chính xác!', 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi đăng nhập: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-base">login</span><span>Đăng Nhập Ban Ngành</span>`;
+      }
+    }
+  }
+
+  function handleLogoutBn() {
+    const menu = document.getElementById('user-dropdown-menu-bn');
+    if (menu) menu.classList.add('hidden');
+    clearAuthSessionBn();
+    showToast('Đã chuyển về tài khoản mặc định!', 'info');
+    renderCurrentView();
+  }
+
+  function openChangePasswordModalBn() {
+    const menu = document.getElementById('user-dropdown-menu-bn');
+    if (menu) menu.classList.add('hidden');
+    document.getElementById('form-change-password-bn').reset();
+    openModal('modal-change-password-bn');
+  }
+
+  async function handleChangePasswordSubmitBn(e) {
+    e.preventDefault();
+    if (!state.currentUser) return;
+    const oldPass = document.getElementById('chg-old-password-bn').value;
+    const newPass = document.getElementById('chg-new-password-bn').value;
+    const confirmPass = document.getElementById('chg-confirm-password-bn').value;
+
+    if (newPass !== confirmPass) {
+      showToast('Mật khẩu xác nhận không khớp!', 'warning');
+      return;
+    }
+
+    showLoading(true);
+    try {
+      const res = await runGAS('apiChangePassword', { userId: state.currentUser.id, oldPassword: oldPass, newPassword: newPass, sheetId: state.activeSheetId });
+      if (res && res.success) {
+        showToast('Đổi mật khẩu thành công!', 'success');
+        closeModal('modal-change-password-bn');
+      } else {
+        showToast((res && res.message) || 'Mật khẩu cũ không chính xác!', 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi: ' + err.message, 'error');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function togglePasswordVisibilityBn(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    const icon = btn.querySelector('.material-symbols-outlined');
+    if (icon) icon.textContent = isPass ? 'visibility_off' : 'visibility';
+  }
+
+  function renderRoleGroupOptions() {
+    const select = document.getElementById('role-group-filter-select');
+    if (!select) return;
+    const opts = (state.groups || []).map(g => `<option value="${g.id}">${g.tenTo}</option>`).join('');
+    select.innerHTML = `<option value="all">Tất cả Tổ</option>` + opts;
+    if (state.scopeGroupId) select.value = state.scopeGroupId;
+  }
+
+  function handleRoleGroupFilterChange(val) {
+    state.scopeGroupId = val;
+    renderCurrentView();
+  }
+
+  function initRoleAndScope() {
+    loadAuthSessionBn();
   }
 
   function getCacheKey() {
@@ -6468,6 +6801,14 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
   window.refreshData = refreshData;
   window.showToast = showToast;
   window.previewBulkMembers = previewBulkMembers;
+  window.toggleUserDropdownBn = toggleUserDropdownBn;
+  window.openLoginModalBn = openLoginModalBn;
+  window.handleLoginSubmitBn = handleLoginSubmitBn;
+  window.handleLogoutBn = handleLogoutBn;
+  window.openChangePasswordModalBn = openChangePasswordModalBn;
+  window.handleChangePasswordSubmitBn = handleChangePasswordSubmitBn;
+  window.togglePasswordVisibilityBn = togglePasswordVisibilityBn;
+  window.handleRoleGroupFilterChange = handleRoleGroupFilterChange;
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllModals();
