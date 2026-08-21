@@ -384,8 +384,8 @@ function apiGetInitialData() {
 
     ministries.forEach(m => {
       m.tenHoiThanh = churchMap[m.hoiThanhId] || 'Chưa xác định';
-      if (m.spreadsheetId && (!m.webAppUrl || m.webAppUrl.indexOf('sheetId') === -1)) {
-        m.webAppUrl = `${baseBanNganhUrl}?sheetId=${encodeURIComponent(m.spreadsheetId)}&banNganhId=${encodeURIComponent(m.id)}&title=${encodeURIComponent(m.tenBN)}`;
+      if (m.spreadsheetId) {
+        m.webAppUrl = `${baseBanNganhUrl}?sheetId=${encodeURIComponent(m.spreadsheetId)}&banNganhId=${encodeURIComponent(m.id || m.maBN)}&title=${encodeURIComponent(m.tenBN)}`;
       }
     });
 
@@ -565,6 +565,34 @@ function apiCreateMinistrySheet(banNganhId, customTitle) {
       s.getRange(1, 1, 1, cols.length).setValues([cols]);
       s.getRange(1, 1, 1, cols.length).setBackground('#10b981').setFontColor('#ffffff').setFontWeight('bold');
       s.setFrozenRows(1);
+
+      // Seed sample data
+      if (tabName === 'ToNhom') {
+        const defaultGroups = [
+          ['to_1', 'TO_01', 'Tổ 1 - Ái Năng', 'Nguyễn Văn An', 'Trần Thị Mai', 5, 'Chiều Chúa Nhật 16h00', 'Phòng Nhóm 1', 'Tổ sinh hoạt tích cực'],
+          ['to_2', 'TO_02', 'Tổ 2 - Trung Tín', 'Lê Hoàng Long', 'Phạm Thị Cúc', 6, 'Chiều Chúa Nhật 16h00', 'Phòng Nhóm 2', 'Tổ sinh hoạt trung tín'],
+          ['to_3', 'TO_03', 'Tổ 3 - Đắc Thắng', 'Võ Minh Trí', 'Đặng Thùy Dung', 4, 'Chiều Chúa Nhật 16h00', 'Phòng Nhóm 3', 'Tổ thanh tráng trẻ']
+        ];
+        s.getRange(2, 1, defaultGroups.length, defaultGroups[0].length).setValues(defaultGroups);
+      } else if (tabName === 'ThanhVien') {
+        const curDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy');
+        const defaultMembers = [
+          ['bv_1', 'BV01', 'Nguyễn Văn An', '0901234567', '15/05/1990', 'Nam', 'to_1', 'Trưởng Ban', '123 Đường Số 1, TP.HCM', 'active', 'Trưởng Ban Điều Hành', curDate],
+          ['bv_2', 'BV02', 'Trần Thị Mai', '0912345678', '20/08/1992', 'Nữ', 'to_1', 'Thư Ký', '456 Đường Số 2, TP.HCM', 'active', 'Thư ký Ban', curDate],
+          ['bv_3', 'BV03', 'Lê Hoàng Long', '0987654321', '10/12/1988', 'Nam', 'to_2', 'Thủ Quỹ', '789 Đường Số 3, TP.HCM', 'active', 'Thủ quỹ Ban', curDate],
+          ['bv_4', 'BV04', 'Phạm Thị Cúc', '0933445566', '25/08/1995', 'Nữ', 'to_2', 'Ban viên', '101 Đường Số 4, TP.HCM', 'active', 'Ban viên tích cực', curDate],
+          ['bv_5', 'BV05', 'Võ Minh Trí', '0977889900', '02/09/1991', 'Nam', 'to_3', 'Ban viên', '202 Đường Số 5, TP.HCM', 'active', 'Nhạc công Ban', curDate]
+        ];
+        s.getRange(2, 1, defaultMembers.length, defaultMembers[0].length).setValues(defaultMembers);
+      } else if (tabName === 'DanhMucQuy') {
+        s.getRange(2, 1, 1, 7).setValues([['q_ban', 'QUY_BAN', 'Quỹ Ban', 0, 'Quỹ sinh hoạt chính của Ban', 'active', Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy')]]);
+      } else if (tabName === 'ChuDe') {
+        const curY = new Date().getFullYear();
+        const defaultThemes = [
+          ['t_year', curY, 'NAM', 0, 'KỶ LUẬT THUỘC LINH', 'I Ti-mô-thê 4:7-8', 'Hãy tập tành sự tin kính; vì sự tập tành thân thể ích lợi ít bề, còn sự tin kính ích cho mọi sự, có lời hứa về đời này và đời sau nữa.', '', '', '', 'active']
+        ];
+        s.getRange(2, 1, defaultThemes.length, defaultThemes[0].length).setValues(defaultThemes);
+      }
     });
 
     const baseWebAppUrl = getBanNganhBaseWebAppUrl();

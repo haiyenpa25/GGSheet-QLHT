@@ -612,15 +612,25 @@ function apiGetInitialData(customSheetId) {
     const themeValues = getSheetValuesByName(SHEET_NAMES.CHU_DE, ['Chủ Đề', 'Chu De']);
     const tplValues = getSheetValuesByName(SHEET_NAMES.MAU_TIN_NHAN, ['Mẫu Tin Nhắn', 'Mau Tin Nhan']);
 
-    const members = parseRowsFromValues(memberValues);
-    const groups = parseRowsFromValues(groupValues);
-    const funds = parseRowsFromValues(fundValues);
-    const transactions = parseRowsFromValues(transValues);
-    const attendances = parseRowsFromValues(attValues);
-    const visits = parseRowsFromValues(visitValues);
-    const schedules = parseRowsFromValues(schedValues);
-    const themes = parseRowsFromValues(themeValues);
+    let members = parseRowsFromValues(memberValues);
+    let groups = parseRowsFromValues(groupValues);
+    let funds = parseRowsFromValues(fundValues);
+    let transactions = parseRowsFromValues(transValues);
+    let attendances = parseRowsFromValues(attValues);
+    let visits = parseRowsFromValues(visitValues);
+    let schedules = parseRowsFromValues(schedValues);
+    let themes = parseRowsFromValues(themeValues);
     let templates = parseRowsFromValues(tplValues);
+
+    // If new empty sheet detected without groups/members, auto seed sample structure
+    if (members.length === 0 && groups.length === 0) {
+      try {
+        setupDatabase(customSheetId);
+        return apiGetInitialData(customSheetId);
+      } catch (seedErr) {
+        Logger.log('Auto-seed error: ' + seedErr.message);
+      }
+    }
 
     if (!templates || templates.length === 0) {
       templates = [
