@@ -179,6 +179,10 @@
       <button data-page="visitations" onclick="navigateTo('visitations')" class="nav-link-btn px-3.5 py-1.5 rounded-full text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 transition-all border border-transparent">
         Thăm Viếng
       </button>
+      <button data-page="pastoral-report" onclick="navigateTo('pastoral-report')" class="nav-link-btn px-3.5 py-1.5 rounded-full text-xs font-semibold text-amber-300 hover:text-white hover:bg-amber-500/10 transition-all border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
+        <span class="material-symbols-outlined text-[16px] text-amber-400">query_stats</span>
+        <span>Báo Cáo Mục Sư</span>
+      </button>
       <button data-page="settings" onclick="navigateTo('settings')" class="nav-link-btn px-3.5 py-1.5 rounded-full text-xs font-semibold text-text-secondary hover:text-white hover:bg-white/5 transition-all border border-transparent">
         Cài Đặt
       </button>
@@ -1109,7 +1113,116 @@
       </div>
     </section>
 
-    <!-- VIEW 8: SETTINGS -->
+    <!-- VIEW 8: BÁO CÁO MỤC VỤ & PHÂN TÍCH DỮ LIỆU CHUYÊN SÂU -->
+    <section id="view-pastoral-report" class="app-view hidden space-y-6">
+      <!-- Header Banner with Glassmorphism -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-amber-500/30 bg-gradient-to-r from-surface-elevated/90 via-surface-container/80 to-surface-elevated/90">
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div class="space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold">
+              <span class="material-symbols-outlined text-[16px]">analytics</span>
+              <span>EXECUTIVE MINISTRY ANALYTICS</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+              <span>Báo Cáo Sinh Hoạt &amp; Phân Tích Dữ Liệu Mục Vụ</span>
+            </h2>
+            <p class="text-xs sm:text-sm text-text-secondary max-w-2xl leading-relaxed">
+              Trực quan hóa đa chiều tình hình sinh hoạt, phân tích dòng tiền, tỷ lệ chuyển đổi hiện diện và đề xuất chiến lược mục vụ trình Mục Sư Quản Nhiệm.
+            </p>
+          </div>
+
+          <!-- Quick Actions & View Switcher -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            <!-- View Mode Switcher -->
+            <div class="flex bg-white/5 p-1 rounded-2xl border border-white/10 shrink-0">
+              <button type="button" id="btn-page-tab-pastoral-dash" onclick="switchPastoralPageView('dashboard')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5 shadow-md">
+                <span class="material-symbols-outlined text-base">dashboard</span>
+                <span>Dashboard &amp; Biểu Đồ</span>
+              </button>
+              <button type="button" id="btn-page-tab-pastoral-sheet" onclick="switchPastoralPageView('sheet')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-base">table_view</span>
+                <span>Bản In A4 &amp; Excel</span>
+              </button>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" onclick="exportPastoralReportToExcel()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all" title="Tải về file Excel định dạng chuẩn màu sắc và bảng biểu">
+                <span class="material-symbols-outlined text-base">table_view</span>
+                <span>📥 Tải Excel (.xls)</span>
+              </button>
+              <button type="button" onclick="copyPastoralReportToClipboard()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all" title="Sao chép toàn bộ bảng để dán (Ctrl+V) sang Google Sheets">
+                <span class="material-symbols-outlined text-base">content_copy</span>
+                <span>📋 Copy Sheet</span>
+              </button>
+              <button type="button" onclick="printPastoralReportPDF()" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all" title="In trực tiếp hoặc xuất PDF trang trọng chuẩn A4">
+                <span class="material-symbols-outlined text-base">print</span>
+                <span>🖨️ In A4 / PDF</span>
+              </button>
+              <button type="button" onclick="sendPastoralReportZalo()" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all" title="Gửi tin nhắn tóm tắt báo cáo có định dạng cho Mục Sư qua Zalo">
+                <span class="material-symbols-outlined text-base">chat</span>
+                <span>💬 Zalo Mục Sư</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Parameter Settings Bar -->
+        <div class="mt-6 pt-4 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+          <div>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Tháng Báo Cáo</label>
+            <select id="pastoral-page-month" onchange="syncPastoralReportInputs(); renderPastoralReportPreview();" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-bold text-amber-300">
+              <option value="1">Tháng 01</option>
+              <option value="2">Tháng 02</option>
+              <option value="3">Tháng 03</option>
+              <option value="4">Tháng 04</option>
+              <option value="5">Tháng 05</option>
+              <option value="6">Tháng 06</option>
+              <option value="7" selected>Tháng 07</option>
+              <option value="8">Tháng 08</option>
+              <option value="9">Tháng 09</option>
+              <option value="10">Tháng 10</option>
+              <option value="11">Tháng 11</option>
+              <option value="12">Tháng 12</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Năm</label>
+            <select id="pastoral-page-year" onchange="syncPastoralReportInputs(); renderPastoralReportPreview();" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-bold text-white">
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Người Báo Cáo *</label>
+            <input type="text" id="pastoral-page-author" oninput="syncPastoralReportInputs(); renderPastoralReportPreview();" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold text-white" value="C.S. Thái Nhựt Bình" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Tồn Đầu Tháng Chuyển Sang (VNĐ)</label>
+            <input type="number" id="pastoral-page-opening-balance" oninput="syncPastoralReportInputs(); renderPastoralReportPreview();" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold text-emerald-400" value="6566000" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Dâng Hiến 1/10 (VNĐ)</label>
+            <input type="text" id="pastoral-page-tithe" oninput="syncPastoralReportInputs(); renderPastoralReportPreview();" class="glass-input w-full rounded-xl px-3 py-2 text-xs font-semibold text-amber-300" placeholder="Số tiền dâng 1/10..." />
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE VIEW 1: EXECUTIVE LIVE DASHBOARD -->
+      <div id="pastoral-page-view-dashboard" class="space-y-6">
+        <!-- Rendered dynamically by JS -->
+      </div>
+
+      <!-- PAGE VIEW 2: VISUAL SHEET CANVAS (EXACT A4 / EXCEL) -->
+      <div id="pastoral-page-view-sheet" class="hidden bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-300 text-slate-900 font-sans overflow-x-auto">
+        <div id="pastoral-page-report-canvas" class="min-w-[750px]">
+          <!-- Rendered dynamically by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 9: SETTINGS -->
     <section id="view-settings" class="app-view hidden space-y-6 max-w-2xl mx-auto">
       <div>
         <h2 class="text-2xl font-bold text-white tracking-tight">Cài Đặt Ban Ngành</h2>
@@ -1172,7 +1285,7 @@
   </main>
 
   <!-- Bottom Navigation Bar (Mobile) -->
-  <nav id="app-bottom-nav" class="no-print glass-card backdrop-blur-3xl fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-md h-16 rounded-full border border-white/10 shadow-[0_8px_28px_rgba(0,0,0,0.5)] flex justify-around items-center px-3 z-40 lg:hidden">
+  <nav id="app-bottom-nav" class="no-print glass-card backdrop-blur-3xl fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-20px)] max-w-lg h-16 rounded-full border border-white/10 shadow-[0_8px_28px_rgba(0,0,0,0.5)] flex justify-around items-center px-2 z-40 lg:hidden">
     <button data-page="dashboard" onclick="navigateTo('dashboard')" class="bottom-nav-btn flex flex-col items-center justify-center text-emerald-400 active:scale-90 transition-transform">
       <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">dashboard</span>
       <span class="nav-label text-[10px] mt-0.5 font-bold">Tổng quan</span>
@@ -1187,7 +1300,11 @@
     </button>
     <button data-page="schedule" onclick="navigateTo('schedule')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
       <span class="material-symbols-outlined text-2xl">calendar_month</span>
-      <span class="nav-label text-[10px] mt-0.5">Lịch sinh hoạt</span>
+      <span class="nav-label text-[10px] mt-0.5">Lịch nhóm</span>
+    </button>
+    <button data-page="pastoral-report" onclick="navigateTo('pastoral-report')" class="bottom-nav-btn flex flex-col items-center justify-center text-amber-400 active:scale-90 transition-transform">
+      <span class="material-symbols-outlined text-2xl">query_stats</span>
+      <span class="nav-label text-[10px] mt-0.5 font-bold">Báo cáo</span>
     </button>
     <button data-page="settings" onclick="navigateTo('settings')" class="bottom-nav-btn flex flex-col items-center justify-center text-text-secondary hover:text-white active:scale-90 transition-transform">
       <span class="material-symbols-outlined text-2xl">settings</span>
