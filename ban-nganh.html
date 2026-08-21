@@ -8650,15 +8650,20 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
     initApp();
   }
 
-  // PWA Service Worker Registration
+  // Proactive Service Worker & Cache Auto-Purge
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=2').then(reg => {
-        console.log('PWA ServiceWorker registered with scope:', reg.scope);
-      }).catch(err => {
-        console.warn('PWA ServiceWorker registration failed:', err);
-      });
-    });
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (let registration of registrations) {
+        registration.unregister();
+      }
+    }).catch(err => console.warn('SW unregister:', err));
+  }
+  if ('caches' in window) {
+    caches.keys().then(names => {
+      for (let name of names) {
+        caches.delete(name);
+      }
+    }).catch(err => console.warn('Cache delete:', err));
   }
 </script>
 
