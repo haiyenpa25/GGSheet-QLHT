@@ -205,7 +205,7 @@
         urlParams = new URLSearchParams(window.location.search);
       } catch (e) {}
 
-      state.activeSheetId = (urlParams ? urlParams.get('sheetId') : '') || serverCfg.sheetId || '1qI_qFmXjbnnw21qPdxeWSUpBH9itFp6TznpAKMZZwME';
+      state.activeSheetId = (urlParams ? urlParams.get('sheetId') : '') || serverCfg.sheetId || '';
       state.banNganhTitle = (urlParams ? urlParams.get('title') : '') || serverCfg.banNganhTitle || 'Ban Thanh Tráng';
       state.banNganhId = (urlParams ? urlParams.get('banNganhId') : '') || serverCfg.banNganhId || 'id_41451e0a';
 
@@ -298,8 +298,11 @@
     if (showLoader) showLoading(true);
 
     try {
-      const res = await runGAS('apiGetInitialData', state.activeSheetId);
+      const res = await runGAS('apiGetInitialData', state.activeSheetId || '');
       if (res && res.success && res.data) {
+        if (!state.activeSheetId && res.data.spreadsheet && res.data.spreadsheet.id) {
+          state.activeSheetId = res.data.spreadsheet.id;
+        }
         applyData(res.data);
         saveToLocalCache(res.data);
         hideConnectionAlert();

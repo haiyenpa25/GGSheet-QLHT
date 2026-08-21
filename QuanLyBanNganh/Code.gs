@@ -42,7 +42,7 @@ function doGet(e) {
     return handleApiRequest(e.parameter.action, e.parameter);
   }
 
-  const sheetId = (e && e.parameter && e.parameter.sheetId) || DEFAULT_SPREADSHEET_ID;
+  const sheetId = (e && e.parameter && e.parameter.sheetId) || '';
   const banNganhId = (e && e.parameter && e.parameter.banNganhId) || 'id_41451e0a';
   const title = (e && e.parameter && e.parameter.title) || 'Ban Thanh Tráng';
 
@@ -155,7 +155,7 @@ function getSpreadsheet(customSheetId) {
       const ss = SpreadsheetApp.openById(cleanId);
       if (ss) return ss;
     } catch (err) {
-      Logger.log('Không thể mở customSheetId: ' + err.message);
+      Logger.log('Không thể mở customSheetId (' + customSheetId + '): ' + err.message);
     }
   }
 
@@ -166,13 +166,13 @@ function getSpreadsheet(customSheetId) {
   } catch (e) {}
 
   // 3. Thử đọc từ Cài đặt đã lưu trong Properties
-  const propId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
-  if (propId && propId.trim()) {
-    try {
+  try {
+    const propId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+    if (propId && propId.trim()) {
       const ss = SpreadsheetApp.openById(propId.trim());
       if (ss) return ss;
-    } catch (e) {}
-  }
+    }
+  } catch (e) {}
 
   // 4. Thử mở theo ID mặc định
   if (typeof DEFAULT_SPREADSHEET_ID !== 'undefined' && DEFAULT_SPREADSHEET_ID) {
