@@ -990,15 +990,71 @@
       }
     }
 
+    function slugify(text) {
+      if (!text) return '';
+      return String(text)
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+
+    function getChurchSlug(churchIdOrName) {
+      const church = (state.churches || []).find(c => String(c.id) === String(churchIdOrName) || c.tenHT === churchIdOrName);
+      if (!church) {
+        let clean = slugify(churchIdOrName || 'hoi-thanh');
+        return clean.startsWith('ht-') ? clean : 'ht-' + clean;
+      }
+      
+      // Clean church name
+      let name = (church.tenHT || '').toLowerCase()
+        .replace(/^hội thánh\s*(tin lành\s*)?/i, '')
+        .replace(/^httl\s*/i, '');
+      let slug = slugify(name);
+      if (!slug && church.maHT) slug = slugify(church.maHT);
+      if (!slug && church.id) slug = slugify(church.id);
+      
+      return slug.startsWith('ht-') ? slug : 'ht-' + (slug || 'hoi-thanh');
+    }
+
+    function getMinistrySlug(m) {
+      if (!m) return 'ban-nganh';
+      let name = (m.tenBN || '').toLowerCase()
+        .replace(/^ban\s+/i, '');
+      return slugify(name || m.maBN || m.id || 'ban-nganh');
+    }
+
+    function getMinistryCleanPath(m) {
+      const churchSlug = getChurchSlug(m.hoiThanhId || m.tenHoiThanh);
+      const minSlug = getMinistrySlug(m);
+      return `${churchSlug}/${minSlug}`;
+    }
+
     function getMinistryWebAppUrl(m) {
       if (m.webAppUrl && !m.webAppUrl.includes('script.google.com')) return m.webAppUrl;
-      if (m.spreadsheetId) {
-        return `ban-nganh.html?sheetId=${encodeURIComponent(m.spreadsheetId)}&banNganhId=${encodeURIComponent(m.id)}&title=${encodeURIComponent(m.tenBN || 'Ban Ngành')}`;
+      return getMinistryCleanPath(m);
+    }
+
+    function copyToClipboard(text, successMsg = 'Đã sao chép liên kết!') {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(successMsg, 'success');
+        }).catch(() => fallbackCopy(text, successMsg));
+      } else {
+        fallbackCopy(text, successMsg);
       }
-      if (state.banNganhWebAppUrl) {
-        return `${state.banNganhWebAppUrl}?sheetId=${encodeURIComponent(m.spreadsheetId || '')}&banNganhId=${encodeURIComponent(m.id)}&title=${encodeURIComponent(m.tenBN || '')}`;
-      }
-      return '';
+    }
+
+    function fallbackCopy(text, successMsg) {
+      const temp = document.createElement('input');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      showToast(successMsg, 'success');
     }
 
     function renderChurches() {
@@ -1204,7 +1260,9 @@
 
       container.innerHTML = list.map(m => {
         const hasSheet = !!m.spreadsheetId;
-        const webUrl = getMinistryWebAppUrl(m);
+        const cleanPath = getMinistryCleanPath(m);
+        const baseUrl = window.location.href.split('?')[0].replace(/\/[^\/]*$/, '/');
+        const fullShareUrl = baseUrl + cleanPath;
         const tInfo = typeIcons[m.loaiBN] || { icon: 'groups', color: 'text-primary' };
 
         return `
@@ -1241,6 +1299,26 @@
                 </div>
                 ${hasSheet ? `<a href="${m.spreadsheetUrl || ('https://docs.google.com/spreadsheets/d/' + m.spreadsheetId + '/edit')}" target="_blank" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1 transition-colors shrink-0"><span>Mở Sheet</span><span class="material-symbols-outlined text-xs">open_in_new</span></a>` : ''}
               </div>
+
+              <!-- Web App Direct URL Box -->
+              <div class="mt-3 p-3 rounded-2xl bg-surface-elevated/80 border border-white/10 flex items-center justify-between gap-2.5 group/url">
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div class="w-7 h-7 rounded-xl bg-primary-container/20 text-primary flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[15px]">link</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-[10px] text-text-secondary/70 font-semibold uppercase tracking-wider">Đường dẫn Web App:</div>
+                    <a href="${cleanPath}" target="_blank" class="text-xs font-mono font-bold text-primary hover:underline truncate block" title="${fullShareUrl}">
+                      /${cleanPath}
+                    </a>
+                  </div>
+                </div>
+                
+                <button onclick="copyToClipboard('${fullShareUrl}', 'Đã sao chép link Web App: /${cleanPath}')" class="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-primary/20 hover:text-primary text-text-secondary transition-all shrink-0 flex items-center gap-1 text-[11px] font-bold border border-white/5" title="Sao chép đường dẫn">
+                  <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                  <span>Copy</span>
+                </button>
+              </div>
             </div>
 
             <!-- Bottom Action Buttons -->
@@ -1249,17 +1327,10 @@
                 <div class="flex items-center justify-between gap-2">
                   <button onclick="openLinkSheetModal('${m.id}')" class="text-[11px] text-text-secondary hover:text-white flex items-center gap-1"><span class="material-symbols-outlined text-xs">edit</span> Đổi Sheet ID</button>
                   
-                  ${webUrl ? `
-                    <a href="${webUrl}" target="_blank" class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all">
-                      <span class="material-symbols-outlined text-[16px]">rocket_launch</span>
-                      <span>Mở Web App Ban Ngành</span>
-                    </a>
-                  ` : `
-                    <button onclick="navigateTo('settings')" class="flex-1 py-2 px-3 rounded-xl bg-surface-elevated hover:bg-white/10 text-pink-300 text-[11px] font-bold flex items-center justify-center gap-1 border border-pink-500/30">
-                      <span class="material-symbols-outlined text-xs">settings</span>
-                      <span>Cấu hình Web App URL</span>
-                    </button>
-                  `}
+                  <a href="${cleanPath}" target="_blank" class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all">
+                    <span class="material-symbols-outlined text-[16px]">rocket_launch</span>
+                    <span>Mở Web App Ban Ngành</span>
+                  </a>
                 </div>
               ` : `
                 <div class="flex items-center gap-2 w-full justify-between">

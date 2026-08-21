@@ -5,32 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Đang điều hướng...</title>
   <script>
-    // GitHub Pages SPA Dynamic Router (Hỗ trợ cấu trúc URL: /<hoi-thanh>/<ban-nganh>)
     (function() {
-      const fullPath = window.location.pathname; // e.g. /GGSheet-QLHT/tml/thanh-trang
-      const repoName = '/GGSheet-QLHT';
-      
-      let relativePath = fullPath;
-      if (relativePath.startsWith(repoName)) {
-        relativePath = relativePath.substring(repoName.length);
+      const pathSegments = window.location.pathname.split('/').filter(Boolean);
+      let repoPrefix = '';
+      let routes = [];
+
+      if (pathSegments.length > 0 && pathSegments[0].toLowerCase() === 'ggsheet-qlht') {
+        repoPrefix = '/' + pathSegments[0];
+        routes = pathSegments.slice(1);
+      } else {
+        routes = pathSegments;
       }
-      
-      // Remove leading and trailing slashes
-      const segments = relativePath.split('/').filter(Boolean);
-      
-      if (segments.length >= 2) {
-        // e.g. /tml/thanh-trang -> redirect to ban-nganh.html?ht=tml&bn=thanh-trang
-        const churchSlug = encodeURIComponent(segments[0]);
-        const ministrySlug = encodeURIComponent(segments[1]);
-        const target = repoName + '/ban-nganh.html?ht=' + churchSlug + '&bn=' + ministrySlug;
+
+      if (routes.length >= 2) {
+        // e.g. /ht-thanh-my-loi/thanh-trang or /ht-thu-duc/thanh-nien
+        const churchSlug = encodeURIComponent(routes[0]);
+        const ministrySlug = encodeURIComponent(routes[1]);
+        const target = repoPrefix + '/ban-nganh.html?ht=' + churchSlug + '&bn=' + ministrySlug;
         window.location.replace(target);
-      } else if (segments.length === 1) {
-        // e.g. /thanh-trang -> redirect to ban-nganh.html?bn=thanh-trang
-        const singleSlug = encodeURIComponent(segments[0].replace(/\.html$/i, ''));
-        const target = repoName + '/ban-nganh.html?bn=' + singleSlug;
+      } else if (routes.length === 1) {
+        // e.g. /thanh-trang
+        const singleSlug = encodeURIComponent(routes[0].replace(/\.html$/i, ''));
+        const target = repoPrefix + '/ban-nganh.html?bn=' + singleSlug;
         window.location.replace(target);
       } else {
-        window.location.replace(repoName + '/index.html');
+        window.location.replace((repoPrefix || '') + '/index.html');
       }
     })();
   </script>

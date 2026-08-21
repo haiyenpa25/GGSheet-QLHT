@@ -262,16 +262,19 @@
 
   function findMinistryInList(list, normChurch, normMin) {
     if (!list || !list.length) return null;
+    const cleanMin = normMin ? normMin.replace(/^ban-/, '') : '';
+    const cleanChurch = normChurch ? normChurch.replace(/^ht-/, '') : '';
+
     return list.find(m => {
       const mId = slugify(m.id);
       const mCode = slugify(m.maBN);
-      const mName = slugify(m.tenBN);
-      const mChurch = slugify(m.tenHoiThanh || m.hoiThanhId);
+      const mName = slugify(m.tenBN).replace(/^ban-/, '');
+      const mChurch = slugify(m.tenHoiThanh || m.hoiThanhId || '').replace(/^ht-/, '');
       
-      const matchMin = (mId === normMin || mCode === normMin || mName.includes(normMin) || normMin.includes(mName));
+      const matchMin = (mId === normMin || mCode === normMin || mName === cleanMin || mName.includes(cleanMin) || cleanMin.includes(mName));
       if (!matchMin) return false;
-      if (normChurch) {
-        return mChurch.includes(normChurch) || normChurch.includes(mChurch);
+      if (cleanChurch) {
+        return mChurch.includes(cleanChurch) || cleanChurch.includes(mChurch) || (m.hoiThanhId && slugify(m.hoiThanhId).includes(cleanChurch));
       }
       return true;
     });
