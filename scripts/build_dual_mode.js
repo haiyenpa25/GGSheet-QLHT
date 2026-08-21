@@ -32,4 +32,8 @@ const targetBanNganhHtml = path.join(rootDir, 'ban-nganh.html');
 fs.writeFileSync(targetBanNganhHtml, standaloneHtml, 'utf8');
 console.log('✅ Created standalone ban-nganh.html for GitHub Pages (Size:', fs.statSync(targetBanNganhHtml).size, 'bytes)');
 
+const targetThanhTrangHtml = path.join(rootDir, 'thanh-trang.html');
+fs.writeFileSync(targetThanhTrangHtml, standaloneHtml, 'utf8');
+console.log('✅ Created short alias thanh-trang.html for GitHub Pages (Size:', fs.statSync(targetThanhTrangHtml).size, 'bytes)');
+
 console.log('Build completed successfully!');

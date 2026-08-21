@@ -259,9 +259,14 @@
         urlParams = new URLSearchParams(window.location.search);
       } catch (e) {}
 
-      state.activeSheetId = (urlParams ? urlParams.get('sheetId') : '') || serverCfg.sheetId || '';
+      state.activeSheetId = (urlParams ? urlParams.get('sheetId') : '') || serverCfg.sheetId || '13oCKGzsOyy3x9VrsI-NNxFaXBTpdOvveUoTiWegcEZw';
       state.banNganhTitle = (urlParams ? urlParams.get('title') : '') || serverCfg.banNganhTitle || 'Ban Thanh Tráng';
       state.banNganhId = (urlParams ? urlParams.get('banNganhId') : '') || serverCfg.banNganhId || 'id_41451e0a';
+
+      // Clean up URL query parameters for short, clean link in address bar
+      if (window.history && window.history.replaceState && window.location.search) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
 
       if (state.banNganhTitle) {
         document.title = 'Quản Lý ' + state.banNganhTitle;
