@@ -2366,9 +2366,66 @@
     }
   }
 
-  // =========================================================================
-  // INITIALIZATION & STALE-WHILE-REVALIDATE CACHE
-  // =========================================================================
+  const GAS_MASTER_API_URL = 'https://script.google.com/macros/s/AKfycbwWOhHsZolmnD5fjNNYKATkUmtwEqQwuvEN_5YAXpUab57UqsyRaMAzvPk0A8XhFl20/exec';
+
+  function slugify(text) {
+    if (!text) return '';
+    return String(text)
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  function findMinistryInList(list, normChurch, normMin) {
+    if (!list || !list.length) return null;
+    return list.find(m => {
+      const mId = slugify(m.id);
+      const mCode = slugify(m.maBN);
+      const mName = slugify(m.tenBN);
+      const mChurch = slugify(m.tenHoiThanh || m.hoiThanhId);
+      
+      const matchMin = (mId === normMin || mCode === normMin || mName.includes(normMin) || normMin.includes(mName));
+      if (!matchMin) return false;
+      if (normChurch) {
+        return mChurch.includes(normChurch) || normChurch.includes(mChurch);
+      }
+      return true;
+    });
+  }
+
+  async function resolveMinistryInfoFromSlugs(churchSlug, ministrySlug) {
+    if (!ministrySlug) return null;
+    const normMin = slugify(ministrySlug);
+    const normChurch = slugify(churchSlug);
+
+    // 1. Check local master cache first
+    try {
+      const cachedRaw = localStorage.getItem('qlht_master_portal_cache');
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        if (cached && cached.data && cached.data.ministries) {
+          const found = findMinistryInList(cached.data.ministries, normChurch, normMin);
+          if (found && found.spreadsheetId) return found;
+        }
+      }
+    } catch (e) {}
+
+    // 2. Fetch from Master API
+    try {
+      const res = await fetchJSONP(GAS_MASTER_API_URL, { action: 'apiGetInitialData' }, 10000);
+      if (res && res.success && res.data && res.data.ministries) {
+        try { localStorage.setItem('qlht_master_portal_cache', JSON.stringify({ timestamp: Date.now(), data: res.data })); } catch (e) {}
+        const found = findMinistryInList(res.data.ministries, normChurch, normMin);
+        if (found && found.spreadsheetId) return found;
+      }
+    } catch (err) {
+      console.warn('Master API slug resolution error:', err);
+    }
+    return null;
+  }
 
   async function initApp() {
     try {
@@ -2378,13 +2435,25 @@
         urlParams = new URLSearchParams(window.location.search);
       } catch (e) {}
 
-      state.activeSheetId = (urlParams ? urlParams.get('sheetId') : '') || serverCfg.sheetId || '13oCKGzsOyy3x9VrsI-NNxFaXBTpdOvveUoTiWegcEZw';
+      const htParam = urlParams ? (urlParams.get('ht') || urlParams.get('hoithanh') || '') : '';
+      const bnParam = urlParams ? (urlParams.get('bn') || urlParams.get('bannganh') || urlParams.get('id') || urlParams.get('ma') || '') : '';
+
+      state.activeSheetId = (urlParams ? urlParams.get('sheetId') : '') || serverCfg.sheetId || '';
       state.banNganhTitle = (urlParams ? urlParams.get('title') : '') || serverCfg.banNganhTitle || 'Ban Thanh Tráng';
       state.banNganhId = (urlParams ? urlParams.get('banNganhId') : '') || serverCfg.banNganhId || 'id_41451e0a';
 
-      // Clean up URL query parameters for short, clean link in address bar
-      if (window.history && window.history.replaceState && window.location.search) {
-        window.history.replaceState({}, document.title, window.location.pathname);
+      // Auto resolve multi-church & multi-ministry if dynamic slugs are provided
+      if (bnParam && !state.activeSheetId) {
+        const resolved = await resolveMinistryInfoFromSlugs(htParam, bnParam);
+        if (resolved) {
+          state.activeSheetId = resolved.spreadsheetId;
+          state.banNganhTitle = resolved.tenBN;
+          state.banNganhId = resolved.id;
+        }
+      }
+
+      if (!state.activeSheetId) {
+        state.activeSheetId = '13oCKGzsOyy3x9VrsI-NNxFaXBTpdOvveUoTiWegcEZw';
       }
 
       if (state.banNganhTitle) {
