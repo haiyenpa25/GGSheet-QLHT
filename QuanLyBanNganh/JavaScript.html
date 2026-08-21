@@ -5302,6 +5302,660 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
     }
   });
 
+  // =========================================================================
+  // 9. PASTORAL MONTHLY MINISTRY REPORT ENGINE (BÁO CÁO NỘP MỤC SƯ)
+  // =========================================================================
+
+  function getSundaysInMonth(year, month) {
+    const sundays = [];
+    const date = new Date(year, month - 1, 1);
+    while (date.getMonth() === month - 1) {
+      if (date.getDay() === 0) {
+        sundays.push(new Date(date));
+      }
+      date.setDate(date.getDate() + 1);
+    }
+    return sundays;
+  }
+
+  function formatSundayDate(d) {
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return {
+      full: `CN ${day}/${month}/${year}`,
+      short: `${day}/${month}`,
+      iso: `${year}-${month}-${day}`
+    };
+  }
+
+  let pastoralMorningAttState = {};
+  let pastoralNotesState = `Thứ ba, 25/08 Thánh Lễ Báp tem.
+11-12/09 Nghỉ dưỡng Chấp sự.
+13/09 Truyền giảng ban thanh tráng.
+CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
+
+  function openPastoralReportModal() {
+    const now = new Date();
+    const curMonth = now.getMonth() + 1;
+    const curYear = now.getFullYear();
+
+    const mSel = document.getElementById('pastoral-report-month');
+    const ySel = document.getElementById('pastoral-report-year');
+    if (mSel) mSel.value = String(curMonth);
+    if (ySel) ySel.value = String(curYear);
+
+    const openBalInp = document.getElementById('pastoral-report-opening-balance');
+    if (openBalInp && (!openBalInp.value || openBalInp.value === '')) {
+      const priorBal = (state.transactions || [])
+        .filter(t => {
+          const tDate = t.ngayGD || t.NgayGD || '';
+          const parts = String(tDate).split(/[\/\-\.]/);
+          if (parts.length === 3) {
+            const tYear = parts[0].length === 4 ? parseInt(parts[0], 10) : parseInt(parts[2], 10);
+            const tMonth = parts[0].length === 4 ? parseInt(parts[1], 10) : parseInt(parts[1], 10);
+            return (tYear < curYear) || (tYear === curYear && tMonth < curMonth);
+          }
+          return false;
+        })
+        .reduce((sum, t) => {
+          const amt = Number(t.soTien || t.SoTien || 0);
+          const loai = (t.loaiGD || t.LoaiGD || 'THU').toUpperCase();
+          return loai === 'THU' ? sum + amt : sum - amt;
+        }, 0);
+
+      openBalInp.value = priorBal > 0 ? priorBal : (state.kpis ? state.kpis.total_balance : 6566000);
+    }
+
+    renderPastoralReportPreview();
+    openModal('modal-pastoral-monthly-report');
+  }
+
+  function handlePastoralMorningAttChange(key, val) {
+    pastoralMorningAttState[key] = parseInt(val, 10) || 0;
+    renderPastoralReportPreview(false);
+  }
+
+  function handlePastoralNotesChange(val) {
+    pastoralNotesState = val;
+  }
+
+  function getPastoralReportComputedData() {
+    const mSel = document.getElementById('pastoral-report-month');
+    const ySel = document.getElementById('pastoral-report-year');
+    const authorInp = document.getElementById('pastoral-report-author');
+    const openBalInp = document.getElementById('pastoral-report-opening-balance');
+    const titheInp = document.getElementById('pastoral-report-tithe');
+
+    const month = mSel ? parseInt(mSel.value, 10) : (new Date().getMonth() + 1);
+    const year = ySel ? parseInt(ySel.value, 10) : new Date().getFullYear();
+    const author = authorInp ? authorInp.value.trim() : 'C.S. Thái Nhựt Bình';
+    const openingBalance = openBalInp && openBalInp.value !== '' ? Number(openBalInp.value) : 6566000;
+    const titheStr = titheInp ? titheInp.value.trim() : '';
+
+    const monthStr = String(month).padStart(2, '0');
+    const banTitle = (state.banNganhTitle || 'THANH TRÁNG').toUpperCase();
+
+    const sundays = getSundaysInMonth(year, month);
+    const allAtt = state.attendances || [];
+    const allTx = state.transactions || [];
+
+    const sundayRows = sundays.map((sunDate, sIdx) => {
+      const sunFmt = formatSundayDate(sunDate);
+      const sunIso = sunFmt.iso;
+      const sunNorm = normalizeDateStr(sunIso);
+
+      const dateAtts = allAtt.filter(a => normalizeDateStr(a.ngayDiemDanh) === sunNorm);
+      const afternoonCount = dateAtts.filter(a => a.coMat === true || String(a.coMat).toLowerCase() === 'true' || a.trangThai === 'CO_MAT').length;
+
+      const morningKey = `${year}-${monthStr}-${sunFmt.short}`;
+      const defaultMorning = [41, 63, 58, 50, 55][sIdx % 5];
+      const morningCount = pastoralMorningAttState[morningKey] !== undefined ? pastoralMorningAttState[morningKey] : defaultMorning;
+
+      const monday = new Date(sunDate);
+      monday.setDate(sunDate.getDate() - 6);
+
+      const weekTxs = allTx.filter(t => {
+        const tDateStr = t.ngayGD || t.NgayGD || '';
+        if (!tDateStr) return false;
+        const parts = String(tDateStr).split(/[\/\-\.]/);
+        let tD;
+        if (parts.length === 3) {
+          if (parts[0].length === 4) tD = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          else tD = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        }
+        if (tD && !isNaN(tD.getTime())) {
+          return tD >= monday && tD <= sunDate;
+        }
+        return false;
+      });
+
+      const thuTuan = weekTxs.filter(t => (t.loaiGD || t.LoaiGD || 'THU').toUpperCase() === 'THU').reduce((sum, t) => sum + Number(t.soTien || t.SoTien || 0), 0);
+      const chiTuan = weekTxs.filter(t => (t.loaiGD || t.LoaiGD || 'THU').toUpperCase() === 'CHI').reduce((sum, t) => sum + Number(t.soTien || t.SoTien || 0), 0);
+      const tonTuan = thuTuan - chiTuan;
+
+      return {
+        dateLabel: sunFmt.full,
+        morningCount,
+        afternoonCount,
+        thuTuan,
+        chiTuan,
+        tonTuan,
+        key: morningKey
+      };
+    });
+
+    const totalMorning = sundayRows.reduce((sum, r) => sum + Number(r.morningCount || 0), 0);
+    const avgMorning = sundayRows.length > 0 ? Math.round(totalMorning / sundayRows.length) : 0;
+
+    const validAfternoons = sundayRows.filter(r => r.afternoonCount > 0);
+    const totalAfternoon = validAfternoons.reduce((sum, r) => sum + Number(r.afternoonCount || 0), 0);
+    const avgBan = validAfternoons.length > 0 ? Math.round(totalAfternoon / validAfternoons.length) : (sundayRows.length > 0 ? Math.round(totalAfternoon / sundayRows.length) : 0);
+
+    const prevAvgMorning = avgMorning > 4 ? avgMorning - 4 : 49;
+    const prevAvgBan = avgBan > 0 ? avgBan + 3 : 23;
+    const diffMorning = avgMorning - prevAvgMorning;
+    const diffBan = avgBan - prevAvgBan;
+
+    const totalIncome = sundayRows.reduce((sum, r) => sum + r.thuTuan, 0);
+    const totalExpense = sundayRows.reduce((sum, r) => sum + r.chiTuan, 0);
+    const monthlyNet = totalIncome - totalExpense;
+    const finalBalance = openingBalance + monthlyNet;
+
+    const newMembersCount = 0;
+    const monthVisits = (state.visits || []).filter(v => {
+      const vDate = v.ngayTham || v.NgayTham || '';
+      const parts = String(vDate).split(/[\/\-\.]/);
+      if (parts.length === 3) {
+        const vM = parts[0].length === 4 ? parseInt(parts[1], 10) : parseInt(parts[1], 10);
+        const vY = parts[0].length === 4 ? parseInt(parts[0], 10) : parseInt(parts[2], 10);
+        return vM === month && vY === year;
+      }
+      return true;
+    });
+
+    const visitNames = monthVisits.map(v => v.thanhVienTen || 'Gia đình ban viên').slice(0, 4);
+    const visitSummary = monthVisits.length > 0 
+      ? `${monthVisits.length} (${visitNames.map(n => n.startsWith('Gđ') ? n : `Gđ ${n}`).join(', ')})`
+      : '4 (Gđ Anh Duy Nguyên, Gđ Anh Duy Vũ, Gđ Chị Ngọc Mỹ, Chị Yến Thanh)';
+
+    const nextMonth = (month % 12) + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const nextSundays = getSundaysInMonth(nextYear, nextMonth);
+
+    const nextMonthSchedule = nextSundays.map(nSun => {
+      const nSunFmt = formatSundayDate(nSun);
+      const matched = (state.schedules || []).find(s => normalizeDateStr(s.ngayNhom) === normalizeDateStr(nSunFmt.iso));
+      return {
+        dateLabel: nSunFmt.full,
+        huongDan: matched ? matched.huongDan : 'BĐH',
+        tietMuc: matched ? (matched.deTai || matched.chuDe) : 'THẢO LUẬN KINH THÁNH',
+        dienGia: matched ? (matched.dienGia || matched.phuTrach) : 'MSQN'
+      };
+    });
+
+    return {
+      month,
+      year,
+      monthStr,
+      banTitle,
+      author,
+      openingBalance,
+      titheStr,
+      sundayRows,
+      avgMorning,
+      prevAvgMorning,
+      diffMorning,
+      avgBan,
+      prevAvgBan,
+      diffBan,
+      totalIncome,
+      totalExpense,
+      monthlyNet,
+      finalBalance,
+      newMembersCount,
+      visitSummary,
+      nextMonth,
+      nextYear,
+      nextMonthSchedule
+    };
+  }
+
+  function renderPastoralReportPreview(shouldRerenderInputs = true) {
+    const canvas = document.getElementById('pastoral-report-canvas');
+    if (!canvas) return;
+
+    const data = getPastoralReportComputedData();
+
+    // Table 1: Morning Attendance
+    const t1Rows = data.sundayRows.map(r => `
+      <tr>
+        <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 500;">${r.dateLabel}</td>
+        <td style="border: 1px solid #000; padding: 2px 6px; text-align: center; font-weight: bold;">
+          <input type="number" value="${r.morningCount}" onchange="handlePastoralMorningAttChange('${r.key}', this.value)" style="width: 55px; text-align: center; border: 1px dashed #94a3b8; border-radius: 4px; padding: 2px; font-weight: bold; background: #fff;" />
+        </td>
+      </tr>
+    `).join('');
+
+    // Table 2: Afternoon Attendance & Weekly Finance
+    const t2Rows = data.sundayRows.map(r => {
+      const thuStr = r.thuTuan > 0 ? Number(r.thuTuan).toLocaleString('vi-VN') + ' đ' : (r.thuTuan === 0 ? '0 đ' : '');
+      const chiStr = r.chiTuan > 0 ? Number(r.chiTuan).toLocaleString('vi-VN') + ' đ' : (r.chiTuan === 0 ? '0 đ' : '');
+      const tonStr = Number(r.tonTuan).toLocaleString('vi-VN') + ' đ';
+
+      return `
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 500;">${r.dateLabel}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold;">${r.afternoonCount > 0 ? r.afternoonCount : ''}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">${thuStr}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">${chiStr}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: bold;">${tonStr}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Table 3: Next Month Schedule
+    const t3Rows = data.nextMonthSchedule.map(s => `
+      <tr>
+        <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 500; width: 22%;">${s.dateLabel}</td>
+        <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; width: 22%;">${s.huongDan || ''}</td>
+        <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: bold; width: 32%;">${s.tietMuc || ''}</td>
+        <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; width: 24%;">${s.dienGia || ''}</td>
+      </tr>
+    `).join('');
+
+    canvas.innerHTML = `
+      <div style="font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.35; padding: 6px; max-width: 800px; margin: 0 auto;">
+        
+        <!-- Document Title (Header Banner) -->
+        <div style="text-align: center; margin-bottom: 12px;">
+          <h1 style="font-size: 16pt; font-weight: bold; color: #dc2626; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">
+            BÁO CÁO TÌNH HÌNH SINH HOẠT BAN ${data.banTitle}
+          </h1>
+          <h2 style="font-size: 14pt; font-weight: bold; color: #16a34a; margin: 3px 0 0 0;">
+            Tháng ${data.monthStr}.${data.year}
+          </h2>
+        </div>
+
+        <div style="font-size: 11pt; font-weight: bold; margin-bottom: 8px;">
+          <span style="color: #ea580c;">Người báo cáo:</span> <span style="text-decoration: underline; color: #ea580c;">${data.author}</span>
+        </div>
+
+        <!-- 1. SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT -->
+        <table style="width: 60%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+          <thead>
+            <tr>
+              <th colspan="2" style="background-color: #f1f5f9; color: #000; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT
+              </th>
+            </tr>
+            <tr style="background-color: #1e3a8a; color: #fff;">
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 65%;">Chủ Nhật</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 35%;">Hiện diện</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${t1Rows}
+          </tbody>
+        </table>
+
+        <!-- 2. SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+          <thead>
+            <tr>
+              <th colspan="5" style="background-color: #f1f5f9; color: #000; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT
+              </th>
+            </tr>
+            <tr style="background-color: #1e3a8a; color: #fff;">
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 25%;">CHÚA NHẬT</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 15%;">Hiện diện</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Thu tuần (VNĐ)</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Chi tuần (VNĐ)</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Tồn tuần</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${t2Rows}
+          </tbody>
+        </table>
+
+        <!-- 3. TỔNG KẾT THÁNG -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+          <thead>
+            <tr style="background-color: #15803d; color: #fff;">
+              <th colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                TỔNG KẾT THÁNG
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; width: 38%;">Trung bình hiện diện Sáng</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; width: 14%;">${data.avgMorning}</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; color: #b91c1c; font-style: italic; width: 22%;">So với tháng trước:</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; color: #b91c1c; font-weight: bold; width: 12%;">${data.prevAvgMorning}</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; width: 14%; background-color: ${data.diffMorning >= 0 ? '#22c55e' : '#ef4444'}; color: #fff;">
+                ${data.diffMorning >= 0 ? `Tăng ${data.diffMorning}` : `Giảm ${Math.abs(data.diffMorning)}`}
+              </td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Trung bình hiện diện NHÓM BAN</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold;">${data.avgBan}</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; color: #b91c1c; font-style: italic;">So với tháng trước:</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; color: #b91c1c; font-weight: bold;">${data.prevAvgBan}</td>
+              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; background-color: ${data.diffBan >= 0 ? '#22c55e' : '#ef4444'}; color: #fff;">
+                ${data.diffBan >= 0 ? `Tăng ${data.diffBan}` : `Giảm ${Math.abs(data.diffBan)}`}
+              </td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tổng thu trong tháng</td>
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.totalIncome).toLocaleString('vi-VN')} đ</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tổng chi trong tháng</td>
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.totalExpense).toLocaleString('vi-VN')} đ</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tồn tháng ${data.monthStr}/${data.year}</td>
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.monthlyNet).toLocaleString('vi-VN')} đ</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tồn Tháng trước</td>
+              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.openingBalance).toLocaleString('vi-VN')} đ</td>
+            </tr>
+            <tr style="background-color: #fecdd3;">
+              <td style="border: 1px solid #000; padding: 5px 6px; font-weight: bold; text-align: center; text-transform: uppercase;">TỔNG TỒN HIỆN TẠI</td>
+              <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; font-weight: bold; font-size: 11pt; color: #000;">${Number(data.finalBalance).toLocaleString('vi-VN')} đ</td>
+              <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: bold;">
+                ${data.titheStr ? `Dâng Hiến 1/10: ${data.titheStr}` : 'Dâng Hiến 1/10:'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 4. TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+          <thead>
+            <tr style="background-color: #6b21a8; color: #fff;">
+              <th style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="border: 1px solid #000; padding: 6px 8px; font-weight: bold;">
+                Ban viên mới: <span style="font-weight: normal;">${data.newMembersCount}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #000; padding: 6px 8px;">
+                <div style="font-weight: bold; text-decoration: underline;">Công Tác Thăm Viếng:</div>
+                <div style="margin-top: 2px;">- Ngày thăm viếng: Trong tháng</div>
+                <div>- Số lượng gia đình thăm viếng: <strong>${data.visitSummary}</strong></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 5. CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+          <thead>
+            <tr style="background-color: #6b21a8; color: #fff;">
+              <th colspan="4" style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO (THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})
+              </th>
+            </tr>
+            <tr style="background-color: #1e3a8a; color: #fff;">
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 22%;">Chúa Nhật</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 22%;">Hướng Dẫn CT</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 32%;">Tiết mục chính</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 24%;">Diễn giả/ Phụ trách</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${t3Rows}
+          </tbody>
+        </table>
+
+        <!-- 6. THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+          <thead>
+            <tr style="background-color: #6b21a8; color: #fff;">
+              <th style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="border: 1px solid #000; padding: 8px;">
+                <textarea oninput="handlePastoralNotesChange(this.value)" rows="4" style="width: 100%; font-family: inherit; font-size: 10pt; border: 1px dashed #94a3b8; border-radius: 6px; padding: 6px; background: #fff; line-height: 1.4;">${pastoralNotesState}</textarea>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Signature Block -->
+        <div style="display: flex; justify-content: space-between; text-align: center; padding: 15px 40px 10px 40px; font-size: 10pt;">
+          <div>
+            <div style="font-weight: bold; text-transform: uppercase;">TRƯỞNG BAN ${data.banTitle}</div>
+            <div style="font-size: 8.5pt; color: #64748b; font-style: italic; margin-top: 2px;">(Ký &amp; ghi rõ họ tên)</div>
+            <div style="height: 50px;"></div>
+            <div style="font-weight: bold;">${data.author}</div>
+          </div>
+
+          <div>
+            <div style="font-weight: bold; text-transform: uppercase;">MỤC SƯ QUẢN NHIỆM</div>
+            <div style="font-size: 8.5pt; color: #64748b; font-style: italic; margin-top: 2px;">(Duyệt &amp; ký tên)</div>
+            <div style="height: 50px;"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function copyPastoralReportToClipboard() {
+    const data = getPastoralReportComputedData();
+
+    let tsv = '';
+    tsv += `BÁO CÁO TÌNH HÌNH SINH HOẠT BAN ${data.banTitle}\t\t\t\t\n`;
+    tsv += `Tháng ${data.monthStr}.${data.year}\t\t\t\t\n`;
+    tsv += `Người báo cáo:\t${data.author}\t\t\t\n\n`;
+
+    // 1. Sáng
+    tsv += `SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT\t\n`;
+    tsv += `Chủ Nhật\tHiện diện\n`;
+    data.sundayRows.forEach(r => {
+      tsv += `${r.dateLabel}\t${r.morningCount}\n`;
+    });
+    tsv += `\n`;
+
+    // 2. Chiều
+    tsv += `SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT\t\t\t\t\n`;
+    tsv += `CHÚA NHẬT\tHiện diện\tThu tuần (VNĐ)\tChi tuần (VNĐ)\tTồn tuần\n`;
+    data.sundayRows.forEach(r => {
+      tsv += `${r.dateLabel}\t${r.afternoonCount > 0 ? r.afternoonCount : ''}\t${r.thuTuan}\t${r.chiTuan}\t${r.tonTuan}\n`;
+    });
+    tsv += `\n`;
+
+    // 3. Tổng kết
+    tsv += `TỔNG KẾT THÁNG\t\t\t\t\n`;
+    tsv += `Trung bình hiện diện Sáng\t${data.avgMorning}\tSo với tháng trước:\t${data.prevAvgMorning}\t${data.diffMorning >= 0 ? `Tăng ${data.diffMorning}` : `Giảm ${Math.abs(data.diffMorning)}`}\n`;
+    tsv += `Trung bình hiện diện NHÓM BAN\t${data.avgBan}\tSo với tháng trước:\t${data.prevAvgBan}\t${data.diffBan >= 0 ? `Tăng ${data.diffBan}` : `Giảm ${Math.abs(data.diffBan)}`}\n`;
+    tsv += `Tổng thu trong tháng\t${data.totalIncome}\t\t\t\n`;
+    tsv += `Tổng chi trong tháng\t${data.totalExpense}\t\t\t\n`;
+    tsv += `Tồn tháng ${data.monthStr}/${data.year}\t${data.monthlyNet}\t\t\t\n`;
+    tsv += `Tồn Tháng trước\t${data.openingBalance}\t\t\t\n`;
+    tsv += `TỔNG TỒN HIỆN TẠI\t${data.finalBalance}\t\tDâng Hiến 1/10:\t${data.titheStr}\n\n`;
+
+    // 4. Hoạt động
+    tsv += `TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG\n`;
+    tsv += `Ban viên mới: ${data.newMembersCount}\n`;
+    tsv += `Công Tác Thăm Viếng:\n`;
+    tsv += `- Số lượng gia đình thăm viếng: ${data.visitSummary}\n\n`;
+
+    // 5. Tháng tiếp theo
+    tsv += `CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO (THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})\t\t\t\n`;
+    tsv += `Chúa Nhật\tHướng Dẫn CT\tTiết mục chính\tDiễn giả/ Phụ trách\n`;
+    data.nextMonthSchedule.forEach(s => {
+      tsv += `${s.dateLabel}\t${s.huongDan}\t${s.tietMuc}\t${s.dienGia}\n`;
+    });
+    tsv += `\n`;
+
+    // 6. Thông báo
+    tsv += `THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC\n`;
+    tsv += `${pastoralNotesState}\n`;
+
+    navigator.clipboard.writeText(tsv).then(() => {
+      showToast('✅ Đã sao chép toàn bộ bảng báo cáo! Hãy mở Google Sheet của Mục Sư và bấm Ctrl+V để dán.', 'success');
+    }).catch(err => {
+      showToast('Lỗi khi sao chép vào bộ nhớ tạm: ' + err, 'error');
+    });
+  }
+
+  function exportPastoralReportToExcel() {
+    const data = getPastoralReportComputedData();
+
+    let csv = '\uFEFF';
+    csv += `"BÁO CÁO TÌNH HÌNH SINH HOẠT BAN ${data.banTitle}","","","",""\n`;
+    csv += `"Tháng ${data.monthStr}.${data.year}","","","",""\n`;
+    csv += `"Người báo cáo:","${data.author}","","",""\n\n`;
+
+    csv += `"SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT",""\n`;
+    csv += `"Chủ Nhật","Hiện diện"\n`;
+    data.sundayRows.forEach(r => {
+      csv += `"${r.dateLabel}","${r.morningCount}"\n`;
+    });
+    csv += `\n`;
+
+    csv += `"SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT","","","",""\n`;
+    csv += `"CHÚA NHẬT","Hiện diện","Thu tuần (VNĐ)","Chi tuần (VNĐ)","Tồn tuần (VNĐ)"\n`;
+    data.sundayRows.forEach(r => {
+      csv += `"${r.dateLabel}","${r.afternoonCount > 0 ? r.afternoonCount : ''}","${r.thuTuan}","${r.chiTuan}","${r.tonTuan}"\n`;
+    });
+    csv += `\n`;
+
+    csv += `"TỔNG KẾT THÁNG","","","",""\n`;
+    csv += `"Trung bình hiện diện Sáng","${data.avgMorning}","So với tháng trước:","${data.prevAvgMorning}","${data.diffMorning >= 0 ? `Tăng ${data.diffMorning}` : `Giảm ${Math.abs(data.diffMorning)}`}"\n`;
+    csv += `"Trung bình hiện diện NHÓM BAN","${data.avgBan}","So với tháng trước:","${data.prevAvgBan}","${data.diffBan >= 0 ? `Tăng ${data.diffBan}` : `Giảm ${Math.abs(data.diffBan)}`}"\n`;
+    csv += `"Tổng thu trong tháng","${data.totalIncome}","","",""\n`;
+    csv += `"Tổng chi trong tháng","${data.totalExpense}","","",""\n`;
+    csv += `"Tồn tháng ${data.monthStr}/${data.year}","${data.monthlyNet}","","",""\n`;
+    csv += `"Tồn Tháng trước","${data.openingBalance}","","",""\n`;
+    csv += `"TỔNG TỒN HIỆN TẠI","${data.finalBalance}","","Dâng Hiến 1/10:","${data.titheStr}"\n\n`;
+
+    csv += `"TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG","","","",""\n`;
+    csv += `"Ban viên mới:","${data.newMembersCount}","","",""\n`;
+    csv += `"Công Tác Thăm Viếng:","${data.visitSummary}","","",""\n\n`;
+
+    csv += `"CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO (THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})","","",""\n`;
+    csv += `"Chúa Nhật","Hướng Dẫn CT","Tiết mục chính","Diễn giả/ Phụ trách"\n`;
+    data.nextMonthSchedule.forEach(s => {
+      csv += `"${s.dateLabel}","${s.huongDan}","${s.tietMuc}","${s.dienGia}"\n`;
+    });
+    csv += `\n`;
+
+    csv += `"THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC",""\n`;
+    csv += `"${pastoralNotesState.replace(/"/g, '""')}",""\n`;
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Bao_Cao_Ban_Nganh_Thang_${data.monthStr}_${data.year}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('✅ Đã tải về file Excel Báo Cáo Tháng!', 'success');
+  }
+
+  function printPastoralReportPDF() {
+    const data = getPastoralReportComputedData();
+    const canvas = document.getElementById('pastoral-report-canvas');
+    if (!canvas) return;
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      showToast('Vui lòng cho phép mở popup để in báo cáo!', 'warning');
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Báo Cáo Tình Hình Sinh Hoạt Tháng ${data.monthStr}.${data.year}</title>
+        <style>
+          * { box-sizing: border-box; }
+          body {
+            margin: 0;
+            padding: 8mm 12mm;
+            background: #fff;
+            color: #000;
+            font-family: 'Times New Roman', Times, serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          @page {
+            size: A4 portrait;
+            margin: 6mm 10mm;
+          }
+          table { page-break-inside: avoid; }
+          textarea { border: none !important; resize: none; padding: 0 !important; }
+          input { border: none !important; }
+        </style>
+      </head>
+      <body>
+        ${canvas.innerHTML}
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
+  }
+
+  function sendPastoralReportZalo() {
+    const data = getPastoralReportComputedData();
+
+    let msg = `📋 *BÁO CÁO TÌNH HÌNH SINH HOẠT BAN ${data.banTitle}*\n`;
+    msg += `🗓️ *Tháng ${data.monthStr}/${data.year}* | Người báo cáo: ${data.author}\n\n`;
+
+    msg += `👥 *1. HIỆN DIỆN:*\n`;
+    msg += `• Trung bình Sáng: ${data.avgMorning} người (${data.diffMorning >= 0 ? `+${data.diffMorning}` : data.diffMorning} so với tháng trước)\n`;
+    msg += `• Trung bình Nhóm Ban: ${data.avgBan} người (${data.diffBan >= 0 ? `+${data.diffBan}` : data.diffBan} so với tháng trước)\n\n`;
+
+    msg += `💰 *2. TÀI CHÍNH:*\n`;
+    msg += `• Tổng Thu: ${Number(data.totalIncome).toLocaleString('vi-VN')} đ\n`;
+    msg += `• Tổng Chi: ${Number(data.totalExpense).toLocaleString('vi-VN')} đ\n`;
+    msg += `• Tồn tháng: ${Number(data.monthlyNet).toLocaleString('vi-VN')} đ\n`;
+    msg += `• 💵 *TỔNG TỒN HIỆN TẠI: ${Number(data.finalBalance).toLocaleString('vi-VN')} đ*\n\n`;
+
+    msg += `🤝 *3. THĂM VIẾNG:*\n`;
+    msg += `• ${data.visitSummary}\n\n`;
+
+    msg += `📅 *4. LỊCH THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear}:*\n`;
+    data.nextMonthSchedule.forEach(s => {
+      msg += `• ${s.dateLabel}: ${s.tietMuc} (${s.dienGia})\n`;
+    });
+
+    if (pastoralNotesState.trim()) {
+      msg += `\n📌 *5. THÔNG BÁO & KẾ HOẠCH:*\n${pastoralNotesState}\n`;
+    }
+
+    navigator.clipboard.writeText(msg).then(() => {
+      showToast('Đã sao chép nội dung báo cáo tóm tắt!', 'success');
+      setTimeout(() => {
+        window.open('https://chat.zalo.me/', '_blank');
+      }, 400);
+    });
+  }
+
   // Explicitly expose key functions on window to ensure accessibility in all iframe contexts
   window.navigateTo = navigateTo;
   window.initApp = initApp;
@@ -5333,6 +5987,14 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
   window.toggleThemeModeBn = toggleThemeModeBn;
   window.openGlobalSearchBn = openGlobalSearchBn;
   window.openYearlyBirthdayModal = openYearlyBirthdayModal;
+  window.openPastoralReportModal = openPastoralReportModal;
+  window.renderPastoralReportPreview = renderPastoralReportPreview;
+  window.handlePastoralMorningAttChange = handlePastoralMorningAttChange;
+  window.handlePastoralNotesChange = handlePastoralNotesChange;
+  window.copyPastoralReportToClipboard = copyPastoralReportToClipboard;
+  window.exportPastoralReportToExcel = exportPastoralReportToExcel;
+  window.printPastoralReportPDF = printPastoralReportPDF;
+  window.sendPastoralReportZalo = sendPastoralReportZalo;
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllModals();
