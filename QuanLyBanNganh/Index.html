@@ -238,6 +238,17 @@
         <span id="notif-badge-count" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-slate-900 shadow-md">0</span>
       </button>
 
+      <!-- Quick Search Button -->
+      <button onclick="openGlobalSearchBn()" class="p-2 text-text-secondary hover:text-emerald-400 transition-colors rounded-full hover:bg-white/5 active:scale-95 flex items-center gap-1" title="Tìm kiếm nhanh (Ctrl+K)">
+        <span class="material-symbols-outlined text-[20px]">search</span>
+        <span class="hidden md:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-text-secondary">Ctrl K</span>
+      </button>
+
+      <!-- Theme Switcher Button -->
+      <button id="btn-theme-toggle-bn" onclick="toggleThemeModeBn()" class="p-2 text-text-secondary hover:text-emerald-400 transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Chuyển đổi giao diện Sáng / Tối">
+        <span id="theme-toggle-icon-bn" class="material-symbols-outlined text-[20px]">light_mode</span>
+      </button>
+
       <button onclick="refreshData(true)" class="p-2 text-text-secondary hover:text-emerald-400 transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Đồng bộ lại dữ liệu">
         <span id="btn-refresh-icon" class="material-symbols-outlined text-[20px]">sync</span>
       </button>
@@ -330,9 +341,36 @@
         </div>
       </div>
 
+      <!-- WIDGET: BIỂU ĐỒ TRỰC QUAN XU HƯỚNG ĐI NHÓM CÁC TUẦN GẦN NHẤT -->
+      <div class="glass-card rounded-3xl p-5 sm:p-6 border border-emerald-500/20 space-y-4 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-xl">bar_chart</span>
+            </span>
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <span>Xu Hướng Đi Nhóm &amp; Thuộc Câu Gốc (8 Buổi Gần Nhất)</span>
+              </h3>
+              <p class="text-[11px] text-text-secondary">Tỷ lệ ban viên hiện diện và học Lời Chúa qua từng tuần sinh hoạt.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 text-[11px]">
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-emerald-500"></span><span class="text-text-secondary">Có mặt</span></div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-amber-400"></span><span class="text-text-secondary">Thuộc câu gốc</span></div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-md bg-white/10"></span><span class="text-text-secondary">Vắng mặt</span></div>
+          </div>
+        </div>
+
+        <div id="dash-attendance-trend-container" class="grid grid-cols-4 sm:grid-cols-8 gap-2 pt-2">
+          <!-- Render dynamic attendance bars -->
+          <div class="col-span-full text-center py-6 text-xs text-text-secondary">Đang phân tích dữ liệu điểm danh...</div>
+        </div>
+      </div>
+
       <!-- WIDGET 1: SINH NHẬT THÁNG NÀY (BIRTHDAY LIST) -->
       <div class="glass-card rounded-3xl p-5 sm:p-6 border border-pink-500/25 bg-gradient-to-r from-pink-950/20 via-surface-elevated/80 to-surface-elevated/80 space-y-4 shadow-xl">
-        <div class="flex justify-between items-center border-b border-white/10 pb-3">
+        <div class="flex justify-between items-center border-b border-white/10 pb-3 flex-wrap gap-2">
           <div class="flex items-center gap-2.5">
             <span class="w-9 h-9 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold">
               <span class="material-symbols-outlined text-xl">cake</span>
@@ -345,6 +383,10 @@
               <p class="text-[11px] text-text-secondary">Danh sách ban viên có sinh nhật trong tháng để Ban Điều Hành chúc mừng &amp; tặng quà.</p>
             </div>
           </div>
+          <button type="button" onclick="openYearlyBirthdayModal()" class="px-3.5 py-1.5 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 border border-pink-500/30 shadow-md">
+            <span class="material-symbols-outlined text-base">calendar_month</span>
+            <span>🎂 Lịch Sinh Nhật 12 Tháng</span>
+          </button>
         </div>
         <div id="dash-birthday-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <div class="col-span-3 text-center py-4 text-xs text-text-secondary">Đang kiểm tra sinh nhật...</div>
@@ -2153,8 +2195,50 @@
     </div>
   </div>
 
-  <!-- TOAST CONTAINER -->
-  <div id="toast-container" class="fixed bottom-6 right-6 z-[110] flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+  <!-- MODAL: TÌM KIẾM TOÀN CỤC BAN NGÀNH (COMMAND BAR CTRL+K) -->
+  <div id="modal-global-search-bn" class="app-modal fixed inset-0 z-[110] hidden items-start justify-center bg-black/80 backdrop-blur-xl p-4 pt-16 sm:pt-24 animate-fade-in">
+    <div class="glass-card-solid border border-emerald-500/30 rounded-3xl p-4 sm:p-6 max-w-xl w-full shadow-2xl space-y-4 relative">
+      <div class="relative">
+        <span class="material-symbols-outlined absolute left-3.5 top-3.5 text-emerald-400 text-xl">search</span>
+        <input type="text" id="global-search-input-bn" oninput="handleGlobalSearchBn(this.value)" placeholder="Tìm tên Ban viên, SĐT, Tổ, Đề tài, Thu/Chi... (ESC để đóng)" class="w-full pl-11 pr-10 py-3 rounded-2xl glass-input text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        <button onclick="closeModal('modal-global-search-bn')" class="absolute right-3 top-3 text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined text-lg">close</span></button>
+      </div>
+
+      <div id="global-search-results-bn" class="max-h-80 overflow-y-auto space-y-2 text-xs pr-1">
+        <div class="text-center py-8 text-text-secondary">Nhập từ khóa tìm kiếm nhanh Ban viên, Tổ, Lịch nhóm, Quỹ...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LỊCH SINH NHẬT TOÀN NĂM (12 THÁNG) -->
+  <div id="modal-yearly-birthdays" class="app-modal fixed inset-0 z-[100] hidden items-center justify-center bg-black/80 backdrop-blur-xl p-4 animate-fade-in">
+    <div class="glass-card-solid border border-pink-500/30 rounded-3xl p-5 sm:p-7 max-w-3xl w-full shadow-2xl space-y-5 max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-white/10 pb-3 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-2xl">calendar_month</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>Lịch Sinh Nhật Cả Năm (12 Tháng)</span>
+              <span id="yearly-birthday-total-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/20 text-pink-300">0 Ban viên</span>
+            </h3>
+            <p class="text-[11px] text-text-secondary">Danh mục ngày sinh nhật theo từng tháng để chuẩn bị thăm hỏi &amp; quà tặng chu đáo.</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-yearly-birthdays')" class="p-1 text-text-secondary hover:text-white rounded-full"><span class="material-symbols-outlined text-lg">close</span></button>
+      </div>
+
+      <!-- 12 Months Grid -->
+      <div id="yearly-birthdays-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 overflow-y-auto pr-1">
+        <!-- Render 12 months dynamically -->
+      </div>
+
+      <div class="flex items-center justify-end pt-3 border-t border-white/10 shrink-0">
+        <button type="button" onclick="closeModal('modal-yearly-birthdays')" class="px-5 py-2 rounded-xl bg-surface-elevated hover:bg-white/10 text-xs font-semibold text-white">Đóng</button>
+      </div>
+    </div>
+  </div>
 
   <?!= include('JavaScript'); ?>
 </body>

@@ -105,6 +105,82 @@
     .animate-fade-in {
       animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+
+    /* =========================================================================
+       LIGHT MODE THEME ENGINE
+       ========================================================================= */
+    body.theme-light {
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    body.theme-light #app-top-header {
+      background-color: rgba(255, 255, 255, 0.95);
+      border-color: rgba(226, 232, 240, 0.9);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+    body.theme-light .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    }
+    body.theme-light .glass-card-solid {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    }
+    body.theme-light .glass-input {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+    }
+    body.theme-light .glass-input:focus {
+      border-color: #e58c67;
+      box-shadow: 0 0 12px rgba(229, 140, 103, 0.25);
+    }
+    body.theme-light .text-white {
+      color: #0f172a !important;
+    }
+    body.theme-light .text-text-secondary {
+      color: #475569 !important;
+    }
+    body.theme-light .text-text-secondary\/70 {
+      color: #64748b !important;
+    }
+    body.theme-light .bg-surface-elevated {
+      background-color: #f8fafc !important;
+    }
+    body.theme-light .bg-surface-elevated\/80 {
+      background-color: rgba(248, 250, 252, 0.95) !important;
+    }
+    body.theme-light .bg-surface-elevated\/70 {
+      background-color: rgba(248, 250, 252, 0.9) !important;
+    }
+    body.theme-light .bg-surface-container-low\/90 {
+      background-color: rgba(255, 255, 255, 0.95) !important;
+    }
+    body.theme-light .bg-surface-container-low\/60 {
+      background-color: rgba(248, 250, 252, 0.95) !important;
+    }
+    body.theme-light .bg-white\/5 {
+      background-color: rgba(0, 0, 0, 0.04) !important;
+    }
+    body.theme-light .bg-white\/10 {
+      background-color: rgba(0, 0, 0, 0.07) !important;
+    }
+    body.theme-light .border-white\/10,
+    body.theme-light .border-white\/5,
+    body.theme-light .border-white\/15,
+    body.theme-light .border-white\/20 {
+      border-color: rgba(226, 232, 240, 0.9) !important;
+    }
+    body.theme-light .ambient-glow {
+      opacity: 0.12 !important;
+    }
+    body.theme-light #app-bottom-nav {
+      background-color: rgba(255, 255, 255, 0.95);
+      border-color: #e2e8f0;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+    }
   </style>
 </head>
 
@@ -247,6 +323,17 @@
       <button id="btn-show-login" onclick="openLoginModal()" class="px-4 py-2 rounded-full bg-primary/20 hover:bg-primary/30 text-primary border border-primary/40 text-xs font-bold flex items-center gap-1.5 transition-all">
         <span class="material-symbols-outlined text-sm">login</span>
         <span>Đăng Nhập</span>
+      </button>
+
+      <!-- Quick Search Button -->
+      <button onclick="openGlobalSearchModal()" class="p-2 text-text-secondary hover:text-primary transition-colors rounded-full hover:bg-white/5 active:scale-95 flex items-center gap-1" title="Tìm kiếm nhanh (Ctrl+K)">
+        <span class="material-symbols-outlined text-[20px]">search</span>
+        <span class="hidden md:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-text-secondary">Ctrl K</span>
+      </button>
+
+      <!-- Theme Switcher Button -->
+      <button id="btn-theme-toggle" onclick="toggleThemeMode()" class="p-2 text-text-secondary hover:text-primary transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Chuyển đổi giao diện Sáng / Tối">
+        <span id="theme-toggle-icon" class="material-symbols-outlined text-[20px]">light_mode</span>
       </button>
 
       <button onclick="navigateTo('settings')" class="p-2.5 text-text-secondary hover:text-primary transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Cài Đặt Hệ Thống">
@@ -944,6 +1031,21 @@
           Cài Đặt
         </button>
         <button onclick="dismissPwaBanner()" class="p-1.5 text-text-secondary hover:text-white rounded-lg"><span class="material-symbols-outlined text-base">close</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TÌM KIẾM TOÀN CỤC (COMMAND BAR CTRL+K) -->
+  <div id="modal-global-search" class="app-modal fixed inset-0 z-[110] hidden items-start justify-center bg-black/80 backdrop-blur-xl p-4 pt-16 sm:pt-24 animate-fade-in">
+    <div class="glass-card-solid border border-white/20 rounded-3xl p-4 sm:p-6 max-w-xl w-full shadow-2xl space-y-4 relative">
+      <div class="relative">
+        <span class="material-symbols-outlined absolute left-3.5 top-3.5 text-primary text-xl">search</span>
+        <input type="text" id="global-search-input" oninput="handleGlobalSearch(this.value)" placeholder="Tìm Hội Thánh, Ban Ngành, Quản nhiệm, SĐT... (ESC để đóng)" class="w-full pl-11 pr-10 py-3 rounded-2xl glass-input text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+        <button onclick="closeModal('modal-global-search')" class="absolute right-3 top-3 text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined text-lg">close</span></button>
+      </div>
+
+      <div id="global-search-results" class="max-h-72 overflow-y-auto space-y-2 text-xs">
+        <div class="text-center py-8 text-text-secondary">Nhập ít nhất 2 ký tự để tìm kiếm nhanh...</div>
       </div>
     </div>
   </div>
@@ -2273,13 +2375,130 @@
     window.addEventListener('offline', updateNetworkStatus);
     updateNetworkStatus();
 
+    // =========================================================================
+    // THEME MODE ENGINE (LIGHT / DARK THEME)
+    // =========================================================================
+    const THEME_STORAGE_KEY = 'qlht_theme_mode';
+
+    function initThemeMode() {
+      const saved = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+      applyThemeMode(saved);
+    }
+
+    function applyThemeMode(theme) {
+      const icon = document.getElementById('theme-toggle-icon');
+      if (theme === 'light') {
+        document.body.classList.add('theme-light');
+        if (icon) icon.textContent = 'dark_mode';
+      } else {
+        document.body.classList.remove('theme-light');
+        if (icon) icon.textContent = 'light_mode';
+      }
+    }
+
+    function toggleThemeMode() {
+      const isLight = document.body.classList.contains('theme-light');
+      const nextTheme = isLight ? 'dark' : 'light';
+      localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      applyThemeMode(nextTheme);
+      showToast(`Đã chuyển sang giao diện ${nextTheme === 'light' ? 'Sáng ☀️' : 'Tối 🌙'}`, 'info');
+    }
+
+    // =========================================================================
+    // GLOBAL SEARCH (COMMAND BAR CTRL+K)
+    // =========================================================================
+    function openGlobalSearchModal() {
+      const inp = document.getElementById('global-search-input');
+      if (inp) inp.value = '';
+      handleGlobalSearch('');
+      openModal('modal-global-search');
+      setTimeout(() => {
+        if (inp) inp.focus();
+      }, 100);
+    }
+
+    function handleGlobalSearch(q) {
+      const resBox = document.getElementById('global-search-results');
+      if (!resBox) return;
+
+      q = (q || '').trim().toLowerCase();
+      if (!q || q.length < 1) {
+        resBox.innerHTML = `<div class="text-center py-6 text-text-secondary">Nhập tên Hội Thánh, Ban Ngành, Quản nhiệm, SĐT... để tìm nhanh</div>`;
+        return;
+      }
+
+      const churches = (state.churches || []).filter(c => 
+        (c.tenHT || '').toLowerCase().includes(q) ||
+        (c.mucSu || '').toLowerCase().includes(q) ||
+        (c.sdt || '').includes(q)
+      );
+
+      const ministries = (state.ministries || []).filter(m => 
+        (m.tenBN || '').toLowerCase().includes(q) ||
+        (m.tenHoiThanh || '').toLowerCase().includes(q) ||
+        (m.truongBan || '').toLowerCase().includes(q)
+      );
+
+      if (churches.length === 0 && ministries.length === 0) {
+        resBox.innerHTML = `<div class="text-center py-6 text-text-secondary">Không tìm thấy kết quả phù hợp với "<strong>${q}</strong>"</div>`;
+        return;
+      }
+
+      let html = '';
+      if (churches.length > 0) {
+        html += `<div class="font-bold text-primary text-[11px] uppercase tracking-wider mb-1">Hội Thánh (${churches.length})</div>`;
+        html += churches.map(c => `
+          <div onclick="closeModal('modal-global-search'); navigateTo('ministries', { hoiThanhId: '${c.id}' });" class="p-2.5 rounded-xl bg-white/5 hover:bg-primary/20 border border-white/5 cursor-pointer transition-colors flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary text-base">church</span>
+              <div>
+                <div class="font-bold text-white">${c.tenHT}</div>
+                <div class="text-[10px] text-text-secondary">${c.mucSu || 'Chưa có quản nhiệm'} &bull; ${c.tinhThanh || ''}</div>
+              </div>
+            </div>
+            <span class="material-symbols-outlined text-sm text-text-secondary">arrow_forward</span>
+          </div>
+        `).join('');
+      }
+
+      if (ministries.length > 0) {
+        html += `<div class="font-bold text-secondary text-[11px] uppercase tracking-wider mt-3 mb-1">Ban Ngành (${ministries.length})</div>`;
+        html += ministries.map(m => `
+          <div onclick="closeModal('modal-global-search'); navigateTo('ministries', { hoiThanhId: '${m.hoiThanhId}' });" class="p-2.5 rounded-xl bg-white/5 hover:bg-secondary/20 border border-white/5 cursor-pointer transition-colors flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary text-base">groups</span>
+              <div>
+                <div class="font-bold text-white">${m.tenBN}</div>
+                <div class="text-[10px] text-text-secondary">${m.tenHoiThanh || ''} &bull; ${m.truongBan || 'Chưa có trưởng ban'}</div>
+              </div>
+            </div>
+            <span class="material-symbols-outlined text-sm text-text-secondary">arrow_forward</span>
+          </div>
+        `).join('');
+      }
+
+      resBox.innerHTML = html;
+    }
+
+    // Keyboard shortcut: Ctrl + K / Cmd + K
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        openGlobalSearchModal();
+      }
+    });
+
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') closeAllModals();
     });
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
+      document.addEventListener('DOMContentLoaded', () => {
+        initThemeMode();
+        initApp();
+      });
     } else {
+      initThemeMode();
       initApp();
     }
 

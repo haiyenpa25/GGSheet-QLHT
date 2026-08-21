@@ -205,6 +205,17 @@
         <span>Đăng Nhập</span>
       </button>
 
+      <!-- Quick Search Button -->
+      <button onclick="openGlobalSearchModal()" class="p-2 text-text-secondary hover:text-primary transition-colors rounded-full hover:bg-white/5 active:scale-95 flex items-center gap-1" title="Tìm kiếm nhanh (Ctrl+K)">
+        <span class="material-symbols-outlined text-[20px]">search</span>
+        <span class="hidden md:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-text-secondary">Ctrl K</span>
+      </button>
+
+      <!-- Theme Switcher Button -->
+      <button id="btn-theme-toggle" onclick="toggleThemeMode()" class="p-2 text-text-secondary hover:text-primary transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Chuyển đổi giao diện Sáng / Tối">
+        <span id="theme-toggle-icon" class="material-symbols-outlined text-[20px]">light_mode</span>
+      </button>
+
       <button onclick="navigateTo('settings')" class="p-2.5 text-text-secondary hover:text-primary transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Cài Đặt Hệ Thống">
         <span class="material-symbols-outlined text-[20px]">settings</span>
       </button>
@@ -879,6 +890,21 @@
           Cài Đặt
         </button>
         <button onclick="dismissPwaBanner()" class="p-1.5 text-text-secondary hover:text-white rounded-lg"><span class="material-symbols-outlined text-base">close</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TÌM KIẾM TOÀN CỤC (COMMAND BAR CTRL+K) -->
+  <div id="modal-global-search" class="app-modal fixed inset-0 z-[110] hidden items-start justify-center bg-black/80 backdrop-blur-xl p-4 pt-16 sm:pt-24 animate-fade-in">
+    <div class="glass-card-solid border border-white/20 rounded-3xl p-4 sm:p-6 max-w-xl w-full shadow-2xl space-y-4 relative">
+      <div class="relative">
+        <span class="material-symbols-outlined absolute left-3.5 top-3.5 text-primary text-xl">search</span>
+        <input type="text" id="global-search-input" oninput="handleGlobalSearch(this.value)" placeholder="Tìm Hội Thánh, Ban Ngành, Quản nhiệm, SĐT... (ESC để đóng)" class="w-full pl-11 pr-10 py-3 rounded-2xl glass-input text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+        <button onclick="closeModal('modal-global-search')" class="absolute right-3 top-3 text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined text-lg">close</span></button>
+      </div>
+
+      <div id="global-search-results" class="max-h-72 overflow-y-auto space-y-2 text-xs">
+        <div class="text-center py-8 text-text-secondary">Nhập ít nhất 2 ký tự để tìm kiếm nhanh...</div>
       </div>
     </div>
   </div>
