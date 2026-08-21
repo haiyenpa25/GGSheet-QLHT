@@ -162,11 +162,16 @@
 
   async function fetchRestFallback(action, args) {
     try {
-      const sheetId = state.activeSheetId || '1qI_qFmXjbnnw21qPdxeWSUpBH9itFp6TznpAKMZZwME';
+      const sheetId = state.activeSheetId || '13oCKGzsOyy3x9VrsI-NNxFaXBTpdOvveUoTiWegcEZw';
       let payload = { action: action, sheetId: sheetId, customSheetId: sheetId };
 
       if (action === 'apiGetInitialData') {
         payload.customSheetId = args[0] || sheetId;
+        const fetchUrl = BAN_NGANH_API_FALLBACK_URL + '?action=' + encodeURIComponent(action) + '&sheetId=' + encodeURIComponent(sheetId) + '&t=' + Date.now();
+        const res = await fetch(fetchUrl, { method: 'GET' });
+        if (!res.ok) throw new Error('HTTP status ' + res.status);
+        const json = await res.json();
+        return json;
       } else if (args.length === 1) {
         if (typeof args[0] === 'object') {
           payload.data = args[0];
