@@ -1133,11 +1133,15 @@
 
           <!-- Quick Actions & View Switcher -->
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-            <!-- View Mode Switcher -->
+            <!-- 3-Way View Mode Switcher -->
             <div class="flex bg-white/5 p-1 rounded-2xl border border-white/10 shrink-0">
               <button type="button" id="btn-page-tab-pastoral-dash" onclick="switchPastoralPageView('dashboard')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5 shadow-md">
                 <span class="material-symbols-outlined text-base">dashboard</span>
-                <span>Dashboard &amp; Biểu Đồ</span>
+                <span>Phân Tích &amp; Biểu Đồ</span>
+              </button>
+              <button type="button" id="btn-page-tab-pastoral-matrix" onclick="switchPastoralPageView('matrix')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-base">grid_view</span>
+                <span>Bảng Số Liệu Live</span>
               </button>
               <button type="button" id="btn-page-tab-pastoral-sheet" onclick="switchPastoralPageView('sheet')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-base">table_view</span>
@@ -1209,12 +1213,17 @@
         </div>
       </div>
 
-      <!-- PAGE VIEW 1: EXECUTIVE LIVE DASHBOARD -->
+      <!-- PAGE VIEW 1: EXECUTIVE LIVE DASHBOARD (FULL INTERACTIVE CHARTS & ANALYTICS) -->
       <div id="pastoral-page-view-dashboard" class="space-y-6">
         <!-- Rendered dynamically by JS -->
       </div>
 
-      <!-- PAGE VIEW 2: VISUAL SHEET CANVAS (EXACT A4 / EXCEL) -->
+      <!-- PAGE VIEW 2: LIVE MATRIX GRID (TABLE & DETAIL DATA ENTRY) -->
+      <div id="pastoral-page-view-matrix" class="hidden space-y-6">
+        <!-- Rendered dynamically by JS -->
+      </div>
+
+      <!-- PAGE VIEW 3: VISUAL SHEET CANVAS (EXACT A4 / EXCEL) -->
       <div id="pastoral-page-view-sheet" class="hidden bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-300 text-slate-900 font-sans overflow-x-auto">
         <div id="pastoral-page-report-canvas" class="min-w-[750px]">
           <!-- Rendered dynamically by JS -->

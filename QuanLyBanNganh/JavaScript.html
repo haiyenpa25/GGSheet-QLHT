@@ -5260,7 +5260,6 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
       let listHtml = '';
       if (list.length === 0) {
         listHtml = `<div class="text-center py-4 text-[11px] text-text-secondary/70 italic">Không có sinh nhật</div>`;
-      } else {
         listHtml = list.map(item => {
           const name = getMemberName(item.member);
           const phone = getMemberPhone(item.member);
@@ -5309,7 +5308,7 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
   // =========================================================================
 
   const STORAGE_KEY_PASTORAL_MORNING = 'pastoral_morning_att_records';
-  let activePastoralView = 'dashboard'; // 'dashboard' or 'sheet'
+  let activePastoralView = 'dashboard';
   let activePastoralPageView = 'dashboard';
 
   function loadPastoralMorningState() {
@@ -5364,56 +5363,58 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
   function switchPastoralPageView(view) {
     activePastoralPageView = view;
     const dashBox = document.getElementById('pastoral-page-view-dashboard');
+    const matrixBox = document.getElementById('pastoral-page-view-matrix');
     const sheetBox = document.getElementById('pastoral-page-view-sheet');
     const btnDash = document.getElementById('btn-page-tab-pastoral-dash');
+    const btnMatrix = document.getElementById('btn-page-tab-pastoral-matrix');
     const btnSheet = document.getElementById('btn-page-tab-pastoral-sheet');
+
+    if (dashBox) dashBox.classList.add('hidden');
+    if (matrixBox) matrixBox.classList.add('hidden');
+    if (sheetBox) sheetBox.classList.add('hidden');
+
+    if (btnDash) btnDash.className = 'px-3.5 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
+    if (btnMatrix) btnMatrix.className = 'px-3.5 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
+    if (btnSheet) btnSheet.className = 'px-3.5 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
 
     if (view === 'dashboard') {
       if (dashBox) dashBox.classList.remove('hidden');
-      if (sheetBox) sheetBox.classList.add('hidden');
-      if (btnDash) {
-        btnDash.className = 'px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5 shadow-md';
-      }
-      if (btnSheet) {
-        btnSheet.className = 'px-3.5 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
-      }
+      if (btnDash) btnDash.className = 'px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5 shadow-md';
+    } else if (view === 'matrix') {
+      if (matrixBox) matrixBox.classList.remove('hidden');
+      if (btnMatrix) btnMatrix.className = 'px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5 shadow-md';
     } else {
-      if (dashBox) dashBox.classList.add('hidden');
       if (sheetBox) sheetBox.classList.remove('hidden');
-      if (btnDash) {
-        btnDash.className = 'px-3.5 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
-      }
-      if (btnSheet) {
-        btnSheet.className = 'px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5 shadow-md';
-      }
+      if (btnSheet) btnSheet.className = 'px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5 shadow-md';
     }
   }
 
   function switchPastoralReportView(view) {
     activePastoralView = view;
     const dashBox = document.getElementById('pastoral-view-dashboard');
+    const matrixBox = document.getElementById('pastoral-view-matrix');
     const sheetBox = document.getElementById('pastoral-view-sheet');
     const btnDash = document.getElementById('btn-tab-pastoral-dash');
+    const btnMatrix = document.getElementById('btn-tab-pastoral-matrix');
     const btnSheet = document.getElementById('btn-tab-pastoral-sheet');
+
+    if (dashBox) dashBox.classList.add('hidden');
+    if (matrixBox) matrixBox.classList.add('hidden');
+    if (sheetBox) sheetBox.classList.add('hidden');
+
+    if (btnDash) btnDash.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
+    if (btnMatrix) btnMatrix.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
+    if (btnSheet) btnSheet.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
 
     if (view === 'dashboard') {
       if (dashBox) dashBox.classList.remove('hidden');
-      if (sheetBox) sheetBox.classList.add('hidden');
-      if (btnDash) {
-        btnDash.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5';
-      }
-      if (btnSheet) {
-        btnSheet.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
-      }
+      if (btnDash) btnDash.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5';
+    } else if (view === 'matrix') {
+      if (matrixBox) matrixBox.classList.remove('hidden');
+      if (btnMatrix) btnMatrix.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5';
     } else {
-      if (dashBox) dashBox.classList.add('hidden');
       if (sheetBox) sheetBox.classList.remove('hidden');
-      if (btnDash) {
-        btnDash.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
-      }
-      if (btnSheet) {
-        btnSheet.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5';
-      }
+      if (btnSheet) btnSheet.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5';
     }
   }
 
@@ -5520,7 +5521,6 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
       const dateAtts = allAtt.filter(a => normalizeDateStr(a.ngayDiemDanh) === sunNorm);
       let afternoonCount = dateAtts.filter(a => a.coMat === true || String(a.coMat).toLowerCase() === 'true' || a.trangThai === 'CO_MAT').length;
       
-      // Fallback to demo sample numbers if database is empty for month 7/2026
       if (allAtt.length === 0 && month === 7 && year === 2026) {
         afternoonCount = [22, 0, 17, 21, 0][sIdx % 5];
       }
@@ -5550,7 +5550,6 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
       let thuTuan = weekTxs.filter(t => (t.loaiGD || t.LoaiGD || 'THU').toUpperCase() === 'THU').reduce((sum, t) => sum + Number(t.soTien || t.SoTien || 0), 0);
       let chiTuan = weekTxs.filter(t => (t.loaiGD || t.LoaiGD || 'THU').toUpperCase() === 'CHI').reduce((sum, t) => sum + Number(t.soTien || t.SoTien || 0), 0);
 
-      // Fallback sample financials if empty in sheet for month 7/2026
       if (allTx.length === 0 && month === 7 && year === 2026) {
         const demoFin = [
           { thu: 620000, chi: 0 },
@@ -5602,14 +5601,12 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
     const totalExpense = sundayRows.reduce((sum, r) => sum + r.chiTuan, 0);
     const monthlyNet = totalIncome - totalExpense;
     const finalBalance = openingBalance + monthlyNet;
-    const burnMultiple = totalIncome > 0 ? (totalExpense / totalIncome).toFixed(1) : '2.0';
     const runwayMonths = totalExpense > 0 ? (finalBalance / (totalExpense / sundayRows.length * 4)).toFixed(1) : '3.0';
 
     const overallRetention = totalMorning > 0 ? ((totalAfternoon / totalMorning) * 100).toFixed(1) : 0;
     const overallDropoff = (100 - overallRetention).toFixed(1);
     const avgGiving = totalAfternoon > 0 ? Math.round(totalIncome / totalAfternoon) : 34500;
 
-    // Birthdays in Month
     const birthdaysInMonth = (state.members || []).filter(m => {
       const bday = m.ngaySinh || m.NgaySinh || m.ngaysinh;
       if (!bday) return false;
@@ -5645,7 +5642,7 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
     const visitNames = monthVisits.map(v => v.thanhVienTen || 'Gia đình ban viên').slice(0, 4);
     const visitSummary = monthVisits.length > 0 
       ? `${monthVisits.length} (${visitNames.map(n => n.startsWith('Gđ') ? n : `Gđ ${n}`).join(', ')})`
-      : '4 (Gđ Anh Duy Nguyên, Gđ Anh Duy Vũ, Gđ Chị Ngọc Mỹ, Chị Yến Thanh)';
+      : '4 (Gia đình Anh Duy Nguyên, Anh Duy Vũ, Chị Ngọc Mỹ, Chị Yến Thanh)';
 
     const nextMonth = (month % 12) + 1;
     const nextYear = month === 12 ? year + 1 : year;
@@ -5673,73 +5670,37 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
     });
 
     return {
-      month,
-      year,
-      monthStr,
-      banTitle,
-      author,
-      openingBalance,
-      titheStr,
-      sundayRows,
-      avgMorning,
-      prevAvgMorning,
-      diffMorning,
-      pctMorningGrowth,
-      avgBan,
-      prevAvgBan,
-      diffBan,
-      overallRetention,
-      overallDropoff,
-      avgGiving,
-      burnMultiple,
-      runwayMonths,
-      totalIncome,
-      totalExpense,
-      monthlyNet,
-      finalBalance,
-      birthdaysInMonth,
-      newMembersCount,
-      visitSummary,
-      nextMonth,
-      nextYear,
-      nextMonthSchedule
+      month, year, monthStr, banTitle, author, openingBalance, titheStr, sundayRows, avgMorning, prevAvgMorning, diffMorning, pctMorningGrowth, avgBan, prevAvgBan, diffBan, overallRetention, overallDropoff, avgGiving, runwayMonths, totalIncome, totalExpense, monthlyNet, finalBalance, birthdaysInMonth, newMembersCount, visitSummary, nextMonth, nextYear, nextMonthSchedule
     };
   }
 
   function renderPastoralReportPreview(shouldRerenderInputs = true) {
     const data = getPastoralReportComputedData();
 
-    // =========================================================================
-    // 1. BUILD COMMON EXECUTIVE DASHBOARD HTML SNIPPETS
-    // =========================================================================
     const maxAtt = Math.max(1, ...data.sundayRows.map(r => Math.max(r.morningCount, r.afternoonCount)));
     const maxFin = Math.max(1, ...data.sundayRows.map(r => Math.max(r.thuTuan, r.chiTuan)));
 
-    // Chart 1: Attendance Dual Bar Chart
     const attChartBars = data.sundayRows.map(r => {
       const mHeight = Math.max(10, Math.round((r.morningCount / maxAtt) * 100));
       const aHeight = Math.max(8, Math.round((r.afternoonCount / maxAtt) * 100));
       return `
         <div class="flex flex-col items-center gap-2 flex-1 group">
-          <div class="flex items-end justify-center gap-1.5 h-36 w-full bg-white/5 rounded-2xl p-1.5 border border-white/5 group-hover:border-sky-500/40 transition-all relative">
-            <!-- Sáng Bar (Sky blue) -->
-            <div class="w-1/2 bg-gradient-to-t from-sky-600 to-blue-400 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-1.5 shadow-md shadow-sky-600/20" style="height: ${mHeight}%;" title="Sáng CN ${r.shortLabel}: ${r.morningCount} người">
+          <div class="flex items-end justify-center gap-2 h-40 w-full bg-white/5 rounded-2xl p-2 border border-white/5 group-hover:border-sky-500/40 transition-all relative">
+            <div class="w-1/2 bg-gradient-to-t from-sky-600 to-blue-400 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-2 shadow-lg shadow-sky-600/20" style="height: ${mHeight}%;" title="Sáng CN ${r.shortLabel}: ${r.morningCount} người">
               <span class="text-[10px] font-black text-white">${r.morningCount}</span>
             </div>
-            <!-- Chiều Bar (Emerald) -->
-            <div class="w-1/2 bg-gradient-to-t from-emerald-600 to-teal-400 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-1.5 shadow-md shadow-emerald-600/20" style="height: ${aHeight}%;" title="Chiều CN ${r.shortLabel}: ${r.afternoonCount} người (Giữ chân: ${r.retentionRate}%)">
+            <div class="w-1/2 bg-gradient-to-t from-emerald-600 to-teal-400 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-2 shadow-lg shadow-emerald-600/20" style="height: ${aHeight}%;" title="Chiều CN ${r.shortLabel}: ${r.afternoonCount} người (Giữ chân: ${r.retentionRate}%)">
               <span class="text-[10px] font-black text-white">${r.afternoonCount > 0 ? r.afternoonCount : ''}</span>
             </div>
           </div>
           <div class="text-center">
-            <div class="text-[11px] font-bold text-white">${r.shortLabel}</div>
-            <div class="text-[9px] font-semibold text-text-secondary">${r.retentionRate > 0 ? `${r.retentionRate}%` : '--'}</div>
+            <div class="text-xs font-bold text-white">${r.shortLabel}</div>
+            <div class="text-[10px] font-semibold text-text-secondary mt-0.5">${r.retentionRate > 0 ? `<span class="text-emerald-400 font-bold">${r.retentionRate}%</span> giữ` : '<span class="text-text-secondary/60">Nghỉ</span>'}</div>
           </div>
         </div>
       `;
     }).join('');
 
-    // Chart 2: Finance Dual Bar Chart
     const finChartBars = data.sundayRows.map(r => {
       const thuH = Math.max(8, Math.round((r.thuTuan / maxFin) * 100));
       const chiH = Math.max(8, Math.round((r.chiTuan / maxFin) * 100));
@@ -5747,176 +5708,191 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
       const chiK = r.chiTuan > 0 ? (r.chiTuan / 1000).toLocaleString('vi-VN') + 'k' : '0';
       return `
         <div class="flex flex-col items-center gap-2 flex-1 group">
-          <div class="flex items-end justify-center gap-1.5 h-36 w-full bg-white/5 rounded-2xl p-1.5 border border-white/5 group-hover:border-amber-500/40 transition-all relative">
-            <!-- Thu Bar (Emerald) -->
-            <div class="w-1/2 bg-gradient-to-t from-emerald-600 to-green-400 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-1.5 shadow-md shadow-emerald-600/20" style="height: ${thuH}%;" title="Thu tuần ${r.shortLabel}: ${Number(r.thuTuan).toLocaleString('vi-VN')} đ">
+          <div class="flex items-end justify-center gap-2 h-40 w-full bg-white/5 rounded-2xl p-2 border border-white/5 group-hover:border-amber-500/40 transition-all relative">
+            <div class="w-1/2 bg-gradient-to-t from-emerald-600 to-green-400 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-2 shadow-lg shadow-emerald-600/20" style="height: ${thuH}%;" title="Thu tuần ${r.shortLabel}: ${Number(r.thuTuan).toLocaleString('vi-VN')} đ">
               <span class="text-[9px] font-bold text-white truncate px-0.5">${thuK}</span>
             </div>
-            <!-- Chi Bar (Rose) -->
-            <div class="w-1/2 bg-gradient-to-t from-rose-600 to-pink-500 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-1.5 shadow-md shadow-rose-600/20" style="height: ${chiH}%;" title="Chi tuần ${r.shortLabel}: ${Number(r.chiTuan).toLocaleString('vi-VN')} đ">
+            <div class="w-1/2 bg-gradient-to-t from-rose-600 to-pink-500 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-2 shadow-lg shadow-rose-600/20" style="height: ${chiH}%;" title="Chi tuần ${r.shortLabel}: ${Number(r.chiTuan).toLocaleString('vi-VN')} đ">
               <span class="text-[9px] font-bold text-white truncate px-0.5">${chiK}</span>
             </div>
           </div>
           <div class="text-center">
-            <div class="text-[11px] font-bold text-white">${r.shortLabel}</div>
-            <div class="text-[9px] font-bold ${r.tonTuan >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${(r.tonTuan / 1000).toFixed(0)}k</div>
+            <div class="text-xs font-bold text-white">${r.shortLabel}</div>
+            <div class="text-[10px] font-bold ${r.tonTuan >= 0 ? 'text-emerald-400' : 'text-rose-400'} mt-0.5">${r.tonTuan >= 0 ? `+${(r.tonTuan / 1000).toFixed(0)}k` : `${(r.tonTuan / 1000).toFixed(0)}k`}</div>
           </div>
         </div>
       `;
     }).join('');
 
-    // Birthdays pill list
+    const funnelHtml = `
+      <div class="space-y-3 pt-2">
+        <div>
+          <div class="flex items-center justify-between text-xs font-bold mb-1">
+            <span class="text-sky-300 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> 1. Thờ Phượng Sáng (Lễ Chung)</span>
+            <span class="text-white">${data.avgMorning} người/tuần (100%)</span>
+          </div>
+          <div class="w-full h-4 bg-white/10 rounded-full overflow-hidden p-0.5">
+            <div class="h-full bg-gradient-to-r from-sky-500 to-blue-500 rounded-full" style="width: 100%;"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between text-xs font-bold mb-1">
+            <span class="text-emerald-300 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> 2. Ở Lại Sinh Hoạt Ban Chiều</span>
+            <span class="text-emerald-400">${data.avgBan} người/buổi (${data.overallRetention}%)</span>
+          </div>
+          <div class="w-full h-4 bg-white/10 rounded-full overflow-hidden p-0.5">
+            <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" style="width: ${data.overallRetention}%;"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between text-xs font-bold mb-1">
+            <span class="text-rose-300 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> 3. Tỷ Lệ Rơi Rụng Ra Về (Drop-off)</span>
+            <span class="text-rose-400">~${Math.round(data.avgMorning - data.avgBan)} người (${data.overallDropoff}%)</span>
+          </div>
+          <div class="w-full h-4 bg-white/10 rounded-full overflow-hidden p-0.5">
+            <div class="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full" style="width: ${data.overallDropoff}%;"></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const curriculumHtml = `
+      <div class="space-y-3 pt-2">
+        <div class="w-full h-6 bg-white/10 rounded-2xl overflow-hidden flex p-0.5 gap-1">
+          <div class="h-full bg-gradient-to-r from-blue-500 to-sky-400 rounded-xl" style="width: 40%;" title="Bồi linh & Lời Chúa: 40% (2 buổi)"></div>
+          <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-xl" style="width: 40%;" title="Thảo luận tương tác: 40% (2 buổi)"></div>
+          <div class="h-full bg-gradient-to-r from-amber-500 to-orange-400 rounded-xl" style="width: 20%;" title="Đố Kinh Thánh & Gắn kết: 20% (1 buổi)"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+          <div class="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
+            <div class="text-[10px] text-blue-300 font-bold uppercase">Bồi Linh / Lời Chúa</div>
+            <div class="text-sm font-black text-white mt-0.5">40% <span class="text-[10px] font-normal text-text-secondary">(2 tuần)</span></div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+            <div class="text-[10px] text-emerald-300 font-bold uppercase">Thảo Luận Tương Tác</div>
+            <div class="text-sm font-black text-white mt-0.5">40% <span class="text-[10px] font-normal text-text-secondary">(2 tuần)</span></div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <div class="text-[10px] text-amber-300 font-bold uppercase">Đố KT &amp; Gắn Kết</div>
+            <div class="text-sm font-black text-white mt-0.5">20% <span class="text-[10px] font-normal text-text-secondary">(1 tuần)</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+
     const bdayListHtml = data.birthdaysInMonth.length > 0
       ? data.birthdaysInMonth.map(b => `
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-pink-500/10 border border-pink-500/30 text-pink-300 text-xs">
+        <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-pink-500/10 border border-pink-500/30 text-pink-300 text-xs shadow-sm hover:border-pink-400 transition-colors">
           <span class="font-bold text-white">${b.name}</span>
           <span class="text-[11px] font-semibold text-pink-400">(${b.dateStr})</span>
-          ${b.phone ? `<button onclick="sendBirthdayZalo('${b.name}', '${b.phone}')" class="text-pink-300 hover:text-white ml-1 font-bold text-xs" title="Gửi lời chúc Zalo">💬 Chúc</button>` : ''}
+          ${b.phone ? `<button onclick="sendBirthdayZalo('${b.name}', '${b.phone}')" class="px-2 py-0.5 rounded-lg bg-pink-500/20 hover:bg-pink-500 text-white font-bold text-[10px] transition-all ml-1" title="Gửi lời chúc Zalo">💬 Chúc Zalo</button>` : ''}
         </div>
       `).join('')
       : `<span class="text-xs text-text-secondary/70 italic">Không có ngày sinh nhật nào trong tháng ${data.monthStr}.</span>`;
 
-    // Live Table Rows in Dashboard
-    const dashTableRows = data.sundayRows.map(r => `
-      <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
-        <td class="py-3 px-3.5 font-bold text-white flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full ${r.afternoonCount > 0 ? 'bg-emerald-400' : 'bg-amber-400'}"></span>
-          <span>${r.dateLabel}</span>
-        </td>
-        <td class="py-3 px-3.5 text-center">
-          <input type="number" value="${r.morningCount}" onchange="handlePastoralMorningAttChange('${r.key}', this.value)" class="w-16 text-center rounded-xl bg-white/10 border border-sky-500/40 text-sky-300 font-bold py-1 px-2 focus:ring-2 focus:ring-sky-400 focus:outline-none" />
-        </td>
-        <td class="py-3 px-3.5 text-center font-bold text-emerald-400">
-          ${r.afternoonCount > 0 ? r.afternoonCount : '<span class="text-text-secondary font-normal italic">Nghỉ</span>'}
-        </td>
-        <td class="py-3 px-3.5 text-center font-semibold text-text-secondary">
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${r.retentionRate >= 40 ? 'bg-emerald-500/20 text-emerald-300' : (r.retentionRate > 0 ? 'bg-amber-500/20 text-amber-300' : 'bg-white/10 text-text-secondary')}">
-            ${r.retentionRate > 0 ? `${r.retentionRate}%` : '--'}
-          </span>
-        </td>
-        <td class="py-3 px-3.5 text-right font-semibold text-emerald-300">
-          ${r.thuTuan > 0 ? Number(r.thuTuan).toLocaleString('vi-VN') + ' đ' : (r.thuTuan === 0 ? '0 đ' : '--')}
-        </td>
-        <td class="py-3 px-3.5 text-right font-semibold text-rose-300">
-          ${r.chiTuan > 0 ? Number(r.chiTuan).toLocaleString('vi-VN') + ' đ' : (r.chiTuan === 0 ? '0 đ' : '--')}
-        </td>
-        <td class="py-3 px-3.5 text-right font-black ${r.tonTuan >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
-          ${Number(r.tonTuan).toLocaleString('vi-VN')} đ
-        </td>
-      </tr>
-    `).join('');
-
     const dashboardHtml = `
-      <!-- EXECUTIVE HERO BANNER & STRATEGIC HIGHLIGHTS -->
-      <div class="glass-card-solid rounded-3xl p-5 sm:p-6 border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-surface-elevated to-teal-950/30 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+      <div class="glass-card-solid rounded-3xl p-6 sm:p-7 border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-surface-elevated to-teal-950/30 flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-2xl">
         <div class="flex items-start gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-slate-950 flex items-center justify-center font-black text-xl shrink-0 shadow-lg shadow-emerald-500/25">
-            <span class="material-symbols-outlined text-2xl">trending_up</span>
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-slate-950 flex items-center justify-center font-black text-2xl shrink-0 shadow-xl shadow-emerald-500/30">
+            <span class="material-symbols-outlined text-3xl">insights</span>
           </div>
           <div>
             <div class="flex items-center gap-2 flex-wrap">
-              <h3 class="text-base font-bold text-white">Tóm Tắt Quản Trị Mục Vụ Tháng ${data.monthStr}/${data.year}</h3>
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Tăng Trưởng Sáng +8.16%</span>
+              <h3 class="text-lg font-bold text-white">Trung Tâm Phân Tích Dữ Liệu Mục Vụ Tháng ${data.monthStr}/${data.year}</h3>
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm">Tăng Trưởng Sáng +${data.pctMorningGrowth}%</span>
             </div>
-            <p class="text-xs text-text-secondary mt-1 max-w-3xl leading-relaxed">
-              Lượng thờ phượng Sáng Chúa Nhật đạt đỉnh <strong>63 người</strong> (trung bình <strong>53.0 người</strong>). Khoảng trống chuyển đổi cần thu hẹp khi tỷ lệ rơi rụng (Drop-off) là <strong>${data.overallDropoff}%</strong>. Tài chính an toàn với dự phòng <strong>${data.runwayMonths} tháng</strong>.
+            <p class="text-xs sm:text-sm text-text-secondary mt-1.5 max-w-3xl leading-relaxed">
+              Lượng thờ phượng Sáng Chúa Nhật đạt đỉnh <strong>63 người</strong> (trung bình <strong>53.0 người</strong>). Khoảng trống chuyển đổi cần thu hẹp khi tỷ lệ rơi rụng (Drop-off) là <strong>${data.overallDropoff}%</strong>. Tài chính an toàn với dự phòng <strong>~${data.runwayMonths} tháng</strong>.
             </p>
           </div>
         </div>
 
-        <div class="flex items-center gap-2 shrink-0">
-          <button type="button" onclick="exportPastoralReportToExcel()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md">
-            <span class="material-symbols-outlined text-sm">download</span>
-            <span>Tải Excel</span>
+        <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
+          <button type="button" onclick="exportPastoralReportToExcel()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg active:scale-95">
+            <span class="material-symbols-outlined text-base">download</span>
+            <span>Tải Excel (.xls)</span>
           </button>
-          <button type="button" onclick="sendPastoralReportZalo()" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md">
-            <span class="material-symbols-outlined text-sm">send</span>
+          <button type="button" onclick="sendPastoralReportZalo()" class="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg active:scale-95">
+            <span class="material-symbols-outlined text-base">send</span>
             <span>Gửi Zalo</span>
           </button>
         </div>
       </div>
 
-      <!-- 4 Top Executive KPI Stat Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- KPI 1: TB Sáng -->
-        <div class="glass-card rounded-2xl p-4 sm:p-5 border border-sky-500/25 bg-gradient-to-br from-sky-950/40 to-surface-elevated flex flex-col justify-between shadow-xl">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-sky-500/25 bg-gradient-to-br from-sky-950/40 to-surface-elevated flex flex-col justify-between shadow-xl hover:border-sky-400/40 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-text-secondary text-[11px] font-bold uppercase tracking-wider">TB Nhóm Sáng</span>
-            <span class="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
-              <span class="material-symbols-outlined text-xl">wb_sunny</span>
+            <span class="text-text-secondary text-xs font-bold uppercase tracking-wider">TB Nhóm Sáng</span>
+            <span class="w-10 h-10 rounded-2xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold shadow-md">
+              <span class="material-symbols-outlined text-2xl">wb_sunny</span>
             </span>
           </div>
-          <div class="mt-3">
-            <div class="text-3xl font-black text-white tracking-tight">${data.avgMorning} <span class="text-xs font-normal text-text-secondary">người/tuần</span></div>
-            <div class="mt-1 flex items-center gap-1.5">
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${data.diffMorning >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+          <div class="mt-4">
+            <div class="text-3xl sm:text-4xl font-black text-white tracking-tight">${data.avgMorning} <span class="text-xs font-normal text-text-secondary">người/tuần</span></div>
+            <div class="mt-2 flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${data.diffMorning >= 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300'}">
                 ${data.diffMorning >= 0 ? `▲ +${data.diffMorning} (+${data.pctMorningGrowth}%)` : `▼ ${data.diffMorning}`}
               </span>
-              <span class="text-[10px] text-text-secondary">T6: ${data.prevAvgMorning}</span>
+              <span class="text-xs text-text-secondary font-semibold">T6: ${data.prevAvgMorning}</span>
             </div>
           </div>
         </div>
 
-        <!-- KPI 2: TB Chiều Nhóm Ban -->
-        <div class="glass-card rounded-2xl p-4 sm:p-5 border border-emerald-500/25 bg-gradient-to-br from-emerald-950/40 to-surface-elevated flex flex-col justify-between shadow-xl">
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-emerald-500/25 bg-gradient-to-br from-emerald-950/40 to-surface-elevated flex flex-col justify-between shadow-xl hover:border-emerald-400/40 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-text-secondary text-[11px] font-bold uppercase tracking-wider">TB Nhóm Ban Chiều</span>
-            <span class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-              <span class="material-symbols-outlined text-xl">church</span>
+            <span class="text-text-secondary text-xs font-bold uppercase tracking-wider">TB Nhóm Ban Chiều</span>
+            <span class="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shadow-md">
+              <span class="material-symbols-outlined text-2xl">church</span>
             </span>
           </div>
-          <div class="mt-3">
-            <div class="text-3xl font-black text-emerald-400 tracking-tight">${data.avgBan} <span class="text-xs font-normal text-text-secondary">người/buổi</span></div>
-            <div class="mt-1 flex items-center gap-1.5">
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${data.diffBan >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+          <div class="mt-4">
+            <div class="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight">${data.avgBan} <span class="text-xs font-normal text-text-secondary">người/buổi</span></div>
+            <div class="mt-2 flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${data.diffBan >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}">
                 ${data.diffBan >= 0 ? `▲ +${data.diffBan}` : `▼ ${data.diffBan}`} (T6: ${data.prevAvgBan})
               </span>
-              <span class="text-[10px] text-amber-400 font-semibold">Giữ chân: ${data.overallRetention}%</span>
+              <span class="text-xs text-amber-400 font-bold">Giữ chân: ${data.overallRetention}%</span>
             </div>
           </div>
         </div>
 
-        <!-- KPI 3: Thu Chi Trong Tháng -->
-        <div class="glass-card rounded-2xl p-4 sm:p-5 border border-amber-500/25 bg-gradient-to-br from-amber-950/40 to-surface-elevated flex flex-col justify-between shadow-xl">
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-amber-500/25 bg-gradient-to-br from-amber-950/40 to-surface-elevated flex flex-col justify-between shadow-xl hover:border-amber-400/40 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-text-secondary text-[11px] font-bold uppercase tracking-wider">Dòng Tiền Tháng</span>
-            <span class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-              <span class="material-symbols-outlined text-xl">payments</span>
+            <span class="text-text-secondary text-xs font-bold uppercase tracking-wider">Dòng Tiền Tháng</span>
+            <span class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold shadow-md">
+              <span class="material-symbols-outlined text-2xl">payments</span>
             </span>
           </div>
-          <div class="mt-2 space-y-1">
+          <div class="mt-3 space-y-1.5">
             <div class="flex items-center justify-between text-xs font-bold">
               <span class="text-emerald-400">+ ${Number(data.totalIncome).toLocaleString('vi-VN')} đ</span>
               <span class="text-rose-400">- ${Number(data.totalExpense).toLocaleString('vi-VN')} đ</span>
             </div>
-            <div class="text-[11px] text-text-secondary flex justify-between border-t border-white/10 pt-1 font-semibold">
-              <span>Bội chi ròng:</span>
+            <div class="text-xs text-text-secondary flex justify-between border-t border-white/10 pt-1.5 font-semibold">
+              <span>Bội chi tháng:</span>
               <span class="${data.monthlyNet >= 0 ? 'text-emerald-300' : 'text-rose-300'} font-bold">${Number(data.monthlyNet).toLocaleString('vi-VN')} đ</span>
             </div>
           </div>
         </div>
 
-        <!-- KPI 4: Quỹ Tồn Hiện Tại -->
-        <div class="glass-card rounded-2xl p-4 sm:p-5 border border-purple-500/25 bg-gradient-to-br from-purple-950/40 to-surface-elevated flex flex-col justify-between shadow-xl">
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-purple-500/25 bg-gradient-to-br from-purple-950/40 to-surface-elevated flex flex-col justify-between shadow-xl hover:border-purple-400/40 transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-text-secondary text-[11px] font-bold uppercase tracking-wider">Tổng Tồn Quỹ Hiện Tại</span>
-            <span class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
-              <span class="material-symbols-outlined text-xl">account_balance_wallet</span>
+            <span class="text-text-secondary text-xs font-bold uppercase tracking-wider">Tổng Tồn Quỹ Hiện Tại</span>
+            <span class="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold shadow-md">
+              <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
             </span>
           </div>
-          <div class="mt-3">
-            <div class="text-3xl font-black text-amber-400 tracking-tight">${Number(data.finalBalance).toLocaleString('vi-VN')} <span class="text-xs font-normal text-text-secondary">đ</span></div>
-            <div class="mt-1 flex items-center justify-between text-[10px] text-text-secondary font-semibold">
+          <div class="mt-4">
+            <div class="text-3xl sm:text-4xl font-black text-amber-400 tracking-tight">${Number(data.finalBalance).toLocaleString('vi-VN')} <span class="text-xs font-normal text-text-secondary">đ</span></div>
+            <div class="mt-2 flex items-center justify-between text-xs text-text-secondary font-semibold">
               <span>Đầu kỳ: ${Number(data.openingBalance).toLocaleString('vi-VN')} đ</span>
-              <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">Dự phòng: ~${data.runwayMonths} tháng</span>
+              <span class="px-2 py-0.5 rounded-lg bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">Dự phòng: ~${data.runwayMonths} tháng</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 2 Visual Interactive Comparison Charts -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <!-- Chart 1: Attendance Sáng vs Chiều -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
         <div class="glass-card rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
@@ -5924,7 +5900,7 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
                 <span class="material-symbols-outlined text-sky-400">group</span>
                 <span>Xu Hướng Hiện Diện Đi Nhóm (Sáng vs Chiều)</span>
               </h4>
-              <p class="text-[11px] text-text-secondary">Tỷ lệ rơi rụng (Drop-off): <strong>${data.overallDropoff}%</strong> &bull; Đỉnh điểm ngày 12/07 (63 người)</p>
+              <p class="text-xs text-text-secondary">Tỷ lệ rơi rụng: <strong>${data.overallDropoff}%</strong> &bull; Đỉnh điểm ngày 12/07 (63 người)</p>
             </div>
             <div class="flex items-center gap-3 text-xs font-semibold shrink-0">
               <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-sky-400"></span> Sáng</span>
@@ -5936,7 +5912,6 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
           </div>
         </div>
 
-        <!-- Chart 2: Cash Flow Thu vs Chi -->
         <div class="glass-card rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
@@ -5944,7 +5919,7 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
                 <span class="material-symbols-outlined text-emerald-400">monitoring</span>
                 <span>Dòng Tiền Thu &amp; Chi Theo Tuần Chúa Nhật</span>
               </h4>
-              <p class="text-[11px] text-text-secondary">Dâng TB: <strong>${Number(data.avgGiving).toLocaleString('vi-VN')} đ/lượt</strong> &bull; Đỉnh dâng ngày 19/07 (50.588 đ/người)</p>
+              <p class="text-xs text-text-secondary">Dâng TB: <strong>${Number(data.avgGiving).toLocaleString('vi-VN')} đ/lượt</strong> &bull; Đỉnh dâng ngày 19/07 (50.588 đ/người)</p>
             </div>
             <div class="flex items-center gap-3 text-xs font-semibold shrink-0">
               <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-400"></span> Thu</span>
@@ -5955,159 +5930,139 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
             ${finChartBars}
           </div>
         </div>
-      </div>
 
-      <!-- Live Interactive Table in Dashboard -->
-      <div class="glass-card rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
+          <div class="flex items-center justify-between">
             <h4 class="font-bold text-white text-sm sm:text-base flex items-center gap-2">
-              <span class="material-symbols-outlined text-amber-400">table_chart</span>
-              <span>Bảng Chi Tiết Hiện Diện, Giữ Chân &amp; Thu Chi Tháng ${data.monthStr}/${data.year}</span>
+              <span class="material-symbols-outlined text-amber-400">filter_alt</span>
+              <span>Phễu Chuyển Đổi Hiện Diện &amp; Gắn Kết Thuộc Linh</span>
             </h4>
-            <p class="text-[11px] text-text-secondary">Nhập số lượng Sáng trực tiếp trên bảng, hệ thống sẽ tự động tính toán lại và lưu vào thiết bị.</p>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300">Conversion Funnel</span>
           </div>
-          <span class="text-[11px] text-emerald-400 font-bold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            ⚡ Tự động ghi nhớ
-          </span>
+          <p class="text-xs text-text-secondary">Đo lường mức độ chuyển hóa từ tín hữu dự lễ sáng sang ban viên sinh hoạt tích cực chiều Chúa Nhật.</p>
+          ${funnelHtml}
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-white/10 text-[11px] font-bold text-text-secondary uppercase tracking-wider">
-                <th class="py-3 px-3.5">Chúa Nhật</th>
-                <th class="py-3 px-3.5 text-center">Sáng (Lễ Chung)</th>
-                <th class="py-3 px-3.5 text-center">Chiều (Ban Ngành)</th>
-                <th class="py-3 px-3.5 text-center">Tỷ Lệ Giữ Chân</th>
-                <th class="py-3 px-3.5 text-right">Thu Tuần</th>
-                <th class="py-3 px-3.5 text-right">Chi Tuần</th>
-                <th class="py-3 px-3.5 text-right">Tồn Tuần</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-white/5 text-xs">
-              ${dashTableRows}
-            </tbody>
-          </table>
+        <div class="glass-card rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-white text-sm sm:text-base flex items-center gap-2">
+              <span class="material-symbols-outlined text-purple-400">donut_large</span>
+              <span>Cơ Cấu Nội Dung Sinh Hoạt Tháng Tới (Tháng ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})</span>
+            </h4>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300">Diversity Ratio</span>
+          </div>
+          <p class="text-xs text-text-secondary">Phân bổ cân đối giữa học Lời Chúa, thảo luận kỹ năng hôn nhân gia đình và sinh hoạt gắn kết ban ngành.</p>
+          ${curriculumHtml}
         </div>
       </div>
 
-      <!-- 4 Activity & Plan Highlights Cards -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <!-- Card A: Thăm Viếng & Ban Viên Mới -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
         <div class="glass-card rounded-3xl p-5 sm:p-6 border border-purple-500/25 space-y-4 shadow-xl">
           <h4 class="font-bold text-purple-300 text-sm sm:text-base flex items-center gap-2">
             <span class="material-symbols-outlined">volunteer_activism</span>
             <span>Công Tác Thăm Viếng &amp; Phát Triển Ban</span>
           </h4>
-          <div class="space-y-2.5 text-xs">
-            <div class="flex items-center justify-between p-3 rounded-2xl bg-white/5">
-              <span class="text-text-secondary">Ban viên mới trong tháng:</span>
+          <div class="space-y-3 text-xs">
+            <div class="flex items-center justify-between p-3.5 rounded-2xl bg-white/5">
+              <span class="text-text-secondary font-semibold">Ban viên mới trong tháng:</span>
               <span class="font-bold text-white px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300">${data.newMembersCount} người</span>
             </div>
-            <div class="p-3.5 rounded-2xl bg-white/5 space-y-1.5">
+            <div class="p-3.5 rounded-2xl bg-white/5 space-y-2">
               <div class="text-text-secondary font-semibold flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-sm text-purple-400">home</span>
+                <span class="material-symbols-outlined text-base text-purple-400">home</span>
                 <span>Gia đình được chăm sóc &amp; thăm viếng:</span>
               </div>
-              <div class="font-bold text-white leading-relaxed">${data.visitSummary}</div>
+              <div class="font-bold text-white leading-relaxed text-sm">${data.visitSummary}</div>
             </div>
           </div>
         </div>
 
-        <!-- Card B: Sinh Nhật Trong Tháng -->
         <div class="glass-card rounded-3xl p-5 sm:p-6 border border-pink-500/25 space-y-4 shadow-xl">
           <div class="flex items-center justify-between">
             <h4 class="font-bold text-pink-300 text-sm sm:text-base flex items-center gap-2">
               <span class="material-symbols-outlined">cake</span>
               <span>Kỷ Niệm Sinh Nhật Tháng ${data.monthStr}</span>
             </h4>
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">${data.birthdaysInMonth.length} Ban viên</span>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">${data.birthdaysInMonth.length} Ban viên</span>
           </div>
-          <div class="flex flex-wrap gap-2 pt-1">
+          <div class="flex flex-wrap gap-2.5 pt-1">
             ${bdayListHtml}
           </div>
         </div>
 
-        <!-- Card C: Chương Trình Sinh Hoạt Tháng Tới -->
         <div class="glass-card rounded-3xl p-5 sm:p-6 border border-sky-500/25 space-y-4 shadow-xl">
           <div class="flex items-center justify-between">
             <h4 class="font-bold text-sky-300 text-sm sm:text-base flex items-center gap-2">
               <span class="material-symbols-outlined">event_upcoming</span>
               <span>Lịch Sinh Hoạt Tháng Tới (Tháng ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})</span>
             </h4>
-            <span class="text-[10px] text-text-secondary font-bold">5 Tuần Chúa Nhật</span>
+            <span class="text-xs text-text-secondary font-bold">5 Tuần Chúa Nhật</span>
           </div>
-          <div class="space-y-2 max-h-56 overflow-y-auto pr-1 text-xs">
+          <div class="space-y-2.5 max-h-64 overflow-y-auto pr-1 text-xs">
             ${data.nextMonthSchedule.map(s => `
-              <div class="p-3 rounded-2xl bg-white/5 flex items-center justify-between gap-2 hover:bg-white/10 transition-colors">
+              <div class="p-3.5 rounded-2xl bg-white/5 flex items-center justify-between gap-2.5 hover:bg-white/10 transition-colors">
                 <div>
-                  <div class="font-bold text-white flex items-center gap-1.5">
+                  <div class="font-bold text-white flex items-center gap-2">
                     <span>${s.tietMuc}</span>
-                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">${s.type}</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-semibold">${s.type}</span>
                   </div>
-                  <div class="text-[11px] text-text-secondary mt-0.5">${s.dateLabel} &bull; HD: <strong>${s.huongDan}</strong></div>
+                  <div class="text-xs text-text-secondary mt-1">${s.dateLabel} &bull; Hướng dẫn: <strong>${s.huongDan}</strong></div>
                 </div>
-                <span class="px-2.5 py-1 rounded-xl bg-sky-500/20 text-sky-300 text-xs font-bold shrink-0">${s.dienGia}</span>
+                <span class="px-3 py-1.5 rounded-xl bg-sky-500/20 text-sky-300 text-xs font-bold shrink-0">${s.dienGia}</span>
               </div>
             `).join('')}
           </div>
         </div>
 
-        <!-- Card D: Thông Báo & Kế Hoạch Ngoại Khóa -->
         <div class="glass-card rounded-3xl p-5 sm:p-6 border border-amber-500/25 space-y-4 shadow-xl">
           <h4 class="font-bold text-amber-300 text-sm sm:text-base flex items-center gap-2">
             <span class="material-symbols-outlined">campaign</span>
             <span>Thông Báo - Đề Nghị &amp; Kế Hoạch Trọng Tâm</span>
           </h4>
-          <textarea oninput="handlePastoralNotesChange(this.value)" rows="5" class="glass-input w-full rounded-2xl p-3.5 text-xs leading-relaxed text-white focus:ring-2 focus:ring-amber-400 focus:outline-none" placeholder="Nhập ghi chú, lễ báp-tem, họp ban, dã ngoại...">${pastoralNotesState}</textarea>
+          <textarea oninput="handlePastoralNotesChange(this.value)" rows="5" class="glass-input w-full rounded-2xl p-4 text-xs sm:text-sm leading-relaxed text-white focus:ring-2 focus:ring-amber-400 focus:outline-none" placeholder="Nhập ghi chú, lễ báp-tem, họp ban, dã ngoại...">${pastoralNotesState}</textarea>
         </div>
       </div>
 
-      <!-- STRATEGIC ACTION PLAN ROADMAP (LỘ TRÌNH CHIẾN LƯỢC MỤC VỤ) -->
-      <div class="glass-card-solid rounded-3xl p-5 sm:p-6 border border-white/10 space-y-4 shadow-xl">
-        <h4 class="font-bold text-white text-sm sm:text-base flex items-center gap-2">
-          <span class="material-symbols-outlined text-amber-400">flag</span>
+      <div class="glass-card-solid rounded-3xl p-6 sm:p-7 border border-white/10 space-y-5 shadow-2xl">
+        <h4 class="font-bold text-white text-base sm:text-lg flex items-center gap-2.5">
+          <span class="material-symbols-outlined text-amber-400 text-2xl">flag</span>
           <span>Lộ Trình Đề Xuất Chiến Lược Mục Vụ (Ban Điều Hành &amp; Quản Nhiệm)</span>
         </h4>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <!-- Step 1: Tháng 8 -->
-          <div class="p-4 rounded-2xl bg-sky-950/20 border border-sky-500/30 space-y-2">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+          <div class="p-5 rounded-3xl bg-sky-950/30 border border-sky-500/30 space-y-3 shadow-lg">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-sky-400">THÁNG 08/2026</span>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300">Giai đoạn 1</span>
+              <span class="font-bold text-sky-400 text-sm">THÁNG 08/2026</span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300">Giai đoạn 1</span>
             </div>
-            <div class="font-bold text-white text-sm">🎯 Thu Hẹp Drop-off</div>
-            <ul class="space-y-1 text-text-secondary text-[11px] list-disc list-inside">
+            <div class="font-bold text-white text-base">🎯 Thu Hẹp Drop-off</div>
+            <ul class="space-y-1.5 text-text-secondary text-xs list-disc list-inside leading-relaxed">
               <li>Tổ chức Góc Gặp Gỡ Thanh Tráng trưa Chúa Nhật.</li>
               <li>Khích lệ ban viên đi lễ sáng ở lại sinh hoạt chiều.</li>
               <li>Phối hợp tổ chức Thánh Lễ Báp-tem ngày 25/08.</li>
             </ul>
           </div>
 
-          <!-- Step 2: Tháng 9 -->
-          <div class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-2">
+          <div class="p-5 rounded-3xl bg-emerald-950/30 border border-emerald-500/30 space-y-3 shadow-lg">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-emerald-400">THÁNG 09/2026</span>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300">Giai đoạn 2</span>
+              <span class="font-bold text-emerald-400 text-sm">THÁNG 09/2026</span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300">Giai đoạn 2</span>
             </div>
-            <div class="font-bold text-white text-sm">🚀 Bứt Phá Truyền Giảng</div>
-            <ul class="space-y-1 text-text-secondary text-[11px] list-disc list-inside">
+            <div class="font-bold text-white text-base">🚀 Bứt Phá Truyền Giảng</div>
+            <ul class="space-y-1.5 text-text-secondary text-xs list-disc list-inside leading-relaxed">
               <li>Trọng tâm: <strong>Truyền Giảng Ban Thanh Tráng (13/09)</strong>.</li>
               <li>Nghỉ dưỡng &amp; Bồi linh Chấp sự ngày 11-12/09.</li>
               <li>Mục tiêu kết nối tối thiểu <strong>+5 Ban viên mới</strong>.</li>
             </ul>
           </div>
 
-          <!-- Step 3: Tháng 10 -->
-          <div class="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 space-y-2">
+          <div class="p-5 rounded-3xl bg-purple-950/30 border border-purple-500/30 space-y-3 shadow-lg">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-purple-400">THÁNG 10/2026</span>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300">Giai đoạn 3</span>
+              <span class="font-bold text-purple-400 text-sm">THÁNG 10/2026</span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300">Giai đoạn 3</span>
             </div>
-            <div class="font-bold text-white text-sm">🤝 Gắn Kết &amp; Phát Triển</div>
-            <ul class="space-y-1 text-text-secondary text-[11px] list-disc list-inside">
+            <div class="font-bold text-white text-base">🤝 Gắn Kết &amp; Phát Triển</div>
+            <ul class="space-y-1.5 text-text-secondary text-xs list-disc list-inside leading-relaxed">
               <li>Tham dự Họp Bạn Ban Phụ Nữ ở HT Phú Xuân (11/10).</li>
               <li>Chăm sóc, dạy giáo lý báp-tem cho tân tín hữu.</li>
               <li>Tổng kết và báo cáo tài chính Quý III.</li>
@@ -6117,17 +6072,94 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
       </div>
     `;
 
-    // Render into In-Page Container
-    const pageDashBox = document.getElementById('pastoral-page-view-dashboard');
-    if (pageDashBox) pageDashBox.innerHTML = dashboardHtml;
+    const matrixRows = data.sundayRows.map(r => `
+      <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+        <td class="py-3.5 px-4 font-bold text-white flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full ${r.afternoonCount > 0 ? 'bg-emerald-400' : 'bg-amber-400'}"></span>
+          <span>${r.dateLabel}</span>
+        </td>
+        <td class="py-3.5 px-4 text-center">
+          <input type="number" value="${r.morningCount}" onchange="handlePastoralMorningAttChange('${r.key}', this.value)" class="w-20 text-center rounded-xl bg-white/10 border border-sky-500/50 text-sky-300 font-bold py-1.5 px-2 focus:ring-2 focus:ring-sky-400 focus:outline-none" />
+        </td>
+        <td class="py-3.5 px-4 text-center font-bold text-emerald-400 text-sm">
+          ${r.afternoonCount > 0 ? r.afternoonCount : '<span class="text-text-secondary font-normal italic">-- (Nghỉ)</span>'}
+        </td>
+        <td class="py-3.5 px-4 text-center font-semibold text-text-secondary">
+          <span class="px-2.5 py-1 rounded-full text-xs font-bold ${r.retentionRate >= 40 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : (r.retentionRate > 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-white/10 text-text-secondary')}">
+            ${r.retentionRate > 0 ? `${r.retentionRate}%` : '--'}
+          </span>
+        </td>
+        <td class="py-3.5 px-4 text-right font-semibold text-emerald-300">
+          ${r.thuTuan > 0 ? Number(r.thuTuan).toLocaleString('vi-VN') + ' đ' : (r.thuTuan === 0 ? '0 đ' : '--')}
+        </td>
+        <td class="py-3.5 px-4 text-right font-semibold text-rose-300">
+          ${r.chiTuan > 0 ? Number(r.chiTuan).toLocaleString('vi-VN') + ' đ' : (r.chiTuan === 0 ? '0 đ' : '--')}
+        </td>
+        <td class="py-3.5 px-4 text-right font-black ${r.tonTuan >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+          ${Number(r.tonTuan).toLocaleString('vi-VN')} đ
+        </td>
+        <td class="py-3.5 px-4 text-right font-semibold text-amber-300">
+          ${r.givingPerCapita > 0 ? Number(r.givingPerCapita).toLocaleString('vi-VN') + ' đ' : '--'}
+        </td>
+      </tr>
+    `).join('');
 
-    // Render into Modal Container
-    const modalDashBox = document.getElementById('pastoral-view-dashboard');
-    if (modalDashBox) modalDashBox.innerHTML = dashboardHtml;
+    const matrixHtml = `
+      <div class="glass-card rounded-3xl p-6 border border-white/10 space-y-4 shadow-2xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h4 class="font-bold text-white text-base sm:text-lg flex items-center gap-2">
+              <span class="material-symbols-outlined text-amber-400">grid_view</span>
+              <span>Bảng Ma Trận Dữ Liệu Chi Tiết Tháng ${data.monthStr}/${data.year}</span>
+            </h4>
+            <p class="text-xs text-text-secondary">Chỉnh sửa nhanh số liệu từng tuần; toàn bộ biểu đồ và báo cáo sẽ tự động đồng bộ ngay lập tức.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="exportPastoralReportToExcel()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm">download</span>
+              <span>Tải Excel</span>
+            </button>
+            <button type="button" onclick="copyPastoralReportToClipboard()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm">content_copy</span>
+              <span>Copy Sheet</span>
+            </button>
+          </div>
+        </div>
 
-    // =========================================================================
-    // 2. BUILD COMMON A4 SHEET CANVAS (EXACT MATCH TO PRINTABLE EXCEL)
-    // =========================================================================
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-white/10 text-[11px] font-bold text-text-secondary uppercase tracking-wider">
+                <th class="py-3.5 px-4">Chúa Nhật</th>
+                <th class="py-3.5 px-4 text-center">Sáng (Lễ Chung)</th>
+                <th class="py-3.5 px-4 text-center">Chiều (Ban Ngành)</th>
+                <th class="py-3.5 px-4 text-center">Tỷ Lệ Giữ Chân</th>
+                <th class="py-3.5 px-4 text-right">Thu Tuần</th>
+                <th class="py-3.5 px-4 text-right">Chi Tuần</th>
+                <th class="py-3.5 px-4 text-right">Tồn Tuần</th>
+                <th class="py-3.5 px-4 text-right">Dâng TB / Người</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-xs">
+              ${matrixRows}
+            </tbody>
+            <tfoot>
+              <tr class="bg-white/5 font-bold text-xs border-t border-white/10">
+                <td class="py-3.5 px-4 text-white uppercase">Tổng Kết / TB:</td>
+                <td class="py-3.5 px-4 text-center text-sky-400 font-black">TB: ${data.avgMorning}</td>
+                <td class="py-3.5 px-4 text-center text-emerald-400 font-black">TB: ${data.avgBan}</td>
+                <td class="py-3.5 px-4 text-center text-amber-300 font-black">TB: ${data.overallRetention}%</td>
+                <td class="py-3.5 px-4 text-right text-emerald-400 font-black">${Number(data.totalIncome).toLocaleString('vi-VN')} đ</td>
+                <td class="py-3.5 px-4 text-right text-rose-400 font-black">${Number(data.totalExpense).toLocaleString('vi-VN')} đ</td>
+                <td class="py-3.5 px-4 text-right ${data.monthlyNet >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-black">${Number(data.monthlyNet).toLocaleString('vi-VN')} đ</td>
+                <td class="py-3.5 px-4 text-right text-amber-300 font-black">TB: ${Number(data.avgGiving).toLocaleString('vi-VN')} đ</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    `;
+
     const t1Rows = data.sundayRows.map(r => `
       <tr>
         <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 500;">${r.dateLabel}</td>
@@ -6141,7 +6173,6 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
       const thuStr = r.thuTuan > 0 ? Number(r.thuTuan).toLocaleString('vi-VN') + ' đ' : (r.thuTuan === 0 ? '0 đ' : '');
       const chiStr = r.chiTuan > 0 ? Number(r.chiTuan).toLocaleString('vi-VN') + ' đ' : (r.chiTuan === 0 ? '0 đ' : '');
       const tonStr = Number(r.tonTuan).toLocaleString('vi-VN') + ' đ';
-
       return `
         <tr>
           <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 500;">${r.dateLabel}</td>
@@ -6164,200 +6195,79 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
 
     const sheetHtml = `
       <div style="font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.35; padding: 6px; max-width: 800px; margin: 0 auto;">
-        
-        <!-- Header Banner -->
         <div style="text-align: center; margin-bottom: 12px;">
-          <h1 style="font-size: 16pt; font-weight: bold; color: #dc2626; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">
-            BÁO CÁO TÌNH HÌNH SINH HOẠT BAN ${data.banTitle}
-          </h1>
-          <h2 style="font-size: 14pt; font-weight: bold; color: #16a34a; margin: 3px 0 0 0;">
-            Tháng ${data.monthStr}.${data.year}
-          </h2>
+          <h1 style="font-size: 16pt; font-weight: bold; color: #dc2626; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">BÁO CÁO TÌNH HÌNH SINH HOẠT BAN ${data.banTitle}</h1>
+          <h2 style="font-size: 14pt; font-weight: bold; color: #16a34a; margin: 3px 0 0 0;">Tháng ${data.monthStr}.${data.year}</h2>
         </div>
-
         <div style="font-size: 11pt; font-weight: bold; margin-bottom: 8px;">
           <span style="color: #ea580c;">Người báo cáo:</span> <span style="text-decoration: underline; color: #ea580c;">${data.author}</span>
         </div>
-
-        <!-- 1. SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT -->
         <table style="width: 60%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
           <thead>
-            <tr>
-              <th colspan="2" style="background-color: #f1f5f9; color: #000; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT
-              </th>
-            </tr>
-            <tr style="background-color: #1e3a8a; color: #fff;">
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 65%;">Chủ Nhật</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 35%;">Hiện diện</th>
-            </tr>
+            <tr><th colspan="2" style="background-color: #f1f5f9; color: #000; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT</th></tr>
+            <tr style="background-color: #1e3a8a; color: #fff;"><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 65%;">Chủ Nhật</th><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 35%;">Hiện diện</th></tr>
           </thead>
-          <tbody>
-            ${t1Rows}
-          </tbody>
+          <tbody>${t1Rows}</tbody>
         </table>
-
-        <!-- 2. SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
           <thead>
-            <tr>
-              <th colspan="5" style="background-color: #f1f5f9; color: #000; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT
-              </th>
-            </tr>
-            <tr style="background-color: #1e3a8a; color: #fff;">
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 25%;">CHÚA NHẬT</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 15%;">Hiện diện</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Thu tuần (VNĐ)</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Chi tuần (VNĐ)</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Tồn tuần</th>
-            </tr>
+            <tr><th colspan="5" style="background-color: #f1f5f9; color: #000; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT</th></tr>
+            <tr style="background-color: #1e3a8a; color: #fff;"><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 25%;">CHÚA NHẬT</th><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 15%;">Hiện diện</th><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Thu tuần (VNĐ)</th><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Chi tuần (VNĐ)</th><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Tồn tuần</th></tr>
           </thead>
+          <tbody>${t2Rows}</tbody>
+        </table>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+          <thead><tr style="background-color: #15803d; color: #fff;"><th colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">TỔNG KẾT THÁNG</th></tr></thead>
           <tbody>
-            ${t2Rows}
+            <tr><td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; width: 38%;">Trung bình hiện diện Sáng</td><td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; width: 14%;">${data.avgMorning}</td><td style="border: 1px solid #000; padding: 4px 6px; color: #b91c1c; font-style: italic; width: 22%;">So với tháng trước:</td><td style="border: 1px solid #000; padding: 4px 6px; text-align: center; color: #b91c1c; font-weight: bold; width: 12%;">${data.prevAvgMorning}</td><td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; width: 14%; background-color: ${data.diffMorning >= 0 ? '#22c55e' : '#ef4444'}; color: #fff;">${data.diffMorning >= 0 ? `Tăng ${data.diffMorning}` : `Giảm ${Math.abs(data.diffMorning)}`}</td></tr>
+            <tr><td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Trung bình hiện diện NHÓM BAN</td><td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold;">${data.avgBan}</td><td style="border: 1px solid #000; padding: 4px 6px; color: #b91c1c; font-style: italic;">So với tháng trước:</td><td style="border: 1px solid #000; padding: 4px 6px; text-align: center; color: #b91c1c; font-weight: bold;">${data.prevAvgBan}</td><td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; background-color: ${data.diffBan >= 0 ? '#22c55e' : '#ef4444'}; color: #fff;">${data.diffBan >= 0 ? `Tăng ${data.diffBan}` : `Giảm ${Math.abs(data.diffBan)}`}</td></tr>
+            <tr><td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tổng thu trong tháng</td><td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.totalIncome).toLocaleString('vi-VN')} đ</td></tr>
+            <tr><td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tổng chi trong tháng</td><td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.totalExpense).toLocaleString('vi-VN')} đ</td></tr>
+            <tr><td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tồn tháng ${data.monthStr}/${data.year}</td><td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.monthlyNet).toLocaleString('vi-VN')} đ</td></tr>
+            <tr><td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tồn Tháng trước</td><td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.openingBalance).toLocaleString('vi-VN')} đ</td></tr>
+            <tr style="background-color: #fecdd3;"><td style="border: 1px solid #000; padding: 5px 6px; font-weight: bold; text-align: center; text-transform: uppercase;">TỔNG TỒN HIỆN TẠI</td><td colspan="2" style="border: 1px solid #000; padding: 5px 6px; font-weight: bold; font-size: 11pt; color: #000;">${Number(data.finalBalance).toLocaleString('vi-VN')} đ</td><td colspan="2" style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: bold;">${data.titheStr ? `Dâng Hiến 1/10: ${data.titheStr}` : 'Dâng Hiến 1/10:'}</td></tr>
           </tbody>
         </table>
-
-        <!-- 3. TỔNG KẾT THÁNG -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+          <thead><tr style="background-color: #6b21a8; color: #fff;"><th style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG</th></tr></thead>
+          <tbody>
+            <tr><td style="border: 1px solid #000; padding: 6px 8px; font-weight: bold;">Ban viên mới: <span style="font-weight: normal;">${data.newMembersCount}</span></td></tr>
+            <tr><td style="border: 1px solid #000; padding: 6px 8px;"><div style="font-weight: bold; text-decoration: underline;">Công Tác Thăm Viếng:</div><div style="margin-top: 2px;">- Ngày thăm viếng: Trong tháng</div><div>- Số lượng gia đình thăm viếng: <strong>${data.visitSummary}</strong></div></td></tr>
+          </tbody>
+        </table>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
           <thead>
-            <tr style="background-color: #15803d; color: #fff;">
-              <th colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                TỔNG KẾT THÁNG
-              </th>
-            </tr>
+            <tr style="background-color: #6b21a8; color: #fff;"><th colspan="4" style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO (THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})</th></tr>
+            <tr style="background-color: #1e3a8a; color: #fff;"><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 22%;">Chúa Nhật</th><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 22%;">Hướng Dẫn CT</th><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 32%;">Tiết mục chính</th><th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 24%;">Diễn giả/ Phụ trách</th></tr>
           </thead>
-          <tbody>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; width: 38%;">Trung bình hiện diện Sáng</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; width: 14%;">${data.avgMorning}</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; color: #b91c1c; font-style: italic; width: 22%;">So với tháng trước:</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; color: #b91c1c; font-weight: bold; width: 12%;">${data.prevAvgMorning}</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; width: 14%; background-color: ${data.diffMorning >= 0 ? '#22c55e' : '#ef4444'}; color: #fff;">
-                ${data.diffMorning >= 0 ? `Tăng ${data.diffMorning}` : `Giảm ${Math.abs(data.diffMorning)}`}
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Trung bình hiện diện NHÓM BAN</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold;">${data.avgBan}</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; color: #b91c1c; font-style: italic;">So với tháng trước:</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; color: #b91c1c; font-weight: bold;">${data.prevAvgBan}</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; background-color: ${data.diffBan >= 0 ? '#22c55e' : '#ef4444'}; color: #fff;">
-                ${data.diffBan >= 0 ? `Tăng ${data.diffBan}` : `Giảm ${Math.abs(data.diffBan)}`}
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tổng thu trong tháng</td>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.totalIncome).toLocaleString('vi-VN')} đ</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tổng chi trong tháng</td>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.totalExpense).toLocaleString('vi-VN')} đ</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tồn tháng ${data.monthStr}/${data.year}</td>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.monthlyNet).toLocaleString('vi-VN')} đ</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tồn Tháng trước</td>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.openingBalance).toLocaleString('vi-VN')} đ</td>
-            </tr>
-            <tr style="background-color: #fecdd3;">
-              <td style="border: 1px solid #000; padding: 5px 6px; font-weight: bold; text-align: center; text-transform: uppercase;">TỔNG TỒN HIỆN TẠI</td>
-              <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; font-weight: bold; font-size: 11pt; color: #000;">${Number(data.finalBalance).toLocaleString('vi-VN')} đ</td>
-              <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: bold;">
-                ${data.titheStr ? `Dâng Hiến 1/10: ${data.titheStr}` : 'Dâng Hiến 1/10:'}
-              </td>
-            </tr>
-          </tbody>
+          <tbody>${t3Rows}</tbody>
         </table>
-
-        <!-- 4. TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
-          <thead>
-            <tr style="background-color: #6b21a8; color: #fff;">
-              <th style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="border: 1px solid #000; padding: 6px 8px; font-weight: bold;">
-                Ban viên mới: <span style="font-weight: normal;">${data.newMembersCount}</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 6px 8px;">
-                <div style="font-weight: bold; text-decoration: underline;">Công Tác Thăm Viếng:</div>
-                <div style="margin-top: 2px;">- Ngày thăm viếng: Trong tháng</div>
-                <div>- Số lượng gia đình thăm viếng: <strong>${data.visitSummary}</strong></div>
-              </td>
-            </tr>
-          </tbody>
+          <thead><tr style="background-color: #6b21a8; color: #fff;"><th style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC</th></tr></thead>
+          <tbody><tr><td style="border: 1px solid #000; padding: 8px;"><div style="font-family: inherit; font-size: 10pt; line-height: 1.4; white-space: pre-line;">${pastoralNotesState}</div></td></tr></tbody>
         </table>
-
-        <!-- 5. CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
-          <thead>
-            <tr style="background-color: #6b21a8; color: #fff;">
-              <th colspan="4" style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO (THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})
-              </th>
-            </tr>
-            <tr style="background-color: #1e3a8a; color: #fff;">
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 22%;">Chúa Nhật</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 22%;">Hướng Dẫn CT</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 32%;">Tiết mục chính</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 24%;">Diễn giả/ Phụ trách</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${t3Rows}
-          </tbody>
-        </table>
-
-        <!-- 6. THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
-          <thead>
-            <tr style="background-color: #6b21a8; color: #fff;">
-              <th style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="border: 1px solid #000; padding: 8px;">
-                <div style="font-family: inherit; font-size: 10pt; line-height: 1.4; white-space: pre-line;">${pastoralNotesState}</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Signature Block -->
         <div style="display: flex; justify-content: space-between; text-align: center; padding: 15px 40px 10px 40px; font-size: 10pt;">
-          <div>
-            <div style="font-weight: bold; text-transform: uppercase;">TRƯỞNG BAN ${data.banTitle}</div>
-            <div style="font-size: 8.5pt; color: #64748b; font-style: italic; margin-top: 2px;">(Ký &amp; ghi rõ họ tên)</div>
-            <div style="height: 50px;"></div>
-            <div style="font-weight: bold;">${data.author}</div>
-          </div>
-
-          <div>
-            <div style="font-weight: bold; text-transform: uppercase;">MỤC SƯ QUẢN NHIỆM</div>
-            <div style="font-size: 8.5pt; color: #64748b; font-style: italic; margin-top: 2px;">(Duyệt &amp; ký tên)</div>
-            <div style="height: 50px;"></div>
-          </div>
+          <div><div style="font-weight: bold; text-transform: uppercase;">TRƯỞNG BAN ${data.banTitle}</div><div style="font-size: 8.5pt; color: #64748b; font-style: italic; margin-top: 2px;">(Ký &amp; ghi rõ họ tên)</div><div style="height: 50px;"></div><div style="font-weight: bold;">${data.author}</div></div>
+          <div><div style="font-weight: bold; text-transform: uppercase;">MỤC SƯ QUẢN NHIỆM</div><div style="font-size: 8.5pt; color: #64748b; font-style: italic; margin-top: 2px;">(Duyệt &amp; ký tên)</div><div style="height: 50px;"></div></div>
         </div>
       </div>
     `;
 
-    // Render into In-Page Canvas
+    const pageDashBox = document.getElementById('pastoral-page-view-dashboard');
+    if (pageDashBox) pageDashBox.innerHTML = dashboardHtml;
+
+    const pageMatrixBox = document.getElementById('pastoral-page-view-matrix');
+    if (pageMatrixBox) pageMatrixBox.innerHTML = matrixHtml;
+
     const pageCanvas = document.getElementById('pastoral-page-report-canvas');
     if (pageCanvas) pageCanvas.innerHTML = sheetHtml;
 
-    // Render into Modal Canvas
+    const modalDashBox = document.getElementById('pastoral-view-dashboard');
+    if (modalDashBox) modalDashBox.innerHTML = dashboardHtml;
+
+    const modalMatrixBox = document.getElementById('pastoral-view-matrix');
+    if (modalMatrixBox) modalMatrixBox.innerHTML = matrixHtml;
+
     const modalCanvas = document.getElementById('pastoral-report-canvas');
     if (modalCanvas) modalCanvas.innerHTML = sheetHtml;
   }
