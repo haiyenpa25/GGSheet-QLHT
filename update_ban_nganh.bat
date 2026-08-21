@@ -1,7 +1,7 @@
 @echo off
 setlocal
 set "ROOT_DIR=%~dp0"
-set "BAN_NGANH_DEPLOY_ID=AKfycbzA9hu94R8otpipHPtw_52Fimf22HIgxIH02YVdisQU6D3KgCVlltjW0QjuD0KGwdYL"
+set "BAN_NGANH_DEPLOY_ID=AKfycbyTzZ_cRWo7DUaIb65Y7ihwRYuu7KY5OMvaFfZqQRTvYt1Mjv8LZebFzPbqEkF3jglI"
 
 echo ====================================================================
 echo   DONG BO VA AUTO-DEPLOY BAN THANH TRANG (BAN NGANH)

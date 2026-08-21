@@ -7,9 +7,9 @@
 // 1. CẤU HÌNH & KHỞI TẠO MẶC ĐỊNH
 // =========================================================================
 
-const DEFAULT_SPREADSHEET_ID = '124O4hYFaxmZn1hg8FyRP4fci6hw84ziTg8o3eAUwMV0';
+const DEFAULT_SPREADSHEET_ID = '124O4hYFaxmZm1hg8FyRP4fci6hw84ziIg8o3eAUwMV0';
 const DEFAULT_DRIVE_FOLDER_ID = '1dy78gH_lwfvPUKaZMRCsiOwN2ZPWcBGj';
-const DEFAULT_BAN_NGANH_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzA9hu94R8otpipHPtw_52Fimf22HIgxIH02YVdisQU6D3KgCVlltjW0QjuD0KGwdYL/exec';
+const DEFAULT_BAN_NGANH_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyTzZ_cRWo7DUaIb65Y7ihwRYuu7KY5OMvaFfZqQRTvYt1Mjv8LZebFzPbqEkF3jglI/exec';
 
 const SHEET_NAMES = {
   HOI_THANH: 'HoiThanh',
@@ -149,7 +149,12 @@ function getDriveFolder() {
       Logger.log('Không thể mở Drive Folder qua ID: ' + err.message);
     }
   }
-  return DriveApp.getRootFolder();
+  try {
+    return DriveApp.getRootFolder();
+  } catch (e) {
+    Logger.log('Không thể lấy Root Folder: ' + e.message);
+    return null;
+  }
 }
 
 function getBanNganhBaseWebAppUrl() {
@@ -216,7 +221,7 @@ function setupDatabase(sheetIdOrUrl, folderIdOrUrl, banNganhWebAppUrl) {
     message: 'Khởi tạo hệ thống Master thành công!',
     spreadsheetId: ss.getId(),
     spreadsheetUrl: ss.getUrl(),
-    folderName: folder.getName()
+    folderName: folder ? folder.getName() : 'Google Drive'
   };
 }
 
@@ -392,9 +397,9 @@ function apiGetInitialData() {
         churches: churches,
         ministries: ministries,
         driveFolder: {
-          id: folder.getId(),
-          name: folder.getName(),
-          url: folder.getUrl()
+          id: folder ? folder.getId() : '',
+          name: folder ? folder.getName() : 'Google Drive',
+          url: folder ? folder.getUrl() : ''
         },
         masterSpreadsheet: {
           id: ss.getId(),
