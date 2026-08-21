@@ -5303,6 +5303,58 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
   // 9. PASTORAL MONTHLY MINISTRY REPORT ENGINE (BÁO CÁO NỘP MỤC SƯ)
   // =========================================================================
 
+  const STORAGE_KEY_PASTORAL_MORNING = 'pastoral_morning_att_records';
+  let activePastoralView = 'dashboard'; // 'dashboard' or 'sheet'
+
+  function loadPastoralMorningState() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_PASTORAL_MORNING);
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function savePastoralMorningState(st) {
+    try {
+      localStorage.setItem(STORAGE_KEY_PASTORAL_MORNING, JSON.stringify(st));
+    } catch (e) {}
+  }
+
+  let pastoralMorningAttState = loadPastoralMorningState();
+  let pastoralNotesState = `Thứ ba, 25/08 Thánh Lễ Báp tem.
+11-12/09 Nghỉ dưỡng Chấp sự.
+13/09 Truyền giảng ban thanh tráng.
+CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
+
+  function switchPastoralReportView(view) {
+    activePastoralView = view;
+    const dashBox = document.getElementById('pastoral-view-dashboard');
+    const sheetBox = document.getElementById('pastoral-view-sheet');
+    const btnDash = document.getElementById('btn-tab-pastoral-dash');
+    const btnSheet = document.getElementById('btn-tab-pastoral-sheet');
+
+    if (view === 'dashboard') {
+      if (dashBox) dashBox.classList.remove('hidden');
+      if (sheetBox) sheetBox.classList.add('hidden');
+      if (btnDash) {
+        btnDash.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5';
+      }
+      if (btnSheet) {
+        btnSheet.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
+      }
+    } else {
+      if (dashBox) dashBox.classList.add('hidden');
+      if (sheetBox) sheetBox.classList.remove('hidden');
+      if (btnDash) {
+        btnDash.className = 'px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5';
+      }
+      if (btnSheet) {
+        btnSheet.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5';
+      }
+    }
+  }
+
   function getSundaysInMonth(year, month) {
     const sundays = [];
     const date = new Date(year, month - 1, 1);
@@ -5322,15 +5374,10 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
     return {
       full: `CN ${day}/${month}/${year}`,
       short: `${day}/${month}`,
-      iso: `${year}-${month}-${day}`
+      iso: `${year}-${month}-${day}`,
+      dayNum: day
     };
   }
-
-  let pastoralMorningAttState = {};
-  let pastoralNotesState = `Thứ ba, 25/08 Thánh Lễ Báp tem.
-11-12/09 Nghỉ dưỡng Chấp sự.
-13/09 Truyền giảng ban thanh tráng.
-CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
 
   function openPastoralReportModal() {
     const now = new Date();
@@ -5364,12 +5411,14 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
       openBalInp.value = priorBal > 0 ? priorBal : (state.kpis ? state.kpis.total_balance : 6566000);
     }
 
+    switchPastoralReportView(activePastoralView || 'dashboard');
     renderPastoralReportPreview();
     openModal('modal-pastoral-monthly-report');
   }
 
   function handlePastoralMorningAttChange(key, val) {
     pastoralMorningAttState[key] = parseInt(val, 10) || 0;
+    savePastoralMorningState(pastoralMorningAttState);
     renderPastoralReportPreview(false);
   }
 
@@ -5433,6 +5482,8 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
 
       return {
         dateLabel: sunFmt.full,
+        dayNum: sunFmt.dayNum,
+        shortLabel: sunFmt.short,
         morningCount,
         afternoonCount,
         thuTuan,
@@ -5458,6 +5509,27 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
     const totalExpense = sundayRows.reduce((sum, r) => sum + r.chiTuan, 0);
     const monthlyNet = totalIncome - totalExpense;
     const finalBalance = openingBalance + monthlyNet;
+
+    // Birthdays in Month
+    const birthdaysInMonth = (state.members || []).filter(m => {
+      const bday = m.ngaySinh || m.NgaySinh || m.ngaysinh;
+      if (!bday) return false;
+      const parts = String(bday).trim().split(/[\/\-\.]/);
+      if (parts.length === 3) {
+        const bMonth = parts[0].length === 4 ? parseInt(parts[1], 10) : parseInt(parts[1], 10);
+        return bMonth === month;
+      }
+      return false;
+    }).map(m => {
+      const bday = m.ngaySinh || m.NgaySinh || m.ngaysinh;
+      const parts = String(bday).trim().split(/[\/\-\.]/);
+      const bDay = parts[0].length === 4 ? parts[2] : parts[0];
+      return {
+        name: getMemberName(m),
+        phone: getMemberPhone(m),
+        dateStr: `${String(bDay).padStart(2, '0')}/${monthStr}`
+      };
+    });
 
     const newMembersCount = 0;
     const monthVisits = (state.visits || []).filter(v => {
@@ -5510,6 +5582,7 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
       totalExpense,
       monthlyNet,
       finalBalance,
+      birthdaysInMonth,
       newMembersCount,
       visitSummary,
       nextMonth,
@@ -5519,238 +5592,528 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
   }
 
   function renderPastoralReportPreview(shouldRerenderInputs = true) {
-    const canvas = document.getElementById('pastoral-report-canvas');
-    if (!canvas) return;
-
     const data = getPastoralReportComputedData();
 
-    // Table 1: Morning Attendance
-    const t1Rows = data.sundayRows.map(r => `
-      <tr>
-        <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 500;">${r.dateLabel}</td>
-        <td style="border: 1px solid #000; padding: 2px 6px; text-align: center; font-weight: bold;">
-          <input type="number" value="${r.morningCount}" onchange="handlePastoralMorningAttChange('${r.key}', this.value)" style="width: 55px; text-align: center; border: 1px dashed #94a3b8; border-radius: 4px; padding: 2px; font-weight: bold; background: #fff;" />
-        </td>
-      </tr>
-    `).join('');
+    // =========================================================================
+    // 1. RENDER EXECUTIVE DASHBOARD VIEW (CARDS & INTERACTIVE CHARTS)
+    // =========================================================================
+    const dashBox = document.getElementById('pastoral-view-dashboard');
+    if (dashBox) {
+      // Find max attendance and finance for chart scaling
+      const maxAtt = Math.max(1, ...data.sundayRows.map(r => Math.max(r.morningCount, r.afternoonCount)));
+      const maxFin = Math.max(1, ...data.sundayRows.map(r => Math.max(r.thuTuan, r.chiTuan)));
 
-    // Table 2: Afternoon Attendance & Weekly Finance
-    const t2Rows = data.sundayRows.map(r => {
-      const thuStr = r.thuTuan > 0 ? Number(r.thuTuan).toLocaleString('vi-VN') + ' đ' : (r.thuTuan === 0 ? '0 đ' : '');
-      const chiStr = r.chiTuan > 0 ? Number(r.chiTuan).toLocaleString('vi-VN') + ' đ' : (r.chiTuan === 0 ? '0 đ' : '');
-      const tonStr = Number(r.tonTuan).toLocaleString('vi-VN') + ' đ';
+      // Chart 1: Attendance Dual Bar Chart
+      const attChartBars = data.sundayRows.map(r => {
+        const mHeight = Math.max(8, Math.round((r.morningCount / maxAtt) * 100));
+        const aHeight = Math.max(8, Math.round((r.afternoonCount / maxAtt) * 100));
+        return `
+          <div class="flex flex-col items-center gap-2 flex-1 group">
+            <div class="flex items-end justify-center gap-1.5 h-32 w-full bg-white/5 rounded-2xl p-1.5 border border-white/5 group-hover:border-sky-500/30 transition-all relative">
+              <!-- Sáng Bar (Sky blue) -->
+              <div class="w-1/2 bg-gradient-to-t from-sky-600 to-blue-400 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-1" style="height: ${mHeight}%;" title="Sáng CN ${r.shortLabel}: ${r.morningCount} người">
+                <span class="text-[9px] font-black text-white">${r.morningCount}</span>
+              </div>
+              <!-- Chiều Bar (Emerald) -->
+              <div class="w-1/2 bg-gradient-to-t from-emerald-600 to-teal-400 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-1" style="height: ${aHeight}%;" title="Chiều CN ${r.shortLabel}: ${r.afternoonCount} người">
+                <span class="text-[9px] font-black text-white">${r.afternoonCount || ''}</span>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-text-secondary">${r.shortLabel}</span>
+          </div>
+        `;
+      }).join('');
 
-      return `
+      // Chart 2: Finance Dual Bar Chart
+      const finChartBars = data.sundayRows.map(r => {
+        const thuH = Math.max(8, Math.round((r.thuTuan / maxFin) * 100));
+        const chiH = Math.max(8, Math.round((r.chiTuan / maxFin) * 100));
+        const thuK = r.thuTuan > 0 ? (r.thuTuan / 1000).toLocaleString('vi-VN') + 'k' : '0';
+        const chiK = r.chiTuan > 0 ? (r.chiTuan / 1000).toLocaleString('vi-VN') + 'k' : '0';
+        return `
+          <div class="flex flex-col items-center gap-2 flex-1 group">
+            <div class="flex items-end justify-center gap-1.5 h-32 w-full bg-white/5 rounded-2xl p-1.5 border border-white/5 group-hover:border-amber-500/30 transition-all relative">
+              <!-- Thu Bar (Emerald) -->
+              <div class="w-1/2 bg-gradient-to-t from-emerald-600 to-green-400 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-1" style="height: ${thuH}%;" title="Thu tuần ${r.shortLabel}: ${Number(r.thuTuan).toLocaleString('vi-VN')} đ">
+                <span class="text-[8px] font-bold text-white truncate px-0.5">${thuK}</span>
+              </div>
+              <!-- Chi Bar (Rose) -->
+              <div class="w-1/2 bg-gradient-to-t from-rose-600 to-pink-500 rounded-xl relative group-hover:brightness-125 transition-all flex flex-col justify-between items-center py-1" style="height: ${chiH}%;" title="Chi tuần ${r.shortLabel}: ${Number(r.chiTuan).toLocaleString('vi-VN')} đ">
+                <span class="text-[8px] font-bold text-white truncate px-0.5">${chiK}</span>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-text-secondary">${r.shortLabel}</span>
+          </div>
+        `;
+      }).join('');
+
+      // Birthdays pill list
+      const bdayListHtml = data.birthdaysInMonth.length > 0
+        ? data.birthdaysInMonth.map(b => `
+          <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs">
+            <span class="font-bold text-white">${b.name}</span>
+            <span class="text-[10px] opacity-80">(${b.dateStr})</span>
+            ${b.phone ? `<button onclick="sendBirthdayZalo('${b.name}', '${b.phone}')" class="text-pink-400 hover:text-white ml-0.5 font-bold" title="Gửi lời chúc Zalo">💬</button>` : ''}
+          </div>
+        `).join('')
+        : `<span class="text-xs text-text-secondary/70 italic">Không có ngày sinh nhật nào trong tháng ${data.monthStr}.</span>`;
+
+      // Live Table Rows in Dashboard
+      const dashTableRows = data.sundayRows.map(r => `
+        <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+          <td class="py-3 px-3.5 font-bold text-white flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>${r.dateLabel}</span>
+          </td>
+          <td class="py-3 px-3.5 text-center">
+            <input type="number" value="${r.morningCount}" onchange="handlePastoralMorningAttChange('${r.key}', this.value)" class="w-16 text-center rounded-xl bg-white/10 border border-sky-500/40 text-sky-300 font-bold py-1 px-2 focus:ring-2 focus:ring-sky-400 focus:outline-none" />
+          </td>
+          <td class="py-3 px-3.5 text-center font-bold text-emerald-400">
+            ${r.afternoonCount > 0 ? r.afternoonCount : '<span class="text-text-secondary font-normal">--</span>'}
+          </td>
+          <td class="py-3 px-3.5 text-right font-semibold text-emerald-300">
+            ${r.thuTuan > 0 ? Number(r.thuTuan).toLocaleString('vi-VN') + ' đ' : (r.thuTuan === 0 ? '0 đ' : '--')}
+          </td>
+          <td class="py-3 px-3.5 text-right font-semibold text-rose-300">
+            ${r.chiTuan > 0 ? Number(r.chiTuan).toLocaleString('vi-VN') + ' đ' : (r.chiTuan === 0 ? '0 đ' : '--')}
+          </td>
+          <td class="py-3 px-3.5 text-right font-black ${r.tonTuan >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+            ${Number(r.tonTuan).toLocaleString('vi-VN')} đ
+          </td>
+        </tr>
+      `).join('');
+
+      dashBox.innerHTML = `
+        <!-- 4 Top Executive KPI Stat Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <!-- KPI 1: TB Sáng -->
+          <div class="glass-card rounded-2xl p-4 border border-sky-500/20 bg-gradient-to-br from-sky-950/40 to-surface-elevated/80 flex flex-col justify-between shadow-lg">
+            <div class="flex items-center justify-between">
+              <span class="text-text-secondary text-[11px] font-bold uppercase tracking-wider">TB Nhóm Sáng</span>
+              <span class="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-lg">wb_sunny</span>
+              </span>
+            </div>
+            <div class="mt-3 flex items-baseline justify-between">
+              <div class="text-2xl font-black text-white">${data.avgMorning} <span class="text-xs font-normal text-text-secondary">người</span></div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${data.diffMorning >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+                ${data.diffMorning >= 0 ? `▲ +${data.diffMorning}` : `▼ ${data.diffMorning}`} (tháng trước: ${data.prevAvgMorning})
+              </span>
+            </div>
+          </div>
+
+          <!-- KPI 2: TB Chiều Nhóm Ban -->
+          <div class="glass-card rounded-2xl p-4 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/40 to-surface-elevated/80 flex flex-col justify-between shadow-lg">
+            <div class="flex items-center justify-between">
+              <span class="text-text-secondary text-[11px] font-bold uppercase tracking-wider">TB Nhóm Ban</span>
+              <span class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-lg">church</span>
+              </span>
+            </div>
+            <div class="mt-3 flex items-baseline justify-between">
+              <div class="text-2xl font-black text-emerald-400">${data.avgBan} <span class="text-xs font-normal text-text-secondary">người</span></div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${data.diffBan >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+                ${data.diffBan >= 0 ? `▲ +${data.diffBan}` : `▼ ${data.diffBan}`} (tháng trước: ${data.prevAvgBan})
+              </span>
+            </div>
+          </div>
+
+          <!-- KPI 3: Thu Chi Trong Tháng -->
+          <div class="glass-card rounded-2xl p-4 border border-amber-500/20 bg-gradient-to-br from-amber-950/40 to-surface-elevated/80 flex flex-col justify-between shadow-lg">
+            <div class="flex items-center justify-between">
+              <span class="text-text-secondary text-[11px] font-bold uppercase tracking-wider">Thu / Chi Tháng</span>
+              <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-lg">payments</span>
+              </span>
+            </div>
+            <div class="mt-2 space-y-0.5">
+              <div class="flex items-center justify-between text-xs font-bold">
+                <span class="text-emerald-400">+ ${Number(data.totalIncome).toLocaleString('vi-VN')} đ</span>
+                <span class="text-rose-400">- ${Number(data.totalExpense).toLocaleString('vi-VN')} đ</span>
+              </div>
+              <div class="text-[10px] text-text-secondary flex justify-between border-t border-white/10 pt-1 mt-1 font-semibold">
+                <span>Tồn tháng:</span>
+                <span class="${data.monthlyNet >= 0 ? 'text-emerald-300' : 'text-rose-300'} font-bold">${Number(data.monthlyNet).toLocaleString('vi-VN')} đ</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI 4: Quỹ Tồn Hiện Tại -->
+          <div class="glass-card rounded-2xl p-4 border border-purple-500/20 bg-gradient-to-br from-purple-950/40 to-surface-elevated/80 flex flex-col justify-between shadow-lg">
+            <div class="flex items-center justify-between">
+              <span class="text-text-secondary text-[11px] font-bold uppercase tracking-wider">Tổng Tồn Quỹ</span>
+              <span class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-lg">account_balance_wallet</span>
+              </span>
+            </div>
+            <div class="mt-3 flex items-baseline justify-between">
+              <div class="text-2xl font-black text-amber-400">${Number(data.finalBalance).toLocaleString('vi-VN')} <span class="text-xs font-normal text-text-secondary">đ</span></div>
+              <span class="text-[10px] text-text-secondary font-semibold">Đầu kỳ: ${Number(data.openingBalance).toLocaleString('vi-VN')} đ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2 Visual Interactive Comparison Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Chart 1: Attendance Sáng vs Chiều -->
+          <div class="glass-card rounded-2xl p-4 sm:p-5 border border-white/5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-white text-xs sm:text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-400 text-base">group</span>
+                <span>Xu Hướng Hiện Diện Đi Nhóm (Sáng vs Chiều)</span>
+              </h4>
+              <div class="flex items-center gap-3 text-[10px] font-semibold">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> Sáng</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Chiều</span>
+              </div>
+            </div>
+            <div class="flex items-end justify-between gap-3 pt-2">
+              ${attChartBars}
+            </div>
+          </div>
+
+          <!-- Chart 2: Cash Flow Thu vs Chi -->
+          <div class="glass-card rounded-2xl p-4 sm:p-5 border border-white/5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-white text-xs sm:text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-400 text-base">monitoring</span>
+                <span>Dòng Tiền Thu &amp; Chi Theo Tuần Chúa Nhật</span>
+              </h4>
+              <div class="flex items-center gap-3 text-[10px] font-semibold">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Thu</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> Chi</span>
+              </div>
+            </div>
+            <div class="flex items-end justify-between gap-3 pt-2">
+              ${finChartBars}
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Interactive Table in Dashboard -->
+        <div class="glass-card rounded-2xl p-4 sm:p-5 border border-white/5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-white text-xs sm:text-sm flex items-center gap-2">
+              <span class="material-symbols-outlined text-amber-400 text-base">table_rows</span>
+              <span>Chi Tiết Đi Nhóm &amp; Thu Chi Các Tuần Trong Tháng ${data.monthStr}/${data.year}</span>
+            </h4>
+            <span class="text-[10px] text-text-secondary font-semibold italic">Nhập số lượng Sáng trực tiếp &amp; App tự lưu</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-white/10 text-[11px] font-bold text-text-secondary uppercase">
+                  <th class="py-2.5 px-3.5">Chúa Nhật</th>
+                  <th class="py-2.5 px-3.5 text-center">Sáng (Lễ Chung)</th>
+                  <th class="py-2.5 px-3.5 text-center">Chiều (Ban Ngành)</th>
+                  <th class="py-2.5 px-3.5 text-right">Thu Tuần</th>
+                  <th class="py-2.5 px-3.5 text-right">Chi Tuần</th>
+                  <th class="py-2.5 px-3.5 text-right">Tồn Tuần</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5 text-xs">
+                ${dashTableRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 4 Activity & Plan Highlights Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Card A: Thăm Viếng & Ban Viên Mới -->
+          <div class="glass-card rounded-2xl p-4 sm:p-5 border border-purple-500/20 space-y-3">
+            <h4 class="font-bold text-purple-300 text-xs sm:text-sm flex items-center gap-2">
+              <span class="material-symbols-outlined text-base">volunteer_activism</span>
+              <span>Công Tác Thăm Viếng &amp; Phát Triển Ban</span>
+            </h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/5">
+                <span class="text-text-secondary">Ban viên mới trong tháng:</span>
+                <span class="font-bold text-white px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300">${data.newMembersCount} người</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-white/5 space-y-1">
+                <div class="text-text-secondary font-semibold">Gia đình được chăm sóc / thăm viếng:</div>
+                <div class="font-bold text-white">${data.visitSummary}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card B: Sinh Nhật Trong Tháng -->
+          <div class="glass-card rounded-2xl p-4 sm:p-5 border border-pink-500/20 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-pink-300 text-xs sm:text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-base">cake</span>
+                <span>Kỷ Niệm Sinh Nhật Tháng ${data.monthStr}</span>
+              </h4>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/20 text-pink-300">${data.birthdaysInMonth.length} Ban viên</span>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              ${bdayListHtml}
+            </div>
+          </div>
+
+          <!-- Card C: Chương Trình Sinh Hoạt Tháng Tới -->
+          <div class="glass-card rounded-2xl p-4 sm:p-5 border border-sky-500/20 space-y-3">
+            <h4 class="font-bold text-sky-300 text-xs sm:text-sm flex items-center gap-2">
+              <span class="material-symbols-outlined text-base">event_upcoming</span>
+              <span>Lịch Sinh Hoạt Tháng Tới (Tháng ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})</span>
+            </h4>
+            <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1 text-xs">
+              ${data.nextMonthSchedule.map(s => `
+                <div class="p-2.5 rounded-xl bg-white/5 flex items-center justify-between gap-2">
+                  <div>
+                    <div class="font-bold text-white">${s.tietMuc}</div>
+                    <div class="text-[10px] text-text-secondary">${s.dateLabel} &bull; HD: ${s.huongDan}</div>
+                  </div>
+                  <span class="px-2 py-1 rounded-lg bg-sky-500/20 text-sky-300 text-[10px] font-bold shrink-0">${s.dienGia}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Card D: Thông Báo & Kế Hoạch Ngoại Khóa -->
+          <div class="glass-card rounded-2xl p-4 sm:p-5 border border-amber-500/20 space-y-3">
+            <h4 class="font-bold text-amber-300 text-xs sm:text-sm flex items-center gap-2">
+              <span class="material-symbols-outlined text-base">campaign</span>
+              <span>Thông Báo - Đề Nghị &amp; Kế Hoạch Khác</span>
+            </h4>
+            <textarea oninput="handlePastoralNotesChange(this.value)" rows="5" class="glass-input w-full rounded-xl p-3 text-xs leading-relaxed text-white focus:ring-2 focus:ring-amber-400 focus:outline-none" placeholder="Nhập ghi chú, lễ báp-tem, họp ban, dã ngoại...">${pastoralNotesState}</textarea>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 2. RENDER VISUAL SHEET CANVAS (EXACT MATCH TO A4 / EXCEL)
+    // =========================================================================
+    const canvas = document.getElementById('pastoral-report-canvas');
+    if (canvas) {
+      const t1Rows = data.sundayRows.map(r => `
         <tr>
           <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 500;">${r.dateLabel}</td>
-          <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold;">${r.afternoonCount > 0 ? r.afternoonCount : ''}</td>
-          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">${thuStr}</td>
-          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">${chiStr}</td>
-          <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: bold;">${tonStr}</td>
+          <td style="border: 1px solid #000; padding: 2px 6px; text-align: center; font-weight: bold;">
+            <input type="number" value="${r.morningCount}" onchange="handlePastoralMorningAttChange('${r.key}', this.value)" style="width: 55px; text-align: center; border: 1px dashed #94a3b8; border-radius: 4px; padding: 2px; font-weight: bold; background: #fff;" />
+          </td>
         </tr>
+      `).join('');
+
+      const t2Rows = data.sundayRows.map(r => {
+        const thuStr = r.thuTuan > 0 ? Number(r.thuTuan).toLocaleString('vi-VN') + ' đ' : (r.thuTuan === 0 ? '0 đ' : '');
+        const chiStr = r.chiTuan > 0 ? Number(r.chiTuan).toLocaleString('vi-VN') + ' đ' : (r.chiTuan === 0 ? '0 đ' : '');
+        const tonStr = Number(r.tonTuan).toLocaleString('vi-VN') + ' đ';
+
+        return `
+          <tr>
+            <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 500;">${r.dateLabel}</td>
+            <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold;">${r.afternoonCount > 0 ? r.afternoonCount : ''}</td>
+            <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">${thuStr}</td>
+            <td style="border: 1px solid #000; padding: 4px 6px; text-align: right;">${chiStr}</td>
+            <td style="border: 1px solid #000; padding: 4px 6px; text-align: right; font-weight: bold;">${tonStr}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const t3Rows = data.nextMonthSchedule.map(s => `
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 500; width: 22%;">${s.dateLabel}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; width: 22%;">${s.huongDan || ''}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: bold; width: 32%;">${s.tietMuc || ''}</td>
+          <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; width: 24%;">${s.dienGia || ''}</td>
+        </tr>
+      `).join('');
+
+      canvas.innerHTML = `
+        <div style="font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.35; padding: 6px; max-width: 800px; margin: 0 auto;">
+          
+          <!-- Header Banner -->
+          <div style="text-align: center; margin-bottom: 12px;">
+            <h1 style="font-size: 16pt; font-weight: bold; color: #dc2626; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">
+              BÁO CÁO TÌNH HÌNH SINH HOẠT BAN ${data.banTitle}
+            </h1>
+            <h2 style="font-size: 14pt; font-weight: bold; color: #16a34a; margin: 3px 0 0 0;">
+              Tháng ${data.monthStr}.${data.year}
+            </h2>
+          </div>
+
+          <div style="font-size: 11pt; font-weight: bold; margin-bottom: 8px;">
+            <span style="color: #ea580c;">Người báo cáo:</span> <span style="text-decoration: underline; color: #ea580c;">${data.author}</span>
+          </div>
+
+          <!-- 1. SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT -->
+          <table style="width: 60%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+            <thead>
+              <tr>
+                <th colspan="2" style="background-color: #f1f5f9; color: #000; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                  SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT
+                </th>
+              </tr>
+              <tr style="background-color: #1e3a8a; color: #fff;">
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 65%;">Chủ Nhật</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 35%;">Hiện diện</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${t1Rows}
+            </tbody>
+          </table>
+
+          <!-- 2. SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT -->
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+            <thead>
+              <tr>
+                <th colspan="5" style="background-color: #f1f5f9; color: #000; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                  SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT
+                </th>
+              </tr>
+              <tr style="background-color: #1e3a8a; color: #fff;">
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 25%;">CHÚA NHẬT</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 15%;">Hiện diện</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Thu tuần (VNĐ)</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Chi tuần (VNĐ)</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Tồn tuần</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${t2Rows}
+            </tbody>
+          </table>
+
+          <!-- 3. TỔNG KẾT THÁNG -->
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+            <thead>
+              <tr style="background-color: #15803d; color: #fff;">
+                <th colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                  TỔNG KẾT THÁNG
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; width: 38%;">Trung bình hiện diện Sáng</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; width: 14%;">${data.avgMorning}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; color: #b91c1c; font-style: italic; width: 22%;">So với tháng trước:</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; color: #b91c1c; font-weight: bold; width: 12%;">${data.prevAvgMorning}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; width: 14%; background-color: ${data.diffMorning >= 0 ? '#22c55e' : '#ef4444'}; color: #fff;">
+                  ${data.diffMorning >= 0 ? `Tăng ${data.diffMorning}` : `Giảm ${Math.abs(data.diffMorning)}`}
+                </td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Trung bình hiện diện NHÓM BAN</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold;">${data.avgBan}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; color: #b91c1c; font-style: italic;">So với tháng trước:</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; color: #b91c1c; font-weight: bold;">${data.prevAvgBan}</td>
+                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; background-color: ${data.diffBan >= 0 ? '#22c55e' : '#ef4444'}; color: #fff;">
+                  ${data.diffBan >= 0 ? `Tăng ${data.diffBan}` : `Giảm ${Math.abs(data.diffBan)}`}
+                </td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tổng thu trong tháng</td>
+                <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.totalIncome).toLocaleString('vi-VN')} đ</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tổng chi trong tháng</td>
+                <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.totalExpense).toLocaleString('vi-VN')} đ</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tồn tháng ${data.monthStr}/${data.year}</td>
+                <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.monthlyNet).toLocaleString('vi-VN')} đ</td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tồn Tháng trước</td>
+                <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.openingBalance).toLocaleString('vi-VN')} đ</td>
+              </tr>
+              <tr style="background-color: #fecdd3;">
+                <td style="border: 1px solid #000; padding: 5px 6px; font-weight: bold; text-align: center; text-transform: uppercase;">TỔNG TỒN HIỆN TẠI</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; font-weight: bold; font-size: 11pt; color: #000;">${Number(data.finalBalance).toLocaleString('vi-VN')} đ</td>
+                <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: bold;">
+                  ${data.titheStr ? `Dâng Hiến 1/10: ${data.titheStr}` : 'Dâng Hiến 1/10:'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 4. TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG -->
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+            <thead>
+              <tr style="background-color: #6b21a8; color: #fff;">
+                <th style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                  TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid #000; padding: 6px 8px; font-weight: bold;">
+                  Ban viên mới: <span style="font-weight: normal;">${data.newMembersCount}</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="border: 1px solid #000; padding: 6px 8px;">
+                  <div style="font-weight: bold; text-decoration: underline;">Công Tác Thăm Viếng:</div>
+                  <div style="margin-top: 2px;">- Ngày thăm viếng: Trong tháng</div>
+                  <div>- Số lượng gia đình thăm viếng: <strong>${data.visitSummary}</strong></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 5. CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO -->
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+            <thead>
+              <tr style="background-color: #6b21a8; color: #fff;">
+                <th colspan="4" style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                  CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO (THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})
+                </th>
+              </tr>
+              <tr style="background-color: #1e3a8a; color: #fff;">
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 22%;">Chúa Nhật</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 22%;">Hướng Dẫn CT</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 32%;">Tiết mục chính</th>
+                <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 24%;">Diễn giả/ Phụ trách</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${t3Rows}
+            </tbody>
+          </table>
+
+          <!-- 6. THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC -->
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
+            <thead>
+              <tr style="background-color: #6b21a8; color: #fff;">
+                <th style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
+                  THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid #000; padding: 8px;">
+                  <div style="font-family: inherit; font-size: 10pt; line-height: 1.4; white-space: pre-line;">${pastoralNotesState}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Signature Block -->
+          <div style="display: flex; justify-content: space-between; text-align: center; padding: 15px 40px 10px 40px; font-size: 10pt;">
+            <div>
+              <div style="font-weight: bold; text-transform: uppercase;">TRƯỞNG BAN ${data.banTitle}</div>
+              <div style="font-size: 8.5pt; color: #64748b; font-style: italic; margin-top: 2px;">(Ký &amp; ghi rõ họ tên)</div>
+              <div style="height: 50px;"></div>
+              <div style="font-weight: bold;">${data.author}</div>
+            </div>
+
+            <div>
+              <div style="font-weight: bold; text-transform: uppercase;">MỤC SƯ QUẢN NHIỆM</div>
+              <div style="font-size: 8.5pt; color: #64748b; font-style: italic; margin-top: 2px;">(Duyệt &amp; ký tên)</div>
+              <div style="height: 50px;"></div>
+            </div>
+          </div>
+        </div>
       `;
-    }).join('');
-
-    // Table 3: Next Month Schedule
-    const t3Rows = data.nextMonthSchedule.map(s => `
-      <tr>
-        <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: 500; width: 22%;">${s.dateLabel}</td>
-        <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; width: 22%;">${s.huongDan || ''}</td>
-        <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; font-weight: bold; width: 32%;">${s.tietMuc || ''}</td>
-        <td style="border: 1px solid #000; padding: 4px 6px; text-align: left; width: 24%;">${s.dienGia || ''}</td>
-      </tr>
-    `).join('');
-
-    canvas.innerHTML = `
-      <div style="font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.35; padding: 6px; max-width: 800px; margin: 0 auto;">
-        
-        <!-- Document Title (Header Banner) -->
-        <div style="text-align: center; margin-bottom: 12px;">
-          <h1 style="font-size: 16pt; font-weight: bold; color: #dc2626; text-transform: uppercase; margin: 0; letter-spacing: 0.5px;">
-            BÁO CÁO TÌNH HÌNH SINH HOẠT BAN ${data.banTitle}
-          </h1>
-          <h2 style="font-size: 14pt; font-weight: bold; color: #16a34a; margin: 3px 0 0 0;">
-            Tháng ${data.monthStr}.${data.year}
-          </h2>
-        </div>
-
-        <div style="font-size: 11pt; font-weight: bold; margin-bottom: 8px;">
-          <span style="color: #ea580c;">Người báo cáo:</span> <span style="text-decoration: underline; color: #ea580c;">${data.author}</span>
-        </div>
-
-        <!-- 1. SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT -->
-        <table style="width: 60%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
-          <thead>
-            <tr>
-              <th colspan="2" style="background-color: #f1f5f9; color: #000; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT
-              </th>
-            </tr>
-            <tr style="background-color: #1e3a8a; color: #fff;">
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 65%;">Chủ Nhật</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 35%;">Hiện diện</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${t1Rows}
-          </tbody>
-        </table>
-
-        <!-- 2. SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
-          <thead>
-            <tr>
-              <th colspan="5" style="background-color: #f1f5f9; color: #000; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT
-              </th>
-            </tr>
-            <tr style="background-color: #1e3a8a; color: #fff;">
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 25%;">CHÚA NHẬT</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 15%;">Hiện diện</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Thu tuần (VNĐ)</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Chi tuần (VNĐ)</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 20%;">Tồn tuần</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${t2Rows}
-          </tbody>
-        </table>
-
-        <!-- 3. TỔNG KẾT THÁNG -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
-          <thead>
-            <tr style="background-color: #15803d; color: #fff;">
-              <th colspan="5" style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                TỔNG KẾT THÁNG
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; width: 38%;">Trung bình hiện diện Sáng</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; width: 14%;">${data.avgMorning}</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; color: #b91c1c; font-style: italic; width: 22%;">So với tháng trước:</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; color: #b91c1c; font-weight: bold; width: 12%;">${data.prevAvgMorning}</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; width: 14%; background-color: ${data.diffMorning >= 0 ? '#22c55e' : '#ef4444'}; color: #fff;">
-                ${data.diffMorning >= 0 ? `Tăng ${data.diffMorning}` : `Giảm ${Math.abs(data.diffMorning)}`}
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Trung bình hiện diện NHÓM BAN</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold;">${data.avgBan}</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; color: #b91c1c; font-style: italic;">So với tháng trước:</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; color: #b91c1c; font-weight: bold;">${data.prevAvgBan}</td>
-              <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; font-weight: bold; background-color: ${data.diffBan >= 0 ? '#22c55e' : '#ef4444'}; color: #fff;">
-                ${data.diffBan >= 0 ? `Tăng ${data.diffBan}` : `Giảm ${Math.abs(data.diffBan)}`}
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tổng thu trong tháng</td>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.totalIncome).toLocaleString('vi-VN')} đ</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tổng chi trong tháng</td>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.totalExpense).toLocaleString('vi-VN')} đ</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tồn tháng ${data.monthStr}/${data.year}</td>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.monthlyNet).toLocaleString('vi-VN')} đ</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 4px 6px; font-weight: bold;">Tồn Tháng trước</td>
-              <td colspan="4" style="border: 1px solid #000; padding: 4px 6px; font-weight: bold; text-align: left;">${Number(data.openingBalance).toLocaleString('vi-VN')} đ</td>
-            </tr>
-            <tr style="background-color: #fecdd3;">
-              <td style="border: 1px solid #000; padding: 5px 6px; font-weight: bold; text-align: center; text-transform: uppercase;">TỔNG TỒN HIỆN TẠI</td>
-              <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; font-weight: bold; font-size: 11pt; color: #000;">${Number(data.finalBalance).toLocaleString('vi-VN')} đ</td>
-              <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: bold;">
-                ${data.titheStr ? `Dâng Hiến 1/10: ${data.titheStr}` : 'Dâng Hiến 1/10:'}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- 4. TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
-          <thead>
-            <tr style="background-color: #6b21a8; color: #fff;">
-              <th style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="border: 1px solid #000; padding: 6px 8px; font-weight: bold;">
-                Ban viên mới: <span style="font-weight: normal;">${data.newMembersCount}</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 6px 8px;">
-                <div style="font-weight: bold; text-decoration: underline;">Công Tác Thăm Viếng:</div>
-                <div style="margin-top: 2px;">- Ngày thăm viếng: Trong tháng</div>
-                <div>- Số lượng gia đình thăm viếng: <strong>${data.visitSummary}</strong></div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- 5. CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
-          <thead>
-            <tr style="background-color: #6b21a8; color: #fff;">
-              <th colspan="4" style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO (THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})
-              </th>
-            </tr>
-            <tr style="background-color: #1e3a8a; color: #fff;">
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 22%;">Chúa Nhật</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 22%;">Hướng Dẫn CT</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 32%;">Tiết mục chính</th>
-              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 24%;">Diễn giả/ Phụ trách</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${t3Rows}
-          </tbody>
-        </table>
-
-        <!-- 6. THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt;">
-          <thead>
-            <tr style="background-color: #6b21a8; color: #fff;">
-              <th style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase;">
-                THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="border: 1px solid #000; padding: 8px;">
-                <textarea oninput="handlePastoralNotesChange(this.value)" rows="4" style="width: 100%; font-family: inherit; font-size: 10pt; border: 1px dashed #94a3b8; border-radius: 6px; padding: 6px; background: #fff; line-height: 1.4;">${pastoralNotesState}</textarea>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Signature Block -->
-        <div style="display: flex; justify-content: space-between; text-align: center; padding: 15px 40px 10px 40px; font-size: 10pt;">
-          <div>
-            <div style="font-weight: bold; text-transform: uppercase;">TRƯỞNG BAN ${data.banTitle}</div>
-            <div style="font-size: 8.5pt; color: #64748b; font-style: italic; margin-top: 2px;">(Ký &amp; ghi rõ họ tên)</div>
-            <div style="height: 50px;"></div>
-            <div style="font-weight: bold;">${data.author}</div>
-          </div>
-
-          <div>
-            <div style="font-weight: bold; text-transform: uppercase;">MỤC SƯ QUẢN NHIỆM</div>
-            <div style="font-size: 8.5pt; color: #64748b; font-style: italic; margin-top: 2px;">(Duyệt &amp; ký tên)</div>
-            <div style="height: 50px;"></div>
-          </div>
-        </div>
-      </div>
-    `;
+    }
   }
 
   function copyPastoralReportToClipboard() {
@@ -5815,57 +6178,170 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
   function exportPastoralReportToExcel() {
     const data = getPastoralReportComputedData();
 
-    let csv = '\uFEFF';
-    csv += `"BÁO CÁO TÌNH HÌNH SINH HOẠT BAN ${data.banTitle}","","","",""\n`;
-    csv += `"Tháng ${data.monthStr}.${data.year}","","","",""\n`;
-    csv += `"Người báo cáo:","${data.author}","","",""\n\n`;
+    // Generate formatted HTML-based Excel Spreadsheet with colors, borders, and number formats
+    let html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>BaoCao_${data.monthStr}_${data.year}</x:Name>
+                <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: 'Times New Roman', Arial, sans-serif; font-size: 11pt; }
+          .title { font-size: 16pt; font-weight: bold; color: #dc2626; text-align: center; }
+          .subtitle { font-size: 14pt; font-weight: bold; color: #16a34a; text-align: center; }
+          .author { font-size: 11pt; font-weight: bold; color: #ea580c; }
+          .header-sub { background-color: #f1f5f9; font-weight: bold; text-align: center; border: 1px solid #000; }
+          .header-navy { background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-align: center; border: 1px solid #000; }
+          .header-green { background-color: #15803d; color: #ffffff; font-weight: bold; text-align: center; border: 1px solid #000; }
+          .header-purple { background-color: #6b21a8; color: #ffffff; font-weight: bold; text-align: center; border: 1px solid #000; }
+          .td-cell { border: 1px solid #000; padding: 4px; }
+          .td-center { border: 1px solid #000; padding: 4px; text-align: center; }
+          .td-right { border: 1px solid #000; padding: 4px; text-align: right; mso-number-format:"\\#\\,\\#\\#0\\ \\đ"; }
+          .td-bold { font-weight: bold; }
+          .tag-up { background-color: #22c55e; color: #ffffff; font-weight: bold; text-align: center; border: 1px solid #000; }
+          .tag-down { background-color: #ef4444; color: #ffffff; font-weight: bold; text-align: center; border: 1px solid #000; }
+          .pink-row { background-color: #fecdd3; font-weight: bold; border: 1px solid #000; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <tr><td colspan="5" class="title">BÁO CÁO TÌNH HÌNH SINH HOẠT BAN ${data.banTitle}</td></tr>
+          <tr><td colspan="5" class="subtitle">Tháng ${data.monthStr}.${data.year}</td></tr>
+          <tr><td colspan="5" class="author">Người báo cáo: <u>${data.author}</u></td></tr>
+          <tr><td></td></tr>
 
-    csv += `"SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT",""\n`;
-    csv += `"Chủ Nhật","Hiện diện"\n`;
-    data.sundayRows.forEach(r => {
-      csv += `"${r.dateLabel}","${r.morningCount}"\n`;
-    });
-    csv += `\n`;
+          <!-- 1. SÁNG -->
+          <tr><td colspan="2" class="header-sub">SỐ LƯỢNG NHÓM SÁNG CHÚA NHẬT</td></tr>
+          <tr>
+            <td class="header-navy" style="width: 250px;">Chủ Nhật</td>
+            <td class="header-navy" style="width: 120px;">Hiện diện</td>
+          </tr>
+          ${data.sundayRows.map(r => `
+            <tr>
+              <td class="td-cell">${r.dateLabel}</td>
+              <td class="td-center td-bold">${r.morningCount}</td>
+            </tr>
+          `).join('')}
+          <tr><td></td></tr>
 
-    csv += `"SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT","","","",""\n`;
-    csv += `"CHÚA NHẬT","Hiện diện","Thu tuần (VNĐ)","Chi tuần (VNĐ)","Tồn tuần (VNĐ)"\n`;
-    data.sundayRows.forEach(r => {
-      csv += `"${r.dateLabel}","${r.afternoonCount > 0 ? r.afternoonCount : ''}","${r.thuTuan}","${r.chiTuan}","${r.tonTuan}"\n`;
-    });
-    csv += `\n`;
+          <!-- 2. CHIỀU -->
+          <tr><td colspan="5" class="header-sub">SỐ LƯỢNG NHÓM CHIỀU CHÚA NHẬT</td></tr>
+          <tr>
+            <td class="header-navy" style="width: 200px;">CHÚA NHẬT</td>
+            <td class="header-navy" style="width: 100px;">Hiện diện</td>
+            <td class="header-navy" style="width: 160px;">Thu tuần (VNĐ)</td>
+            <td class="header-navy" style="width: 160px;">Chi tuần (VNĐ)</td>
+            <td class="header-navy" style="width: 160px;">Tồn tuần</td>
+          </tr>
+          ${data.sundayRows.map(r => `
+            <tr>
+              <td class="td-cell">${r.dateLabel}</td>
+              <td class="td-center td-bold">${r.afternoonCount > 0 ? r.afternoonCount : ''}</td>
+              <td class="td-right">${r.thuTuan}</td>
+              <td class="td-right">${r.chiTuan}</td>
+              <td class="td-right td-bold">${r.tonTuan}</td>
+            </tr>
+          `).join('')}
+          <tr><td></td></tr>
 
-    csv += `"TỔNG KẾT THÁNG","","","",""\n`;
-    csv += `"Trung bình hiện diện Sáng","${data.avgMorning}","So với tháng trước:","${data.prevAvgMorning}","${data.diffMorning >= 0 ? `Tăng ${data.diffMorning}` : `Giảm ${Math.abs(data.diffMorning)}`}"\n`;
-    csv += `"Trung bình hiện diện NHÓM BAN","${data.avgBan}","So với tháng trước:","${data.prevAvgBan}","${data.diffBan >= 0 ? `Tăng ${data.diffBan}` : `Giảm ${Math.abs(data.diffBan)}`}"\n`;
-    csv += `"Tổng thu trong tháng","${data.totalIncome}","","",""\n`;
-    csv += `"Tổng chi trong tháng","${data.totalExpense}","","",""\n`;
-    csv += `"Tồn tháng ${data.monthStr}/${data.year}","${data.monthlyNet}","","",""\n`;
-    csv += `"Tồn Tháng trước","${data.openingBalance}","","",""\n`;
-    csv += `"TỔNG TỒN HIỆN TẠI","${data.finalBalance}","","Dâng Hiến 1/10:","${data.titheStr}"\n\n`;
+          <!-- 3. TỔNG KẾT -->
+          <tr><td colspan="5" class="header-green">TỔNG KẾT THÁNG</td></tr>
+          <tr>
+            <td class="td-cell td-bold">Trung bình hiện diện Sáng</td>
+            <td class="td-center td-bold">${data.avgMorning}</td>
+            <td class="td-cell" style="color: #b91c1c; font-style: italic;">So với tháng trước:</td>
+            <td class="td-center td-bold" style="color: #b91c1c;">${data.prevAvgMorning}</td>
+            <td class="${data.diffMorning >= 0 ? 'tag-up' : 'tag-down'}">${data.diffMorning >= 0 ? `Tăng ${data.diffMorning}` : `Giảm ${Math.abs(data.diffMorning)}`}</td>
+          </tr>
+          <tr>
+            <td class="td-cell td-bold">Trung bình hiện diện NHÓM BAN</td>
+            <td class="td-center td-bold">${data.avgBan}</td>
+            <td class="td-cell" style="color: #b91c1c; font-style: italic;">So với tháng trước:</td>
+            <td class="td-center td-bold" style="color: #b91c1c;">${data.prevAvgBan}</td>
+            <td class="${data.diffBan >= 0 ? 'tag-up' : 'tag-down'}">${data.diffBan >= 0 ? `Tăng ${data.diffBan}` : `Giảm ${Math.abs(data.diffBan)}`}</td>
+          </tr>
+          <tr>
+            <td class="td-cell td-bold">Tổng thu trong tháng</td>
+            <td colspan="4" class="td-right td-bold">${data.totalIncome}</td>
+          </tr>
+          <tr>
+            <td class="td-cell td-bold">Tổng chi trong tháng</td>
+            <td colspan="4" class="td-right td-bold">${data.totalExpense}</td>
+          </tr>
+          <tr>
+            <td class="td-cell td-bold">Tồn tháng ${data.monthStr}/${data.year}</td>
+            <td colspan="4" class="td-right td-bold">${data.monthlyNet}</td>
+          </tr>
+          <tr>
+            <td class="td-cell td-bold">Tồn Tháng trước</td>
+            <td colspan="4" class="td-right td-bold">${data.openingBalance}</td>
+          </tr>
+          <tr class="pink-row">
+            <td class="td-center td-bold" style="text-transform: uppercase;">TỔNG TỒN HIỆN TẠI</td>
+            <td colspan="2" class="td-cell td-bold" style="font-size: 12pt;">${data.finalBalance}</td>
+            <td colspan="2" class="td-right td-bold">${data.titheStr ? `Dâng Hiến 1/10: ${data.titheStr}` : 'Dâng Hiến 1/10:'}</td>
+          </tr>
+          <tr><td></td></tr>
 
-    csv += `"TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG","","","",""\n`;
-    csv += `"Ban viên mới:","${data.newMembersCount}","","",""\n`;
-    csv += `"Công Tác Thăm Viếng:","${data.visitSummary}","","",""\n\n`;
+          <!-- 4. HOẠT ĐỘNG -->
+          <tr><td colspan="5" class="header-purple">TÌNH HÌNH HOẠT ĐỘNG CỦA BAN TRONG THÁNG</td></tr>
+          <tr><td colspan="5" class="td-cell td-bold">Ban viên mới: <span style="font-weight: normal;">${data.newMembersCount}</span></td></tr>
+          <tr>
+            <td colspan="5" class="td-cell">
+              <b><u>Công Tác Thăm Viếng:</u></b><br/>
+              - Ngày thăm viếng: Trong tháng<br/>
+              - Số lượng gia đình thăm viếng: <b>${data.visitSummary}</b>
+            </td>
+          </tr>
+          <tr><td></td></tr>
 
-    csv += `"CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO (THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})","","",""\n`;
-    csv += `"Chúa Nhật","Hướng Dẫn CT","Tiết mục chính","Diễn giả/ Phụ trách"\n`;
-    data.nextMonthSchedule.forEach(s => {
-      csv += `"${s.dateLabel}","${s.huongDan}","${s.tietMuc}","${s.dienGia}"\n`;
-    });
-    csv += `\n`;
+          <!-- 5. THÁNG TỚI -->
+          <tr><td colspan="5" class="header-purple">CHƯƠNG TRÌNH SINH HOẠT THÁNG TIẾP THEO (THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear})</td></tr>
+          <tr>
+            <td class="header-navy">Chúa Nhật</td>
+            <td class="header-navy">Hướng Dẫn CT</td>
+            <td colspan="2" class="header-navy">Tiết mục chính</td>
+            <td class="header-navy">Diễn giả/ Phụ trách</td>
+          </tr>
+          ${data.nextMonthSchedule.map(s => `
+            <tr>
+              <td class="td-cell">${s.dateLabel}</td>
+              <td class="td-cell">${s.huongDan}</td>
+              <td colspan="2" class="td-cell td-bold">${s.tietMuc}</td>
+              <td class="td-cell">${s.dienGia}</td>
+            </tr>
+          `).join('')}
+          <tr><td></td></tr>
 
-    csv += `"THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC",""\n`;
-    csv += `"${pastoralNotesState.replace(/"/g, '""')}",""\n`;
+          <!-- 6. THÔNG BÁO -->
+          <tr><td colspan="5" class="header-purple">THÔNG BÁO - ĐỀ NGHỊ VÀ KẾ HOẠCH KHÁC</td></tr>
+          <tr>
+            <td colspan="5" class="td-cell" style="white-space: pre-line;">${pastoralNotesState}</td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Bao_Cao_Ban_Nganh_Thang_${data.monthStr}_${data.year}.csv`);
+    link.setAttribute('download', `Bao_Cao_Ban_${data.banTitle}_Thang_${data.monthStr}_${data.year}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('✅ Đã tải về file Excel Báo Cáo Tháng!', 'success');
+    showToast('✅ Đã tải về file Excel Báo Cáo định dạng đẹp chuẩn!', 'success');
   }
 
   function printPastoralReportPDF() {
@@ -5932,16 +6408,24 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
     msg += `• Tồn tháng: ${Number(data.monthlyNet).toLocaleString('vi-VN')} đ\n`;
     msg += `• 💵 *TỔNG TỒN HIỆN TẠI: ${Number(data.finalBalance).toLocaleString('vi-VN')} đ*\n\n`;
 
-    msg += `🤝 *3. THĂM VIẾNG:*\n`;
+    if (data.birthdaysInMonth.length > 0) {
+      msg += `🎂 *3. SINH NHẬT THÁNG ${data.monthStr}:*\n`;
+      data.birthdaysInMonth.forEach(b => {
+        msg += `• ${b.name} (${b.dateStr})\n`;
+      });
+      msg += `\n`;
+    }
+
+    msg += `🤝 *4. THĂM VIẾNG:*\n`;
     msg += `• ${data.visitSummary}\n\n`;
 
-    msg += `📅 *4. LỊCH THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear}:*\n`;
+    msg += `📅 *5. LỊCH THÁNG ${String(data.nextMonth).padStart(2, '0')}/${data.nextYear}:*\n`;
     data.nextMonthSchedule.forEach(s => {
       msg += `• ${s.dateLabel}: ${s.tietMuc} (${s.dienGia})\n`;
     });
 
     if (pastoralNotesState.trim()) {
-      msg += `\n📌 *5. THÔNG BÁO & KẾ HOẠCH:*\n${pastoralNotesState}\n`;
+      msg += `\n📌 *6. THÔNG BÁO & KẾ HOẠCH:*\n${pastoralNotesState}\n`;
     }
 
     navigator.clipboard.writeText(msg).then(() => {
@@ -5984,6 +6468,7 @@ CN, 11/10 Họp ban phụ nữ ở HT Phú Xuân 13:30_ 17 giờ.`;
   window.openGlobalSearchBn = openGlobalSearchBn;
   window.openYearlyBirthdayModal = openYearlyBirthdayModal;
   window.openPastoralReportModal = openPastoralReportModal;
+  window.switchPastoralReportView = switchPastoralReportView;
   window.renderPastoralReportPreview = renderPastoralReportPreview;
   window.handlePastoralMorningAttChange = handlePastoralMorningAttChange;
   window.handlePastoralNotesChange = handlePastoralNotesChange;

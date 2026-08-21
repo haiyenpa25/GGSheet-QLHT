@@ -2245,46 +2245,61 @@
   </div>
 
   <!-- MODAL: BÁO CÁO TÌNH HÌNH SINH HOẠT BAN NGÀNH (GỬI MỤC SƯ) -->
-  <div id="modal-pastoral-monthly-report" class="app-modal fixed inset-0 z-[100] hidden items-center justify-center bg-black/85 backdrop-blur-xl p-3 sm:p-5 animate-fade-in">
-    <div class="glass-card-solid border border-amber-500/30 rounded-3xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[95vh] overflow-hidden">
+  <div id="modal-pastoral-monthly-report" class="app-modal fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-xl p-2 sm:p-4 animate-fade-in">
+    <div class="glass-card-solid border border-amber-500/30 rounded-3xl w-full max-w-6xl shadow-2xl flex flex-col max-h-[96vh] overflow-hidden">
       <!-- Modal Header -->
-      <div class="p-4 sm:p-5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-container-low/80 shrink-0">
+      <div class="p-4 sm:p-5 border-b border-white/10 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-surface-container-low/90 shrink-0">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold shrink-0">
-            <span class="material-symbols-outlined text-2xl">assignment</span>
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-bold shrink-0 shadow-lg shadow-amber-500/20">
+            <span class="material-symbols-outlined text-2xl">analytics</span>
           </div>
           <div>
             <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-              <span>Báo Cáo Tình Hình Sinh Hoạt Tháng (Gửi Mục Sư)</span>
+              <span>Báo Cáo Tình Hình Sinh Hoạt Ban Ngành (Nộp Mục Sư)</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Executive Report</span>
             </h3>
-            <p class="text-[11px] text-text-secondary">Tự động tổng hợp 100% từ Điểm danh, Sổ quỹ, Thăm viếng và Lịch nhóm theo mẫu báo cáo Hội Thánh.</p>
+            <p class="text-[11px] text-text-secondary">Tự động tổng hợp 100% Điểm danh, Sổ quỹ, Thăm viếng, Sinh nhật &amp; Phân công tháng tới.</p>
           </div>
         </div>
 
-        <!-- Filter Controls: Month & Year -->
+        <!-- Filter Controls & View Switcher -->
         <div class="flex items-center gap-2 flex-wrap">
-          <select id="pastoral-report-month" onchange="renderPastoralReportPreview()" class="glass-input rounded-xl px-3 py-1.5 text-xs font-bold text-amber-300">
-            <option value="1">Tháng 01</option>
-            <option value="2">Tháng 02</option>
-            <option value="3">Tháng 03</option>
-            <option value="4">Tháng 04</option>
-            <option value="5">Tháng 05</option>
-            <option value="6">Tháng 06</option>
-            <option value="7">Tháng 07</option>
-            <option value="8">Tháng 08</option>
-            <option value="9">Tháng 09</option>
-            <option value="10">Tháng 10</option>
-            <option value="11">Tháng 11</option>
-            <option value="12">Tháng 12</option>
-          </select>
-          <select id="pastoral-report-year" onchange="renderPastoralReportPreview()" class="glass-input rounded-xl px-3 py-1.5 text-xs font-bold text-white">
-            <option value="2025">Năm 2025</option>
-            <option value="2026" selected>Năm 2026</option>
-            <option value="2027">Năm 2027</option>
-          </select>
-          <button onclick="closeModal('modal-pastoral-monthly-report')" class="p-1.5 text-text-secondary hover:text-white rounded-full hover:bg-white/10 transition-colors ml-1">
-            <span class="material-symbols-outlined">close</span>
-          </button>
+          <!-- View Switcher -->
+          <div class="flex bg-white/5 p-1 rounded-2xl border border-white/10 shrink-0">
+            <button type="button" id="btn-tab-pastoral-dash" onclick="switchPastoralReportView('dashboard')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 transition-all flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-base">dashboard</span>
+              <span>Dashboard &amp; Biểu Đồ</span>
+            </button>
+            <button type="button" id="btn-tab-pastoral-sheet" onclick="switchPastoralReportView('sheet')" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-text-secondary hover:text-white transition-all flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-base">table_view</span>
+              <span>Bản In A4 &amp; Excel</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <select id="pastoral-report-month" onchange="renderPastoralReportPreview()" class="glass-input rounded-xl px-3 py-1.5 text-xs font-bold text-amber-300">
+              <option value="1">Tháng 01</option>
+              <option value="2">Tháng 02</option>
+              <option value="3">Tháng 03</option>
+              <option value="4">Tháng 04</option>
+              <option value="5">Tháng 05</option>
+              <option value="6">Tháng 06</option>
+              <option value="7">Tháng 07</option>
+              <option value="8">Tháng 08</option>
+              <option value="9">Tháng 09</option>
+              <option value="10">Tháng 10</option>
+              <option value="11">Tháng 11</option>
+              <option value="12">Tháng 12</option>
+            </select>
+            <select id="pastoral-report-year" onchange="renderPastoralReportPreview()" class="glass-input rounded-xl px-3 py-1.5 text-xs font-bold text-white">
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+            </select>
+            <button onclick="closeModal('modal-pastoral-monthly-report')" class="p-1.5 text-text-secondary hover:text-white rounded-full hover:bg-white/10 transition-colors ml-1">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2292,50 +2307,55 @@
       <div class="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs">
         
         <!-- Editable Parameters Bar -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-surface-elevated/70 p-3.5 rounded-2xl border border-white/5">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-surface-elevated/70 p-3.5 rounded-2xl border border-white/5">
           <div>
-            <label class="block text-[11px] font-bold text-text-secondary mb-1">Người Báo Cáo *</label>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Người Báo Cáo (Trưởng Ban / Thư Ký) *</label>
             <input type="text" id="pastoral-report-author" oninput="renderPastoralReportPreview()" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs font-semibold text-white" value="C.S. Thái Nhựt Bình" placeholder="Họ tên người báo cáo..." />
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-text-secondary mb-1">Tồn Quỹ Đầu Tháng Trước (VNĐ)</label>
+            <label class="block text-[11px] font-bold text-text-secondary mb-1">Tồn Quỹ Đầu Tháng Trước Chuyển Sang (VNĐ)</label>
             <input type="number" id="pastoral-report-opening-balance" oninput="renderPastoralReportPreview()" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs font-semibold text-emerald-400" placeholder="Số dư lũy kế chuyển sang..." />
           </div>
           <div>
             <label class="block text-[11px] font-bold text-text-secondary mb-1">Dâng Hiến 1/10 Ban Ngành (VNĐ)</label>
-            <input type="text" id="pastoral-report-tithe" oninput="renderPastoralReportPreview()" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs font-semibold text-white" placeholder="Số tiền dâng 1/10 nếu có..." />
+            <input type="text" id="pastoral-report-tithe" oninput="renderPastoralReportPreview()" class="glass-input w-full rounded-xl px-3 py-1.5 text-xs font-semibold text-amber-300" placeholder="Số tiền dâng 1/10 nếu có..." />
           </div>
         </div>
 
-        <!-- Visual Report Canvas (Exact Match to Excel File) -->
-        <div class="bg-white rounded-2xl p-4 sm:p-8 shadow-inner border border-slate-300 text-slate-900 font-sans overflow-x-auto">
-          <div id="pastoral-report-canvas" class="min-w-[700px]">
+        <!-- VIEW MODE 1: EXECUTIVE MODERN DASHBOARD WITH CHARTS -->
+        <div id="pastoral-view-dashboard" class="space-y-6">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- VIEW MODE 2: VISUAL SHEET CANVAS (EXACT MATCH TO A4 / EXCEL) -->
+        <div id="pastoral-view-sheet" class="hidden bg-white rounded-2xl p-4 sm:p-8 shadow-inner border border-slate-300 text-slate-900 font-sans overflow-x-auto">
+          <div id="pastoral-report-canvas" class="min-w-[720px]">
             <!-- Rendered dynamically -->
           </div>
         </div>
       </div>
 
       <!-- Action Buttons Footer -->
-      <div class="p-4 sm:p-5 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 bg-surface-container-low/80 shrink-0">
+      <div class="p-4 sm:p-5 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 bg-surface-container-low/90 shrink-0">
         <div class="text-[11px] text-text-secondary flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-sm text-amber-400">info</span>
-          <span>Bấm <strong>Sao Chép Sang Sheets</strong> rồi sang file Excel/Google Sheet của Mục Sư bấm <strong>Ctrl+V</strong>.</span>
+          <span class="material-symbols-outlined text-sm text-emerald-400">task_alt</span>
+          <span>Dữ liệu tự động đồng bộ từ <strong>Điểm Danh</strong>, <strong>Sổ Quỹ</strong>, <strong>Thăm Viếng</strong> &amp; <strong>Lịch Nhóm</strong>.</span>
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
-          <button type="button" onclick="copyPastoralReportToClipboard()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all">
+          <button type="button" onclick="exportPastoralReportToExcel()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all" title="Tải về file Excel chuẩn màu sắc và viền kẻ giống mẫu của Mục Sư">
+            <span class="material-symbols-outlined text-base">table_view</span>
+            <span>📥 Tải File Excel (.xls)</span>
+          </button>
+          <button type="button" onclick="copyPastoralReportToClipboard()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all" title="Sao chép toàn bộ bảng vào bộ nhớ tạm để dán (Ctrl+V) sang Google Sheets">
             <span class="material-symbols-outlined text-base">content_copy</span>
-            <span>📋 Sao Chép Sang Sheets</span>
+            <span>📋 Copy Vào Google Sheet</span>
           </button>
-          <button type="button" onclick="exportPastoralReportToExcel()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all">
-            <span class="material-symbols-outlined text-base">file_download</span>
-            <span>📥 Xuất File Excel</span>
-          </button>
-          <button type="button" onclick="printPastoralReportPDF()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all">
+          <button type="button" onclick="printPastoralReportPDF()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all" title="In trực tiếp hoặc xuất file PDF trang trọng chuẩn A4">
             <span class="material-symbols-outlined text-base">print</span>
-            <span>🖨️ In A4 / Lưu PDF</span>
+            <span>🖨️ In A4 / PDF</span>
           </button>
-          <button type="button" onclick="sendPastoralReportZalo()" class="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all">
+          <button type="button" onclick="sendPastoralReportZalo()" class="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition-all" title="Gửi tin nhắn tóm tắt báo cáo có định dạng cho Mục Sư qua Zalo">
             <span class="material-symbols-outlined text-base">chat</span>
             <span>💬 Gửi Zalo Mục Sư</span>
           </button>
