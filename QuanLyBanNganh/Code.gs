@@ -148,21 +148,41 @@ function createJsonResponse(data) {
 }
 
 function getSpreadsheet(customSheetId) {
-  const savedId = customSheetId || PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || DEFAULT_SPREADSHEET_ID;
-  if (savedId) {
+  // 1. Nếu có customSheetId truyền từ URL (Master ánh xạ qua), thử mở theo ID đó
+  if (customSheetId && String(customSheetId).trim()) {
     try {
-      return SpreadsheetApp.openById(savedId.trim());
+      const cleanId = cleanIdFromInput(customSheetId);
+      const ss = SpreadsheetApp.openById(cleanId);
+      if (ss) return ss;
     } catch (err) {
-      Logger.log('Lỗi mở Sheet bằng ID (' + savedId + '): ' + err.message);
-      throw new Error(`Không thể truy cập Google Sheet [ID: ${savedId.trim()}]. Lỗi: ${err.message}. Hãy mở file Sheet trên Google Drive > Bấm "Chia sẻ" > Đổi sang "Bất kỳ ai có đường liên kết (Người chỉnh sửa)"!`);
+      Logger.log('Không thể mở customSheetId: ' + err.message);
     }
   }
+
+  // 2. Tự động nhận diện Container-bound Spreadsheet (Sheet chứa dự án)
   try {
     const active = SpreadsheetApp.getActiveSpreadsheet();
     if (active) return active;
   } catch (e) {}
 
-  throw new Error('Chưa kết nối Google Sheet cho Ban Ngành này. Vui lòng mở từ Master hoặc cấu hình ID Sheet trong Cài Đặt!');
+  // 3. Thử đọc từ Cài đặt đã lưu trong Properties
+  const propId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  if (propId && propId.trim()) {
+    try {
+      const ss = SpreadsheetApp.openById(propId.trim());
+      if (ss) return ss;
+    } catch (e) {}
+  }
+
+  // 4. Thử mở theo ID mặc định
+  if (typeof DEFAULT_SPREADSHEET_ID !== 'undefined' && DEFAULT_SPREADSHEET_ID) {
+    try {
+      const ss = SpreadsheetApp.openById(DEFAULT_SPREADSHEET_ID.trim());
+      if (ss) return ss;
+    } catch (e) {}
+  }
+
+  throw new Error('Chưa kết nối Google Sheet! Vui lòng vào Cài Đặt trên Web App để dán link Google Sheet của bạn.');
 }
 
 function cleanIdFromInput(input) {
