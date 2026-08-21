@@ -1,5 +1,5 @@
 // Service Worker for Quản Lý Hội Thánh & Ban Ngành PWA
-const CACHE_NAME = 'qlht-pwa-v1';
+const CACHE_NAME = 'qlht-pwa-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(ASSETS_TO_CACHE).catch(err => {
@@ -19,7 +20,6 @@ self.addEventListener('install', event => {
       });
     })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
@@ -28,6 +28,7 @@ self.addEventListener('activate', event => {
       return Promise.all(
         keys.map(key => {
           if (key !== CACHE_NAME) {
+            console.log('SW deleting old cache:', key);
             return caches.delete(key);
           }
         })
@@ -37,15 +38,34 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Network-first for Google Apps Script API calls, Stale-while-revalidate for static assets
+// Network-First for HTML Navigation and Google Scripts, Cache-first for static fonts/icons
 self.addEventListener('fetch', event => {
   const url = event.request.url;
 
-  // Do not intercept or cache Google Script REST API endpoints
+  // Do not intercept Google Script REST API endpoints
   if (url.includes('script.google.com') || url.includes('google.com/macros')) {
     return;
   }
 
+  // Network-First for HTML pages / Navigation requests to ensure updates are immediate
+  if (event.request.mode === 'navigate' || url.endsWith('.html') || url.endsWith('/')) {
+    event.respondWith(
+      fetch(event.request).then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        return caches.match(event.request);
+      })
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for other static assets (fonts, icons, css)
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       const fetchPromise = fetch(event.request).then(networkResponse => {
@@ -56,12 +76,10 @@ self.addEventListener('fetch', event => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // Return cached or offline fallback
-        return cachedResponse;
-      });
+      }).catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })
   );
 });
+
