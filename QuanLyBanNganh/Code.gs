@@ -86,46 +86,52 @@ function handleApiRequest(action, params) {
   try {
     let result = { success: false, message: 'Unknown action: ' + action };
     const sheetId = params.sheetId || params.customSheetId;
+    const callback = params.callback || params.prefix;
+
+    let data = params.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) {}
+    }
 
     switch (action) {
       case 'apiGetInitialData':
         result = apiGetInitialData(sheetId);
         break;
       case 'apiSaveMember':
-        result = apiSaveMember(params.data || params, sheetId);
+        result = apiSaveMember(data || params, sheetId);
         break;
       case 'apiDeleteMember':
         result = apiDeleteMember(params.id, sheetId);
         break;
       case 'apiSaveGroup':
-        result = apiSaveGroup(params.data || params, sheetId);
+        result = apiSaveGroup(data || params, sheetId);
         break;
       case 'apiDeleteGroup':
         result = apiDeleteGroup(params.id, sheetId);
         break;
       case 'apiSaveAttendance':
-        result = apiSaveAttendance(params.data || params, sheetId);
+        result = apiSaveAttendance(data || params, sheetId);
         break;
       case 'apiAddTransaction':
-        result = apiAddTransaction(params.data || params, sheetId);
+        result = apiAddTransaction(data || params, sheetId);
         break;
       case 'apiDeleteTransaction':
         result = apiDeleteTransaction(params.id, sheetId);
         break;
       case 'apiSaveSchedule':
-        result = apiSaveSchedule(params.data || params, sheetId);
+        result = apiSaveSchedule(data || params, sheetId);
         break;
       case 'apiDeleteSchedule':
         result = apiDeleteSchedule(params.id, sheetId);
         break;
       case 'apiGenerateYearlySchedule':
-        result = apiGenerateYearlySchedule(params.data || params, sheetId);
+        result = apiGenerateYearlySchedule(data || params, sheetId);
         break;
       case 'apiSaveAllThemes':
-        result = apiSaveAllThemes(params.data || params, sheetId);
+        result = apiSaveAllThemes(data || params, sheetId);
         break;
       case 'apiSaveVisitation':
-        result = apiSaveVisitation(params.data || params, sheetId);
+        result = apiSaveVisitation(data || params, sheetId);
         break;
       case 'apiDeleteVisitation':
         result = apiDeleteVisitation(params.id, sheetId);
@@ -134,7 +140,7 @@ function handleApiRequest(action, params) {
         result = setupDatabase(sheetId);
         break;
       case 'apiBulkImportMembers':
-        result = apiBulkImportMembers(params.data || params, sheetId);
+        result = apiBulkImportMembers(data || params, sheetId);
         break;
       case 'apiBatchAssignGroup':
         result = apiBatchAssignGroup(params.memberIds || params.ids, params.toId, sheetId);
@@ -143,13 +149,18 @@ function handleApiRequest(action, params) {
         result = { success: false, message: `Hành động "${action}" không tồn tại` };
     }
 
-    return createJsonResponse(result);
+    return createJsonResponse(result, callback);
   } catch (e) {
-    return createJsonResponse({ success: false, message: e.message || String(e) });
+    return createJsonResponse({ success: false, message: e.message || String(e) }, params.callback);
   }
 }
 
-function createJsonResponse(data) {
+function createJsonResponse(data, callback) {
+  if (callback && String(callback).trim()) {
+    const safeCallback = String(callback).replace(/[^a-zA-Z0-9_$]/g, '');
+    return ContentService.createTextOutput(safeCallback + '(' + JSON.stringify(data) + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }

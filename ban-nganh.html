@@ -2279,38 +2279,87 @@
     return fetchRestFallback(functionName, args);
   }
 
-  async function fetchRestFallback(action, args) {
-    try {
-      const sheetId = state.activeSheetId || '13oCKGzsOyy3x9VrsI-NNxFaXBTpdOvveUoTiWegcEZw';
-      let payload = { action: action, sheetId: sheetId, customSheetId: sheetId };
+  function fetchJSONP(url, params, timeoutMs) {
+    return new Promise(function(resolve, reject) {
+      const callbackName = 'gas_cb_' + Math.random().toString(36).substring(2, 10) + '_' + Date.now();
+      const script = document.createElement('script');
+      let timer = null;
 
-      if (action === 'apiGetInitialData') {
-        payload.customSheetId = args[0] || sheetId;
-        const fetchUrl = BAN_NGANH_API_FALLBACK_URL + '?action=' + encodeURIComponent(action) + '&sheetId=' + encodeURIComponent(sheetId) + '&t=' + Date.now();
-        const res = await fetch(fetchUrl, { method: 'GET' });
-        if (!res.ok) throw new Error('HTTP status ' + res.status);
-        const json = await res.json();
-        return json;
-      } else if (args.length === 1) {
-        if (typeof args[0] === 'object') {
-          payload.data = args[0];
-        } else {
-          payload.id = args[0];
+      function cleanup() {
+        if (timer) clearTimeout(timer);
+        if (window[callbackName]) {
+          try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
         }
-      } else if (args.length >= 2) {
-        payload.data = args[0];
-        payload.sheetId = args[1] || sheetId;
+        if (script.parentNode) script.parentNode.removeChild(script);
       }
 
+      timer = setTimeout(function() {
+        cleanup();
+        reject(new Error('JSONP Timeout (' + (timeoutMs || 15000) + 'ms)'));
+      }, timeoutMs || 15000);
+
+      window[callbackName] = function(data) {
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = function(err) {
+        cleanup();
+        reject(new Error('JSONP Script Load Error'));
+      };
+
+      const query = new URLSearchParams();
+      for (const k in params) {
+        if (params.hasOwnProperty(k)) {
+          if (typeof params[k] === 'object') {
+            query.set(k, JSON.stringify(params[k]));
+          } else {
+            query.set(k, String(params[k]));
+          }
+        }
+      }
+      query.set('callback', callbackName);
+      query.set('t', String(Date.now()));
+
+      script.src = url + (url.includes('?') ? '&' : '?') + query.toString();
+      document.body.appendChild(script);
+    });
+  }
+
+  async function fetchRestFallback(action, args) {
+    const sheetId = state.activeSheetId || '13oCKGzsOyy3x9VrsI-NNxFaXBTpdOvveUoTiWegcEZw';
+    let params = { action: action, sheetId: sheetId, customSheetId: sheetId };
+
+    if (action === 'apiGetInitialData') {
+      params.customSheetId = args[0] || sheetId;
+    } else if (args.length === 1) {
+      if (typeof args[0] === 'object') {
+        params.data = args[0];
+      } else {
+        params.id = args[0];
+      }
+    } else if (args.length >= 2) {
+      params.data = args[0];
+      params.sheetId = args[1] || sheetId;
+    }
+
+    // 1. Try JSONP first (immune to browser CORS redirect issues)
+    try {
+      const jsonpResult = await fetchJSONP(BAN_NGANH_API_FALLBACK_URL, params, 15000);
+      if (jsonpResult) return jsonpResult;
+    } catch (jsonpErr) {
+      console.warn('JSONP attempt failed [' + action + '], trying fetch POST...', jsonpErr);
+    }
+
+    // 2. Try Fetch POST fallback
+    try {
       const res = await fetch(BAN_NGANH_API_FALLBACK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(params)
       });
-
       if (!res.ok) throw new Error('HTTP status ' + res.status);
-      const json = await res.json();
-      return json;
+      return await res.json();
     } catch (e) {
       console.error('REST Fallback Error [' + action + ']:', e);
       return { success: false, message: e.message || String(e) };
