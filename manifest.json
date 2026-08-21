@@ -1,0 +1,50 @@
+{
+  "name": "Quản Lý Hội Thánh & Ban Ngành",
+  "short_name": "QL Hội Thánh",
+  "description": "Hệ thống quản trị Hội Thánh & Ban Ngành Tin Lành số hóa toàn diện",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b1326",
+  "theme_color": "#0b1326",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Điểm Danh",
+      "short_name": "Điểm Danh",
+      "description": "Điểm danh sinh hoạt thờ phượng",
+      "url": "./thanh-trang.html?page=attendance",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "512x512" }]
+    },
+    {
+      "name": "Sổ Quỹ",
+      "short_name": "Sổ Quỹ",
+      "description": "Quản lý thu chi & quỹ ban ngành",
+      "url": "./thanh-trang.html?page=finance",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "512x512" }]
+    },
+    {
+      "name": "Ban Viên",
+      "short_name": "Ban Viên",
+      "description": "Danh sách nhân sự ban viên",
+      "url": "./thanh-trang.html?page=members",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "512x512" }]
+    },
+    {
+      "name": "Lịch Sinh Hoạt",
+      "short_name": "Lịch Nhóm",
+      "description": "Xem chương trình thờ phượng",
+      "url": "./thanh-trang.html?page=schedule",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "512x512" }]
+    }
+  ]
+}

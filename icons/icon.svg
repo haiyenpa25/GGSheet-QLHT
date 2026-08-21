@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1326"/>
+      <stop offset="50%" stop-color="#14213d"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </linearGradient>
+    <linearGradient id="crossGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  
+  <!-- App Icon Background -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)"/>
+  <rect width="504" height="504" x="4" y="4" rx="106" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="4"/>
+  
+  <!-- Church Dome & Cross Illustration -->
+  <g filter="url(#glow)">
+    <!-- Church Base Outline -->
+    <path d="M120 410 L120 280 L256 180 L392 280 L392 410 Z" fill="rgba(16, 185, 129, 0.15)" stroke="url(#crossGrad)" stroke-width="12" stroke-linejoin="round"/>
+    
+    <!-- Church Door Arch -->
+    <path d="M220 410 L220 320 Q256 290 292 320 L292 410 Z" fill="rgba(251, 191, 36, 0.25)" stroke="url(#goldGrad)" stroke-width="8"/>
+    
+    <!-- Central Holy Cross -->
+    <path d="M256 80 L256 220 M200 130 L312 130" stroke="url(#crossGrad)" stroke-width="20" stroke-linecap="round"/>
+    
+    <!-- Radiance Rays -->
+    <circle cx="256" cy="130" r="70" fill="none" stroke="rgba(52, 211, 153, 0.2)" stroke-width="4" stroke-dasharray="10, 10"/>
+  </g>
+</svg>

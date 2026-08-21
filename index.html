@@ -3,7 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
-  <title>Quản Lý Hội Thánh &amp; Ban Ngành</title>
+  <!-- PWA & Mobile Web App Meta -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="QL Hội Thánh" />
+  <meta name="theme-color" content="#0b1326" />
 
   <!-- Tailwind CSS & Google Fonts & Material Icons -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -104,8 +112,74 @@
   <div class="ambient-glow w-[400px] h-[400px] bg-primary-container/15 top-[-100px] left-[-100px]"></div>
   <div class="ambient-glow w-[450px] h-[450px] bg-blue-600/15 bottom-[50px] right-[-120px]" style="animation-delay: -8s;"></div>
 
-  <!-- TopAppBar -->
-  <header id="app-top-header" class="bg-surface-container-low/90 backdrop-blur-2xl fixed top-0 left-0 right-0 w-full h-16 z-50 border-b border-white/10 shadow-lg flex justify-between items-center px-4 sm:px-6">
+  <!-- FULLSCREEN AUTH GATE (MÀN HÌNH KHÓA ĐĂNG NHẬP CHẶN ĐẦU) -->
+  <div id="auth-gate-screen-master" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background overflow-y-auto">
+    <div class="ambient-glow w-[350px] h-[350px] bg-primary-container/20 top-[10%] left-[10%]"></div>
+    <div class="ambient-glow w-[350px] h-[350px] bg-blue-600/20 bottom-[10%] right-[10%]"></div>
+    
+    <div class="glass-card-solid border border-white/15 rounded-3xl p-6 sm:p-10 max-w-md w-full shadow-2xl space-y-6 relative my-auto">
+      <div class="text-center space-y-2.5">
+        <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-primary-container via-primary to-secondary mx-auto flex items-center justify-center text-white shadow-2xl shadow-primary/30 border border-white/20">
+          <span class="material-symbols-outlined text-4xl">church</span>
+        </div>
+        <div>
+          <h2 class="text-2xl font-extrabold text-white tracking-tight">Quản Lý Hội Thánh</h2>
+          <p class="text-xs text-text-secondary mt-1">Cổng Quản Trị Hệ Thống &amp; Ban Ngành Tin Lành</p>
+        </div>
+      </div>
+
+      <form id="form-auth-gate-master" onsubmit="handleAuthGateLogin(event)" class="space-y-4 pt-1">
+        <div>
+          <label class="block text-xs font-semibold text-text-secondary mb-1.5">Tên đăng nhập / Tài khoản *</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-3 text-text-secondary text-[18px]">person</span>
+            <input type="text" id="gate-login-username" required placeholder="admin hoặc quannhiem" class="w-full pl-10 pr-4 py-2.5 rounded-2xl glass-input text-xs focus:ring-2 focus:ring-primary focus:outline-none font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-text-secondary mb-1.5">Mật khẩu *</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-3 text-text-secondary text-[18px]">lock</span>
+            <input type="password" id="gate-login-password" required placeholder="Mật khẩu của bạn" class="w-full pl-10 pr-10 py-2.5 rounded-2xl glass-input text-xs focus:ring-2 focus:ring-primary focus:outline-none">
+            <button type="button" onclick="togglePasswordVisibility('gate-login-password', this)" class="absolute right-3.5 top-2.5 text-text-secondary hover:text-white">
+              <span class="material-symbols-outlined text-[18px]">visibility</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs pt-1">
+          <label class="flex items-center gap-2 cursor-pointer text-text-secondary hover:text-white">
+            <input type="checkbox" id="gate-login-remember" checked class="rounded border-white/20 text-primary focus:ring-0 bg-transparent">
+            <span>Ghi nhớ đăng nhập</span>
+          </label>
+        </div>
+
+        <!-- Quick preset buttons for convenience -->
+        <div class="p-3 bg-white/5 rounded-2xl border border-white/5 space-y-1.5">
+          <span class="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Chọn nhanh tài khoản mẫu:</span>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button type="button" onclick="fillPresetAccountMaster('admin', 'Haiyen@2026')" class="px-2.5 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[11px] font-bold truncate transition-all text-left">
+              👑 Super Admin
+            </button>
+            <button type="button" onclick="fillPresetAccountMaster('quannhiem', '123456')" class="px-2.5 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 text-[11px] font-bold truncate transition-all text-left">
+              ⛪ Quản Nhiệm
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-gate-login-submit" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-primary-container via-primary to-secondary text-white text-xs font-bold shadow-xl shadow-primary/25 hover:opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2 mt-2">
+          <span class="material-symbols-outlined text-base">login</span>
+          <span>Đăng Nhập Vào Hệ Thống</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP WRAPPER (CHỈ HIỂN THỊ SAU KHI ĐĂNG NHẬP THÀNH CÔNG) -->
+  <div id="app-main-wrapper" class="hidden">
+    <!-- TopAppBar -->
+    <header id="app-top-header" class="bg-surface-container-low/90 backdrop-blur-2xl fixed top-0 left-0 right-0 w-full h-16 z-40 border-b border-white/10 shadow-lg flex justify-between items-center px-4 sm:px-6">
     <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('dashboard')">
       <div class="w-10 h-10 rounded-2xl glass-card flex items-center justify-center border border-primary/40 text-primary">
         <span class="material-symbols-outlined text-[24px]">church</span>
@@ -545,6 +619,7 @@
       <span class="nav-label text-[10px] mt-0.5">Cài đặt</span>
     </button>
   </nav>
+  </div> <!-- end #app-main-wrapper -->
 
   <!-- Global Loading Indicator -->
   <div id="global-loading-indicator" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center pointer-events-none">
@@ -927,7 +1002,7 @@
     const AUTH_SESSION_KEY = 'qlht_auth_session';
 
     // =========================================================================
-    // AUTHENTICATION & SESSION MANAGEMENT
+    // AUTHENTICATION & SESSION MANAGEMENT WITH AUTH GATE
     // =========================================================================
 
     function loadAuthSession() {
@@ -966,6 +1041,8 @@
     }
 
     function updateAuthUI() {
+      const authGate = document.getElementById('auth-gate-screen-master');
+      const appWrapper = document.getElementById('app-main-wrapper');
       const uHeader = document.getElementById('user-profile-header');
       const btnLogin = document.getElementById('btn-show-login');
       const uAvatar = document.getElementById('header-user-avatar');
@@ -976,6 +1053,10 @@
       const dropBadge = document.getElementById('dropdown-user-badge');
 
       if (state.currentUser) {
+        // Đã đăng nhập: Mở khóa App, ẩn Auth Gate
+        if (authGate) authGate.classList.add('hidden');
+        if (appWrapper) appWrapper.classList.remove('hidden');
+
         if (uHeader) uHeader.classList.remove('hidden'), uHeader.classList.add('flex');
         if (btnLogin) btnLogin.classList.add('hidden');
 
@@ -988,8 +1069,52 @@
         if (dropEmail) dropEmail.textContent = state.currentUser.email || (state.currentUser.username + '@hoithanh.vn');
         if (dropBadge) dropBadge.textContent = roleLabel;
       } else {
+        // Chưa đăng nhập: Khóa App, hiển thị Auth Gate
+        if (authGate) authGate.classList.remove('hidden');
+        if (appWrapper) appWrapper.classList.add('hidden');
+
         if (uHeader) uHeader.classList.add('hidden'), uHeader.classList.remove('flex');
         if (btnLogin) btnLogin.classList.remove('hidden');
+      }
+    }
+
+    function fillPresetAccountMaster(user, pass) {
+      const uInput = document.getElementById('gate-login-username');
+      const pInput = document.getElementById('gate-login-password');
+      if (uInput) uInput.value = user;
+      if (pInput) pInput.value = pass;
+    }
+
+    async function handleAuthGateLogin(e) {
+      e.preventDefault();
+      const uInput = document.getElementById('gate-login-username').value.trim();
+      const pInput = document.getElementById('gate-login-password').value;
+      const remember = document.getElementById('gate-login-remember').checked;
+
+      if (!uInput || !pInput) return;
+
+      const submitBtn = document.getElementById('btn-gate-login-submit');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="material-symbols-outlined animate-spin text-base">progress_activity</span><span>Đang xác thực...</span>`;
+      }
+
+      try {
+        const res = await runGAS('apiLogin', { username: uInput, password: pInput });
+        if (res && res.success && res.user) {
+          saveAuthSession(res.user, res.token, remember);
+          showToast(`Xin chào ${res.user.fullName || res.user.username}! Đăng nhập thành công.`, 'success');
+          await initApp();
+        } else {
+          showToast((res && res.message) || 'Tên đăng nhập hoặc mật khẩu không chính xác!', 'error');
+        }
+      } catch (err) {
+        showToast('Lỗi đăng nhập: ' + err.message, 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span class="material-symbols-outlined text-base">login</span><span>Đăng Nhập Vào Hệ Thống</span>`;
+        }
       }
     }
 
@@ -1042,6 +1167,13 @@
           submitBtn.innerHTML = `<span class="material-symbols-outlined text-base">login</span><span>Đăng Nhập Hệ Thống</span>`;
         }
       }
+    }
+
+    function handleLogout() {
+      const menu = document.getElementById('user-dropdown-menu');
+      if (menu) menu.classList.add('hidden');
+      clearAuthSession();
+      showToast('Đã đăng xuất khỏi hệ thống!', 'info');
     }
 
     function handleLogout() {
@@ -1936,6 +2068,17 @@
       document.addEventListener('DOMContentLoaded', initApp);
     } else {
       initApp();
+    }
+
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('PWA ServiceWorker registered with scope:', reg.scope);
+        }).catch(err => {
+          console.warn('PWA ServiceWorker registration failed:', err);
+        });
+      });
     }
   </script>
 </body>

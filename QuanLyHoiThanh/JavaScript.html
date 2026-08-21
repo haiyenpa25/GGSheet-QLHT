@@ -64,11 +64,233 @@
     });
   }
 
+  const AUTH_SESSION_KEY = 'qlht_auth_session';
+
+  // =========================================================================
+  // AUTHENTICATION & SESSION MANAGEMENT WITH AUTH GATE
+  // =========================================================================
+
+  function loadAuthSession() {
+    try {
+      const raw = localStorage.getItem(AUTH_SESSION_KEY) || sessionStorage.getItem(AUTH_SESSION_KEY);
+      if (raw) {
+        const session = JSON.parse(raw);
+        if (session && session.user) {
+          state.currentUser = session.user;
+          updateAuthUI();
+          return session.user;
+        }
+      }
+    } catch (e) {}
+    state.currentUser = null;
+    updateAuthUI();
+    return null;
+  }
+
+  function saveAuthSession(user, token, remember = true) {
+    const session = { user, token, timestamp: Date.now() };
+    state.currentUser = user;
+    if (remember) {
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+    } else {
+      sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+    }
+    updateAuthUI();
+  }
+
+  function clearAuthSession() {
+    state.currentUser = null;
+    localStorage.removeItem(AUTH_SESSION_KEY);
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
+    updateAuthUI();
+  }
+
+  function updateAuthUI() {
+    const authGate = document.getElementById('auth-gate-screen-master');
+    const appWrapper = document.getElementById('app-main-wrapper');
+    const uHeader = document.getElementById('user-profile-header');
+    const btnLogin = document.getElementById('btn-show-login');
+    const uAvatar = document.getElementById('header-user-avatar');
+    const uName = document.getElementById('header-user-name');
+    const uRole = document.getElementById('header-user-role');
+    const dropFullName = document.getElementById('dropdown-user-fullname');
+    const dropEmail = document.getElementById('dropdown-user-email');
+    const dropBadge = document.getElementById('dropdown-user-badge');
+
+    if (state.currentUser) {
+      if (authGate) authGate.classList.add('hidden');
+      if (appWrapper) appWrapper.classList.remove('hidden');
+
+      if (uHeader) uHeader.classList.remove('hidden'), uHeader.classList.add('flex');
+      if (btnLogin) btnLogin.classList.add('hidden');
+
+      const initial = (state.currentUser.fullName || state.currentUser.username || 'A')[0].toUpperCase();
+      if (uAvatar) uAvatar.textContent = initial;
+      if (uName) uName.textContent = state.currentUser.fullName || state.currentUser.username;
+      const roleLabel = state.currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Quản Nhiệm';
+      if (uRole) uRole.textContent = roleLabel;
+      if (dropFullName) dropFullName.textContent = state.currentUser.fullName || state.currentUser.username;
+      if (dropEmail) dropEmail.textContent = state.currentUser.email || (state.currentUser.username + '@hoithanh.vn');
+      if (dropBadge) dropBadge.textContent = roleLabel;
+    } else {
+      if (authGate) authGate.classList.remove('hidden');
+      if (appWrapper) appWrapper.classList.add('hidden');
+
+      if (uHeader) uHeader.classList.add('hidden'), uHeader.classList.remove('flex');
+      if (btnLogin) btnLogin.classList.remove('hidden');
+    }
+  }
+
+  function fillPresetAccountMaster(user, pass) {
+    const uInput = document.getElementById('gate-login-username');
+    const pInput = document.getElementById('gate-login-password');
+    if (uInput) uInput.value = user;
+    if (pInput) pInput.value = pass;
+  }
+
+  function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    const icon = btn.querySelector('.material-symbols-outlined');
+    if (icon) icon.textContent = isPass ? 'visibility_off' : 'visibility';
+  }
+
+  async function handleAuthGateLogin(e) {
+    e.preventDefault();
+    const uInput = document.getElementById('gate-login-username').value.trim();
+    const pInput = document.getElementById('gate-login-password').value;
+    const remember = document.getElementById('gate-login-remember').checked;
+
+    if (!uInput || !pInput) return;
+
+    const submitBtn = document.getElementById('btn-gate-login-submit');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span class="material-symbols-outlined animate-spin text-base">progress_activity</span><span>Đang xác thực...</span>`;
+    }
+
+    try {
+      const res = await runGAS('apiLogin', { username: uInput, password: pInput });
+      if (res && res.success && res.user) {
+        saveAuthSession(res.user, res.token, remember);
+        showToast(`Xin chào ${res.user.fullName || res.user.username}! Đăng nhập thành công.`, 'success');
+        await initApp();
+      } else {
+        showToast((res && res.message) || 'Tên đăng nhập hoặc mật khẩu không chính xác!', 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi đăng nhập: ' + err.message, 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span class="material-symbols-outlined text-base">login</span><span>Đăng Nhập Vào Hệ Thống</span>`;
+      }
+    }
+  }
+
+  function toggleUserDropdown() {
+    const menu = document.getElementById('user-dropdown-menu');
+    if (menu) menu.classList.toggle('hidden');
+  }
+
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('user-dropdown-menu');
+    const uHeader = document.getElementById('user-profile-header');
+    if (menu && !menu.classList.contains('hidden') && uHeader && !uHeader.contains(e.target)) {
+      menu.classList.add('hidden');
+    }
+  });
+
+  function openLoginModal() {
+    openModal('modal-login');
+  }
+
+  async function handleLoginSubmit(e) {
+    e.preventDefault();
+    const uInput = document.getElementById('login-username').value.trim();
+    const pInput = document.getElementById('login-password').value;
+    const remember = document.getElementById('login-remember').checked;
+
+    if (!uInput || !pInput) return;
+
+    const submitBtn = document.getElementById('btn-login-submit');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span class="material-symbols-outlined animate-spin text-base">progress_activity</span><span>Đang xác thực...</span>`;
+    }
+
+    try {
+      const res = await runGAS('apiLogin', { username: uInput, password: pInput });
+      if (res && res.success && res.user) {
+        saveAuthSession(res.user, res.token, remember);
+        closeModal('modal-login');
+        showToast(`Xin chào ${res.user.fullName || res.user.username}! Đăng nhập thành công.`, 'success');
+        await initApp();
+      } else {
+        showToast((res && res.message) || 'Tên đăng nhập hoặc mật khẩu không chính xác!', 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi đăng nhập: ' + err.message, 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span class="material-symbols-outlined text-base">login</span><span>Đăng Nhập Hệ Thống</span>`;
+      }
+    }
+  }
+
+  async function handleChangePasswordSubmit(e) {
+    e.preventDefault();
+    if (!state.currentUser) return;
+    const oldPass = document.getElementById('chg-old-password').value;
+    const newPass = document.getElementById('chg-new-password').value;
+    const confirmPass = document.getElementById('chg-confirm-password').value;
+
+    if (newPass !== confirmPass) {
+      showToast('Mật khẩu mới và xác nhận mật khẩu không khớp!', 'error');
+      return;
+    }
+
+    showLoading(true);
+    try {
+      const res = await runGAS('apiChangePassword', {
+        userId: state.currentUser.id || state.currentUser.username,
+        oldPassword: oldPass,
+        newPassword: newPass
+      });
+      if (res && res.success) {
+        showToast('Đổi mật khẩu thành công!', 'success');
+        closeModal('modal-change-password');
+        document.getElementById('form-change-password').reset();
+      } else {
+        showToast((res && res.message) || 'Đổi mật khẩu thất bại!', 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi: ' + err.message, 'error');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function handleLogout() {
+    const menu = document.getElementById('user-dropdown-menu');
+    if (menu) menu.classList.add('hidden');
+    clearAuthSession();
+    showToast('Đã đăng xuất khỏi hệ thống!', 'info');
+  }
+
   // =========================================================================
   // APP INITIALIZATION & NAVIGATION
   // =========================================================================
 
   async function initApp() {
+    loadAuthSession();
+    if (!state.currentUser) {
+      return; // Dừng nạp dữ liệu cho đến khi đăng nhập
+    }
+
     showLoading(true);
     try {
       const res = await runGAS('apiGetInitialData');

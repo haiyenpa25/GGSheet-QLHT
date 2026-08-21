@@ -364,7 +364,10 @@
       }
     } catch (e) {}
 
-    initRoleAndScope();
+    loadAuthSessionBn();
+    if (!state.currentUser) {
+      return; // Dừng nạp dữ liệu cho đến khi người dùng đăng nhập
+    }
 
     // 1. TẢI TỪ LOCAL CACHE (HIỂN THỊ TỨC THÌ 0.01s - KHÔNG PHẢI CHỜ ĐỢI)
     const hasCache = loadFromLocalCache();
@@ -396,16 +399,9 @@
       }
     } catch (e) {}
 
-    // Default: Trưởng ban (toàn quyền)
-    state.currentUser = {
-      id: 'usr_admin',
-      username: 'admin',
-      fullName: 'Trưởng Ban',
-      role: 'TRUONG_BAN',
-      email: 'admin@bannganh.vn'
-    };
+    state.currentUser = null;
     updateAuthUIBn();
-    return state.currentUser;
+    return null;
   }
 
   function saveAuthSessionBn(user, token, remember = true) {
@@ -423,10 +419,12 @@
     state.currentUser = null;
     localStorage.removeItem(AUTH_SESSION_KEY_BN);
     sessionStorage.removeItem(AUTH_SESSION_KEY_BN);
-    loadAuthSessionBn();
+    updateAuthUIBn();
   }
 
   function updateAuthUIBn() {
+    const authGate = document.getElementById('auth-gate-screen-bn');
+    const appWrapper = document.getElementById('app-main-wrapper-bn');
     const uAvatar = document.getElementById('header-user-avatar-bn');
     const uName = document.getElementById('header-user-name-bn');
     const uRole = document.getElementById('header-user-role-bn');
@@ -435,35 +433,83 @@
     const dropBadge = document.getElementById('dropdown-user-badge-bn');
     const groupSelect = document.getElementById('role-group-filter-select');
 
-    if (!state.currentUser) return;
+    if (state.currentUser) {
+      // Đã đăng nhập: Mở khóa App
+      if (authGate) authGate.classList.add('hidden');
+      if (appWrapper) appWrapper.classList.remove('hidden');
 
-    const roleMap = {
-      'TRUONG_BAN': { label: 'Trưởng Ban', badge: 'Trưởng Ban (Toàn quyền)', icon: '👑' },
-      'THU_KY': { label: 'Thư Ký', badge: 'Thư Ký (Nhân sự & Điểm danh)', icon: '✍️' },
-      'THU_QUY': { label: 'Thủ Quỹ', badge: 'Thủ Quỹ (Sổ Quỹ & Tài chính)', icon: '💰' },
-      'TO_TRUONG': { label: 'Tổ Trưởng', badge: 'Tổ Trưởng', icon: '👥' },
-      'BAN_VIEN': { label: 'Ban Viên', badge: 'Ban Viên (Chỉ xem)', icon: '👤' }
-    };
+      const roleMap = {
+        'TRUONG_BAN': { label: 'Trưởng Ban', badge: 'Trưởng Ban (Toàn quyền)', icon: '👑' },
+        'THU_KY': { label: 'Thư Ký', badge: 'Thư Ký (Nhân sự & Điểm danh)', icon: '✍️' },
+        'THU_QUY': { label: 'Thủ Quỹ', badge: 'Thủ Quỹ (Sổ Quỹ & Tài chính)', icon: '💰' },
+        'TO_TRUONG': { label: 'Tổ Trưởng', badge: 'Tổ Trưởng', icon: '👥' },
+        'BAN_VIEN': { label: 'Ban Viên', badge: 'Ban Viên (Chỉ xem)', icon: '👤' }
+      };
 
-    const rInfo = roleMap[state.currentUser.role] || { label: 'Ban Viên', badge: state.currentUser.role, icon: '👤' };
+      const rInfo = roleMap[state.currentUser.role] || { label: 'Ban Viên', badge: state.currentUser.role, icon: '👤' };
 
-    if (uAvatar) uAvatar.textContent = rInfo.icon;
-    if (uName) uName.textContent = state.currentUser.fullName || state.currentUser.username;
-    if (uRole) uRole.textContent = rInfo.label;
-    if (dropFullName) dropFullName.textContent = state.currentUser.fullName || state.currentUser.username;
-    if (dropEmail) dropEmail.textContent = state.currentUser.email || (state.currentUser.sdt || (state.currentUser.username + '@bannganh.vn'));
-    if (dropBadge) dropBadge.textContent = rInfo.badge;
+      if (uAvatar) uAvatar.textContent = rInfo.icon;
+      if (uName) uName.textContent = state.currentUser.fullName || state.currentUser.username;
+      if (uRole) uRole.textContent = rInfo.label;
+      if (dropFullName) dropFullName.textContent = state.currentUser.fullName || state.currentUser.username;
+      if (dropEmail) dropEmail.textContent = state.currentUser.email || (state.currentUser.sdt || (state.currentUser.username + '@bannganh.vn'));
+      if (dropBadge) dropBadge.textContent = rInfo.badge;
 
-    if (groupSelect) {
-      if (state.currentUser.role === 'TO_TRUONG') {
-        groupSelect.classList.remove('hidden');
-        renderRoleGroupOptions();
-      } else {
-        groupSelect.classList.add('hidden');
+      if (groupSelect) {
+        if (state.currentUser.role === 'TO_TRUONG') {
+          groupSelect.classList.remove('hidden');
+          renderRoleGroupOptions();
+        } else {
+          groupSelect.classList.add('hidden');
+        }
       }
+
+      applyRbacPermissions();
+    } else {
+      // Chưa đăng nhập: Khóa App, hiển thị Auth Gate
+      if (authGate) authGate.classList.remove('hidden');
+      if (appWrapper) appWrapper.classList.add('hidden');
+    }
+  }
+
+  function fillPresetAccountBn(user, pass) {
+    const uInput = document.getElementById('gate-login-username-bn');
+    const pInput = document.getElementById('gate-login-password-bn');
+    if (uInput) uInput.value = user;
+    if (pInput) pInput.value = pass;
+  }
+
+  async function handleAuthGateLoginBn(e) {
+    e.preventDefault();
+    const iden = document.getElementById('gate-login-username-bn').value.trim();
+    const pass = document.getElementById('gate-login-password-bn').value;
+    const remember = document.getElementById('gate-login-remember-bn').checked;
+
+    if (!iden) return;
+
+    const btn = document.getElementById('btn-gate-login-bn-submit');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-base">progress_activity</span><span>Đang đăng nhập...</span>`;
     }
 
-    applyRbacPermissions();
+    try {
+      const res = await runGAS('apiLogin', { identifier: iden, password: pass, sheetId: state.activeSheetId });
+      if (res && res.success && res.user) {
+        saveAuthSessionBn(res.user, res.token, remember);
+        showToast(res.message || `Xin chào ${res.user.fullName}! Đăng nhập thành công.`, 'success');
+        await initApp();
+      } else {
+        showToast((res && res.message) || 'Thông tin đăng nhập không chính xác!', 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi đăng nhập: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-base">login</span><span>Đăng Nhập Vào Ban Ngành</span>`;
+      }
+    }
   }
 
   function applyRbacPermissions() {
@@ -534,8 +580,7 @@
     const menu = document.getElementById('user-dropdown-menu-bn');
     if (menu) menu.classList.add('hidden');
     clearAuthSessionBn();
-    showToast('Đã chuyển về tài khoản mặc định!', 'info');
-    renderCurrentView();
+    showToast('Đã đăng xuất khỏi hệ thống!', 'info');
   }
 
   function openChangePasswordModalBn() {
@@ -4588,6 +4633,8 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
   window.handleChangePasswordSubmitBn = handleChangePasswordSubmitBn;
   window.togglePasswordVisibilityBn = togglePasswordVisibilityBn;
   window.handleRoleGroupFilterChange = handleRoleGroupFilterChange;
+  window.fillPresetAccountBn = fillPresetAccountBn;
+  window.handleAuthGateLoginBn = handleAuthGateLoginBn;
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllModals();
@@ -4597,5 +4644,16 @@ Kính mời Quý Anh Chị Em tham dự đầy đủ & đúng giờ! ❤️`;
     document.addEventListener('DOMContentLoaded', initApp);
   } else {
     initApp();
+  }
+
+  // PWA Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        console.log('PWA ServiceWorker registered with scope:', reg.scope);
+      }).catch(err => {
+        console.warn('PWA ServiceWorker registration failed:', err);
+      });
+    });
   }
 </script>

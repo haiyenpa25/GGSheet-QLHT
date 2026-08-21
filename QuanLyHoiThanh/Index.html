@@ -6,6 +6,16 @@
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
   <title>Quản Lý Hội Thánh &amp; Ban Ngành</title>
 
+  <!-- PWA & Mobile Web App Meta -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="QL Hội Thánh" />
+  <meta name="theme-color" content="#0b1326" />
+
   <!-- Tailwind CSS & Google Fonts & Material Icons -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -56,8 +66,74 @@
   <div class="ambient-glow w-[400px] h-[400px] bg-primary-container/15 top-[-100px] left-[-100px]"></div>
   <div class="ambient-glow w-[450px] h-[450px] bg-blue-600/15 bottom-[50px] right-[-120px]" style="animation-delay: -8s;"></div>
 
-  <!-- TopAppBar -->
-  <header id="app-top-header" class="bg-surface-container-low/90 backdrop-blur-2xl fixed top-0 left-0 right-0 w-full h-16 z-50 border-b border-white/10 shadow-lg flex justify-between items-center px-4 sm:px-6">
+  <!-- FULLSCREEN AUTH GATE (MÀN HÌNH KHÓA ĐĂNG NHẬP CHẶN ĐẦU) -->
+  <div id="auth-gate-screen-master" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background overflow-y-auto">
+    <div class="ambient-glow w-[350px] h-[350px] bg-primary-container/20 top-[10%] left-[10%]"></div>
+    <div class="ambient-glow w-[350px] h-[350px] bg-blue-600/20 bottom-[10%] right-[10%]"></div>
+    
+    <div class="glass-card-solid border border-white/15 rounded-3xl p-6 sm:p-10 max-w-md w-full shadow-2xl space-y-6 relative my-auto">
+      <div class="text-center space-y-2.5">
+        <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-primary-container via-primary to-secondary mx-auto flex items-center justify-center text-white shadow-2xl shadow-primary/30 border border-white/20">
+          <span class="material-symbols-outlined text-4xl">church</span>
+        </div>
+        <div>
+          <h2 class="text-2xl font-extrabold text-white tracking-tight">Quản Lý Hội Thánh</h2>
+          <p class="text-xs text-text-secondary mt-1">Cổng Quản Trị Hệ Thống &amp; Ban Ngành Tin Lành</p>
+        </div>
+      </div>
+
+      <form id="form-auth-gate-master" onsubmit="handleAuthGateLogin(event)" class="space-y-4 pt-1">
+        <div>
+          <label class="block text-xs font-semibold text-text-secondary mb-1.5">Tên đăng nhập / Tài khoản *</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-3 text-text-secondary text-[18px]">person</span>
+            <input type="text" id="gate-login-username" required placeholder="admin hoặc quannhiem" class="w-full pl-10 pr-4 py-2.5 rounded-2xl glass-input text-xs focus:ring-2 focus:ring-primary focus:outline-none font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-text-secondary mb-1.5">Mật khẩu *</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-3 text-text-secondary text-[18px]">lock</span>
+            <input type="password" id="gate-login-password" required placeholder="Mật khẩu của bạn" class="w-full pl-10 pr-10 py-2.5 rounded-2xl glass-input text-xs focus:ring-2 focus:ring-primary focus:outline-none">
+            <button type="button" onclick="togglePasswordVisibility('gate-login-password', this)" class="absolute right-3.5 top-2.5 text-text-secondary hover:text-white">
+              <span class="material-symbols-outlined text-[18px]">visibility</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs pt-1">
+          <label class="flex items-center gap-2 cursor-pointer text-text-secondary hover:text-white">
+            <input type="checkbox" id="gate-login-remember" checked class="rounded border-white/20 text-primary focus:ring-0 bg-transparent">
+            <span>Ghi nhớ đăng nhập</span>
+          </label>
+        </div>
+
+        <!-- Quick preset buttons for convenience -->
+        <div class="p-3 bg-white/5 rounded-2xl border border-white/5 space-y-1.5">
+          <span class="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Chọn nhanh tài khoản mẫu:</span>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button type="button" onclick="fillPresetAccountMaster('admin', 'Haiyen@2026')" class="px-2.5 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[11px] font-bold truncate transition-all text-left">
+              👑 Super Admin
+            </button>
+            <button type="button" onclick="fillPresetAccountMaster('quannhiem', '123456')" class="px-2.5 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 text-[11px] font-bold truncate transition-all text-left">
+              ⛪ Quản Nhiệm
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-gate-login-submit" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-primary-container via-primary to-secondary text-white text-xs font-bold shadow-xl shadow-primary/25 hover:opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2 mt-2">
+          <span class="material-symbols-outlined text-base">login</span>
+          <span>Đăng Nhập Vào Hệ Thống</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP WRAPPER (CHỈ HIỂN THỊ SAU KHI ĐĂNG NHẬP THÀNH CÔNG) -->
+  <div id="app-main-wrapper" class="hidden">
+    <!-- TopAppBar -->
+    <header id="app-top-header" class="bg-surface-container-low/90 backdrop-blur-2xl fixed top-0 left-0 right-0 w-full h-16 z-40 border-b border-white/10 shadow-lg flex justify-between items-center px-4 sm:px-6">
     <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('dashboard')">
       <div class="w-10 h-10 rounded-2xl glass-card flex items-center justify-center border border-primary/40 text-primary">
         <span class="material-symbols-outlined text-[24px]">church</span>
@@ -86,6 +162,43 @@
 
     <!-- Right Controls -->
     <div class="flex items-center gap-2">
+      <!-- User Profile Header Widget -->
+      <div id="user-profile-header" class="relative hidden items-center gap-2 pl-2 border-l border-white/10">
+        <button onclick="toggleUserDropdown()" class="flex items-center gap-2 p-1.5 rounded-full hover:bg-white/5 transition-colors focus:outline-none">
+          <div id="header-user-avatar" class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-container to-secondary text-white font-bold flex items-center justify-center text-xs shadow-md border border-white/20">
+            A
+          </div>
+          <div class="hidden lg:block text-left">
+            <div id="header-user-name" class="text-xs font-bold text-white truncate max-w-[120px]">Admin</div>
+            <div id="header-user-role" class="text-[10px] text-text-secondary">Super Admin</div>
+          </div>
+          <span class="material-symbols-outlined text-text-secondary text-base">expand_more</span>
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div id="user-dropdown-menu" class="hidden absolute right-0 top-12 w-56 rounded-2xl glass-card-solid border border-white/15 shadow-2xl p-2 z-50 animate-fade-in space-y-1">
+          <div class="p-2.5 border-b border-white/10 mb-1">
+            <div id="dropdown-user-fullname" class="text-xs font-bold text-white truncate">Administrator</div>
+            <div id="dropdown-user-email" class="text-[10px] text-text-secondary truncate">admin@hoithanh.vn</div>
+            <span id="dropdown-user-badge" class="inline-block mt-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold bg-primary/20 text-primary border border-primary/30">Super Admin</span>
+          </div>
+          <button onclick="openModal('modal-change-password'); toggleUserDropdown();" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-text-secondary hover:text-white hover:bg-white/5 transition-colors text-left">
+            <span class="material-symbols-outlined text-base">key</span>
+            <span>Đổi mật khẩu</span>
+          </button>
+          <button onclick="handleLogout()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-rose-400 hover:bg-rose-500/10 transition-colors text-left font-medium">
+            <span class="material-symbols-outlined text-base">logout</span>
+            <span>Đăng xuất</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Login Button when not logged in -->
+      <button id="btn-show-login" onclick="openLoginModal()" class="px-3.5 py-1.5 rounded-full bg-primary/20 text-primary hover:bg-primary/30 border border-primary/40 text-xs font-bold transition-all flex items-center gap-1">
+        <span class="material-symbols-outlined text-[16px]">login</span>
+        <span>Đăng Nhập</span>
+      </button>
+
       <button onclick="navigateTo('settings')" class="p-2.5 text-text-secondary hover:text-primary transition-colors rounded-full hover:bg-white/5 active:scale-95" title="Cài Đặt Hệ Thống">
         <span class="material-symbols-outlined text-[20px]">settings</span>
       </button>
@@ -445,6 +558,7 @@
       <span class="nav-label text-[10px] mt-0.5">Cài đặt</span>
     </button>
   </nav>
+  </div> <!-- end #app-main-wrapper -->
 
   <!-- Global Loading Indicator -->
   <div id="global-loading-indicator" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center pointer-events-none">
@@ -507,36 +621,18 @@
 
           <div>
             <label class="block text-xs font-semibold text-text-secondary mb-1">Số Điện Thoại</label>
-            <input id="church-sdt" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="0901234567" />
+            <input id="church-sdt" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="0252.xxx.xxxx" />
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Email</label>
-            <input id="church-email" type="email" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="httl.tanminh@gmail.com" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Ngày Thành Lập</label>
-            <input id="church-ngaythanhlap" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="DD/MM/YYYY" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Trạng Thái</label>
-            <select id="church-trangthai" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs">
-              <option value="active">Đang sinh hoạt (Active)</option>
-              <option value="inactive">Tạm ngưng</option>
-            </select>
-          </div>
-
-          <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Ghi Chú</label>
-            <textarea id="church-ghichu" rows="2" class="glass-input w-full rounded-xl px-4 py-2 text-xs" placeholder="Ghi chú thêm về Hội Thánh..."></textarea>
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Email Liên Hệ</label>
+            <input id="church-email" type="email" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs" placeholder="hoithanh@gmail.com" />
           </div>
         </div>
 
         <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
           <button type="button" onclick="closeModal('modal-church')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5 transition-colors">Hủy</button>
-          <button type="submit" class="px-6 py-2.5 rounded-full bg-primary-container hover:bg-accent-hover text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Hội Thánh</button>
+          <button type="submit" class="px-6 py-2.5 rounded-full bg-primary hover:bg-primary-container text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Hội Thánh</button>
         </div>
       </form>
     </div>
@@ -546,8 +642,8 @@
   <div id="modal-ministry" class="app-modal hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm items-center justify-center p-4">
     <div class="glass-card-solid rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-white/15 animate-fade-in flex flex-col max-h-[90vh]">
       <div class="p-5 border-b border-white/10 flex justify-between items-center bg-surface-container-low/50">
-        <h3 id="modal-min-title" class="text-base font-bold text-white flex items-center gap-2">
-          <span class="material-symbols-outlined text-secondary">groups</span>
+        <h3 id="modal-ministry-title" class="text-base font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-secondary">diversity_3</span>
           Thêm Ban Ngành Mới
         </h3>
         <button onclick="closeModal('modal-ministry')" class="text-text-secondary hover:text-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
@@ -559,23 +655,33 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="sm:col-span-2">
             <label class="block text-xs font-semibold text-text-secondary mb-1">Thuộc Hội Thánh *</label>
-            <select id="min-hoithanh-id" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold"></select>
+            <select id="min-hoithanh" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold">
+              <option value="">-- Chọn Hội Thánh --</option>
+            </select>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Tên Ban Ngành *</label>
+            <input id="min-ten" required class="glass-input w-full rounded-xl px-4 py-2.5 text-sm font-semibold" placeholder="VD: Ban Thanh Tráng, Ban Thanh Niên..." />
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-text-secondary mb-1">Tên Ban Ngành *</label>
-            <input id="min-ten" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold" placeholder="VD: Ban Thanh Tráng" />
+            <label class="block text-xs font-semibold text-text-secondary mb-1">Mã Ban Ngành</label>
+            <input id="min-ma" class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-mono uppercase" placeholder="VD: BN_TT" />
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-text-secondary mb-1">Loại Ban Ngành *</label>
-            <select id="min-loai" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs font-semibold">
-              <option value="THANH_TRANG">Ban Thanh Tráng</option>
-              <option value="THANH_NIEN">Ban Thanh Niên</option>
-              <option value="THIEU_NHI">Ban Thiếu Nhi</option>
-              <option value="PHU_NU">Ban Phụ Nữ</option>
-              <option value="NAM_GIOI">Ban Nam Giới</option>
-              <option value="LAO_NIEN">Ban Lão Niên</option>
+            <select id="min-loai" required class="glass-input w-full rounded-xl px-4 py-2.5 text-xs">
+              <option value="thanh-trang">Thanh Tráng (25 - 45 tuổi)</option>
+              <option value="thanh-nien">Thanh Niên (18 - 25 tuổi)</option>
+              <option value="trang-nien">Tráng Niên (45 - 60 tuổi)</option>
+              <option value="lao-nien">Lão Niên (trên 60 tuổi)</option>
+              <option value="phu-nu">Phụ Nữ</option>
+              <option value="nam-gioi">Nam Giới</option>
+              <option value="thieu-nien">Thiếu Niên</option>
+              <option value="thieu-nhi">Ấu Nhi / Thiếu Nhi</option>
+              <option value="khac">Khác (Hát, Truyền giảng...)</option>
             </select>
           </div>
 
@@ -634,6 +740,85 @@
         <div class="pt-4 border-t border-white/10 flex justify-end gap-2">
           <button type="button" onclick="closeModal('modal-link-sheet')" class="px-5 py-2.5 rounded-full border border-white/10 text-xs font-semibold text-text-secondary hover:bg-white/5 transition-colors">Hủy</button>
           <button type="submit" class="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md active:scale-95">Lưu Kết Nối</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LOGIN MODAL -->
+  <div id="modal-login" class="app-modal fixed inset-0 z-[100] hidden items-center justify-center bg-black/80 backdrop-blur-xl p-4 animate-fade-in">
+    <div class="glass-card-solid border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 relative">
+      <div class="text-center space-y-2">
+        <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-primary-container via-primary to-secondary mx-auto flex items-center justify-center text-white shadow-xl shadow-primary/20 border border-white/20">
+          <span class="material-symbols-outlined text-3xl">church</span>
+        </div>
+        <h2 class="text-xl font-bold text-white tracking-tight">Hệ Thống Quản Lý Hội Thánh</h2>
+        <p class="text-xs text-text-secondary">Đăng nhập tài khoản Ban Trị Sự / Quản Nhiệm</p>
+      </div>
+
+      <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1.5">Tên đăng nhập / Email</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-3 text-text-secondary text-[18px]">person</span>
+            <input type="text" id="login-username" required placeholder="admin hoặc quannhiem" class="w-full pl-10 pr-4 py-2.5 rounded-2xl glass-input text-xs focus:ring-2 focus:ring-primary focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1.5">Mật khẩu</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-3 text-text-secondary text-[18px]">lock</span>
+            <input type="password" id="login-password" required placeholder="Mật khẩu của bạn" class="w-full pl-10 pr-10 py-2.5 rounded-2xl glass-input text-xs focus:ring-2 focus:ring-primary focus:outline-none">
+            <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3.5 top-2.5 text-text-secondary hover:text-white">
+              <span class="material-symbols-outlined text-[18px]">visibility</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs pt-1">
+          <label class="flex items-center gap-2 cursor-pointer text-text-secondary hover:text-white">
+            <input type="checkbox" id="login-remember" checked class="rounded border-white/20 text-primary focus:ring-0 bg-transparent">
+            <span>Ghi nhớ đăng nhập</span>
+          </label>
+          <span class="text-[11px] text-text-secondary/70">Mặc định: admin / Haiyen@2026</span>
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="w-full py-3 rounded-2xl bg-gradient-to-r from-primary-container via-primary to-secondary text-white text-xs font-bold shadow-lg shadow-primary/25 hover:opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2 mt-2">
+          <span class="material-symbols-outlined text-base">login</span>
+          <span>Đăng Nhập Hệ Thống</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL CHANGE PASSWORD -->
+  <div id="modal-change-password" class="app-modal fixed inset-0 z-[105] hidden items-center justify-center bg-black/80 backdrop-blur-xl p-4 animate-fade-in">
+    <div class="glass-card-solid border border-white/15 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5">
+      <div class="flex justify-between items-center pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <span class="material-symbols-outlined text-primary text-xl">key</span>
+          <h3 class="text-base font-bold text-white">Đổi Mật Khẩu</h3>
+        </div>
+        <button onclick="closeModal('modal-change-password')" class="p-1 text-text-secondary hover:text-white rounded-full"><span class="material-symbols-outlined text-lg">close</span></button>
+      </div>
+
+      <form id="form-change-password" onsubmit="handleChangePasswordSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1">Mật khẩu hiện tại</label>
+          <input type="password" id="chg-old-password" required class="w-full px-3.5 py-2.5 rounded-2xl glass-input text-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1">Mật khẩu mới</label>
+          <input type="password" id="chg-new-password" required minlength="6" class="w-full px-3.5 py-2.5 rounded-2xl glass-input text-xs" placeholder="Tối thiểu 6 ký tự">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-text-secondary mb-1">Xác nhận mật khẩu mới</label>
+          <input type="password" id="chg-confirm-password" required minlength="6" class="w-full px-3.5 py-2.5 rounded-2xl glass-input text-xs">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-change-password')" class="px-4 py-2 rounded-xl border border-white/10 text-xs font-semibold text-text-secondary">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-container text-white text-xs font-bold shadow-md">Cập Nhật</button>
         </div>
       </form>
     </div>
