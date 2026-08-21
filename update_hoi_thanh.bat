@@ -1,7 +1,7 @@
 @echo off
 setlocal
 set "ROOT_DIR=%~dp0"
-set "HOI_THANH_DEPLOY_ID=AKfycbz7e9ZVchhCfuTs10-ldapfDMl3ZzqlB2jQz7nCsyFpQXzHJk6c2AYvM_qOs9MODZZ8"
+set "HOI_THANH_DEPLOY_ID=AKfycbwWOhHsZolmnD5fjNNYKATkUmtwEqQwuvEN_5YAXpUab57UqsyRaMAzvPk0A8XhFl20"
 
 echo ====================================================================
 echo   DONG BO VA AUTO-DEPLOY QUAN LY HOI THANH (MASTER)

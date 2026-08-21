@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 set "ROOT_DIR=%~dp0"
-set "HOI_THANH_DEPLOY_ID=AKfycbz7e9ZVchhCfuTs10-ldapfDMl3ZzqlB2jQz7nCsyFpQXzHJk6c2AYvM_qOs9MODZZ8"
+set "HOI_THANH_DEPLOY_ID=AKfycbwWOhHsZolmnD5fjNNYKATkUmtwEqQwuvEN_5YAXpUab57UqsyRaMAzvPk0A8XhFl20"
 set "BAN_NGANH_DEPLOY_ID=AKfycbyzVgom-BMZOadYkoYOQRZ3W7lLZRRGc2ofU1rbqQWTxD7x-QD8UXDW33vuuNsJxViYvw"
 
 echo ====================================================================
