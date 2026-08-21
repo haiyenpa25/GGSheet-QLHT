@@ -49,16 +49,28 @@ function doGet(e) {
     return handleApiRequest(e.parameter.action, e.parameter);
   }
 
-  const sheetId = (e && e.parameter && e.parameter.sheetId) || '';
+  const sheetId = (e && e.parameter && e.parameter.sheetId) || DEFAULT_SPREADSHEET_ID;
   const banNganhId = (e && e.parameter && e.parameter.banNganhId) || 'id_41451e0a';
   const title = (e && e.parameter && e.parameter.title) || 'Ban Thanh Tráng';
 
-  const template = HtmlService.createTemplateFromFile('Index');
-  template.sheetId = sheetId;
-  template.banNganhId = banNganhId;
-  template.banNganhTitle = title;
+  let indexContent = HtmlService.createHtmlOutputFromFile('Index').getContent();
+  const stylesContent = HtmlService.createHtmlOutputFromFile('Styles').getContent();
+  const jsContent = HtmlService.createHtmlOutputFromFile('JavaScript').getContent();
 
-  return template.evaluate()
+  // Clean include tags replacement directly (100% reliable, no template parser crashes)
+  indexContent = indexContent.replace(/<\?!\s*=\s*include\(['"]Styles['"]\);?\s*\?>/g, stylesContent);
+  indexContent = indexContent.replace(/<\?!\s*=\s*include\(['"]JavaScript['"]\);?\s*\?>/g, jsContent);
+
+  // Inject SERVER_CONFIG directly into the HTML
+  const configScript = '<script>window.SERVER_CONFIG = ' + JSON.stringify({
+    sheetId: sheetId,
+    banNganhId: banNganhId,
+    banNganhTitle: title
+  }) + ';</script>';
+
+  indexContent = indexContent.replace(/<script>[\s\S]*?window\.SERVER_CONFIG[\s\S]*?<\/script>/i, configScript);
+
+  return HtmlService.createHtmlOutput(indexContent)
     .setTitle(title ? `Quản Lý ${title}` : 'Quản Lý Ban Ngành - Hội Thánh')
     .setFaviconUrl('https://img.icons8.com/fluency/48/groups.png')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no')
