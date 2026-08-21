@@ -72,19 +72,26 @@ function doPost(e) {
 function handleApiRequest(action, params) {
   try {
     let result = { success: false, message: 'Unknown action: ' + action };
+    const callback = params.callback || params.prefix;
+
+    let data = params.data;
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch (e) {}
+    }
 
     switch (action) {
       case 'apiGetInitialData':
+      case 'apiGetDashboardData':
         result = apiGetInitialData();
         break;
       case 'apiSaveChurch':
-        result = apiSaveChurch(params.data || params);
+        result = apiSaveChurch(data || params);
         break;
       case 'apiDeleteChurch':
         result = apiDeleteChurch(params.id);
         break;
       case 'apiSaveMinistry':
-        result = apiSaveMinistry(params.data || params);
+        result = apiSaveMinistry(data || params);
         break;
       case 'apiDeleteMinistry':
         result = apiDeleteMinistry(params.id);
@@ -102,13 +109,18 @@ function handleApiRequest(action, params) {
         result = { success: false, message: `Hành động "${action}" không tồn tại` };
     }
 
-    return createJsonResponse(result);
+    return createJsonResponse(result, callback);
   } catch (e) {
-    return createJsonResponse({ success: false, message: e.message || String(e) });
+    return createJsonResponse({ success: false, message: e.message || String(e) }, params.callback);
   }
 }
 
-function createJsonResponse(data) {
+function createJsonResponse(data, callback) {
+  if (callback && String(callback).trim()) {
+    const safeCallback = String(callback).replace(/[^a-zA-Z0-9_$]/g, '');
+    return ContentService.createTextOutput(safeCallback + '(' + JSON.stringify(data) + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }
